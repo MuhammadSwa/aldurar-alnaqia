@@ -76,39 +76,43 @@ class BookmarksTilesHomeScreen extends StatelessWidget {
             orphanTitles.add(bookmark);
           }
         }
-        return Column(
-          children: [
-            if (weekAzkarBookmarked) ...{
-              const ZikrListViewTile(
-                  title: 'أوراد الأسبوع', route: '/home/weekCollection'),
-            },
-            if (bookmarks.isNotEmpty) ...{
-              for (var day in azkarOfDays) ...{
-                ZikrListViewTile(
-                    title: day, route: '/home/${azkarDayTitlesToNum[day]}'),
-              },
-              AzkarListViewWidget(
-                titles: collectionTitles,
-                route: '/home/zikrCollection',
-                barTitle: 'الأذكار',
-              ),
-              AzkarListViewWidget(
-                titles: orphanTitles,
-                route: '/home/zikr',
-                barTitle: 'الأذكار',
-              ),
-            } else ...{
-              // TODO: design empty state
-              const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('المحفوظات فارغة'),
-                  Icon(Icons.bookmark_remove)
-                ],
-              ),
-            }
-          ],
-        );
+        return SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                if (weekAzkarBookmarked) ...{
+                  const ZikrListViewTile(
+                      title: 'أوراد الأسبوع', route: '/home/weekCollection'),
+                },
+                if (bookmarks.isNotEmpty) ...{
+                  for (var day in azkarOfDays) ...{
+                    ZikrListViewTile(
+                        title: day, route: '/home/${azkarDayTitlesToNum[day]}'),
+                  },
+                  AzkarListViewWidget(
+                    titles: collectionTitles,
+                    route: '/home/zikrCollection',
+                    barTitle: 'الأذكار',
+                    scrollable: false,
+                  ),
+                  AzkarListViewWidget(
+                    titles: orphanTitles,
+                    route: '/home/zikr',
+                    barTitle: 'الأذكار',
+                    scrollable: false,
+                  ),
+                } else ...{
+                  // TODO: design empty state
+                  const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('المحفوظات فارغة'),
+                      Icon(Icons.bookmark_remove)
+                    ],
+                  ),
+                }
+              ],
+            ));
       },
     );
   }

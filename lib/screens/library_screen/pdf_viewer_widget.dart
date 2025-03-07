@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
-import 'package:file_selector/file_selector.dart' as fs;
+// import 'package:flutter/foundation.dart';
+// import 'package:file_selector/file_selector.dart' as fs;
 import 'package:path_provider/path_provider.dart';
 // import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -13,7 +13,7 @@ import 'package:yosria/screens/library_screen/pdfViewer/markers_view.dart';
 import 'package:yosria/screens/library_screen/pdfViewer/outline_view.dart';
 import 'package:yosria/screens/library_screen/pdfViewer/search_view.dart';
 import 'package:yosria/screens/library_screen/pdfViewer/thumbnails_view.dart';
-import 'package:yosria/screens/library_screen/pdfViewer/password_dialog.dart';
+// import 'package:yosria/screens/library_screen/pdfViewer/password_dialog.dart';
 
 // import 'package:url_launcher/url_launcher.dart';
 
