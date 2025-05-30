@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yosria/models/azkar_models.dart';
-import 'package:yosria/router/page_transitions.dart';
-import 'package:yosria/router/zikrPage_router.dart';
-import 'package:yosria/widgets/azkarListView/azkarListView_widget.dart';
-import 'package:yosria/widgets/zikrSlider_screen.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/router/page_transitions.dart';
+import 'package:aldurar_alnaqia/router/zikrPage_router.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
+import 'package:aldurar_alnaqia/widgets/zikrSlider_screen.dart';
 
 GoRoute zikrCollectionRoute({required String parent}) {
   return GoRoute(

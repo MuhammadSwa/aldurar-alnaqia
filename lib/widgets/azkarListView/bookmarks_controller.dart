@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:yosria/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 class BookmarksController extends GetxController {
   var bookmarks = SharedPreferencesService.getBookmarks();

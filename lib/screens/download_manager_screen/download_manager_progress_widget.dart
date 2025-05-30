@@ -1,7 +1,7 @@
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:get/instance_manager.dart';
-import 'package:yosria/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 
 class DownloadManagerProgressWidget extends StatelessWidget {
   const DownloadManagerProgressWidget({super.key, required this.title});

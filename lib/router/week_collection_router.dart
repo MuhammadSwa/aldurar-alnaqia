@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yosria/models/consts/alhadra_collection.dart';
-import 'package:yosria/screens/zikr_screen/zikr_screen.dart';
-import 'package:yosria/widgets/azkarListView/helia_nasab_screen.dart';
-import 'package:yosria/widgets/azkarListView/zikrListViewTile_widget.dart';
-import 'package:yosria/widgets/week_azkar_list.dart';
-import 'package:yosria/router/page_transitions.dart';
+import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
+import 'package:aldurar_alnaqia/router/page_transitions.dart';
 // TODO: reactor this and maybe make the weekazkar, and azkarofdayx it's own iwdget in screens folder?
 
 GoRoute weekCollectionRouter({required String parent}) {

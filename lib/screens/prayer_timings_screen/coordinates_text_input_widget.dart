@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:yosria/screens/prayer_timings_screen/manual_coordination_form.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/manual_coordination_form.dart';
 
 // TODO: extract validation, make TextFormField it's own widget?
 class CoordinatesTextInputWidget extends StatelessWidget {

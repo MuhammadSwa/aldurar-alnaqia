@@ -1,8 +1,8 @@
-import 'package:yosria/models/azkar_models.dart';
-import 'package:yosria/models/consts/azkar_algomari_collection.dart';
-import 'package:yosria/models/consts/azkar_morning_evening_collection.dart';
-import 'package:yosria/models/consts/poems_collection.dart';
-import 'package:yosria/models/consts/salawat_yousria_collection.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/models/consts/azkar_algomari_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/azkar_morning_evening_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 
 const alhadraCollection = <Zikr>[
   almarefAlzawquia,

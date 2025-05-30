@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:yosria/widgets/azkarListView/zikrListViewTile_widget.dart';
-import 'package:yosria/screens/award_list_screen/search_bar_widget.dart';
-import 'package:yosria/widgets/azkarListView/azkarListView_widget.dart';
-import 'package:yosria/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
+import 'package:aldurar_alnaqia/screens/award_list_screen/search_bar_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
 class AwradListScreen extends StatefulWidget {
   const AwradListScreen({super.key});

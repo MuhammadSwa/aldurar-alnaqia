@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:yosria/screens/prayer_timings_screen/asr_calc_segmented_button.dart';
-import 'package:yosria/screens/prayer_timings_screen/calc_method.dart';
-import 'package:yosria/screens/prayer_timings_screen/coordinates_text_input_widget.dart';
-import 'package:yosria/screens/prayer_timings_screen/location_button_widget.dart';
-import 'package:yosria/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/asr_calc_segmented_button.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/calc_method.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/coordinates_text_input_widget.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_button_widget.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 
 class ManualCoordinatesFormModel {
   double _latitude = 0.0;

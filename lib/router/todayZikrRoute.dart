@@ -1,8 +1,8 @@
 import 'package:go_router/go_router.dart';
-import 'package:yosria/common/helpers/helpers.dart';
-import 'package:yosria/widgets/week_azkar_list.dart';
-import 'package:yosria/router/page_transitions.dart';
-import 'package:yosria/router/week_collection_router.dart';
+import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
+import 'package:aldurar_alnaqia/router/page_transitions.dart';
+import 'package:aldurar_alnaqia/router/week_collection_router.dart';
 
 GoRoute todayZikrRoute() {
   return GoRoute(

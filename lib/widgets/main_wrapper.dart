@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yosria/audioPlayer/audioPlayer.dart';
+import 'package:aldurar_alnaqia/audioPlayer/audioPlayer.dart';
 
 class MainWrapper extends StatefulWidget {
   const MainWrapper({

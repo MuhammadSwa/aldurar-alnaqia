@@ -1,9 +1,9 @@
 import 'package:go_router/go_router.dart';
-import 'package:yosria/models/consts/alhadra_collection.dart';
-import 'package:yosria/models/consts/orphans.dart';
-import 'package:yosria/router/handle_router.dart';
-import 'package:yosria/router/page_transitions.dart';
-import 'package:yosria/screens/zikr_screen/zikr_screen.dart';
+import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/orphans.dart';
+import 'package:aldurar_alnaqia/router/handle_router.dart';
+import 'package:aldurar_alnaqia/router/page_transitions.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
 
 GoRoute zikrPageRoute() {
   return GoRoute(
@@ -20,7 +20,7 @@ GoRoute zikrPageRoute() {
       }
 
       return CustomTransitionPage(
-        child: ZikrScreen(title: state.pathParameters['zikr']! ),
+        child: ZikrScreen(title: state.pathParameters['zikr']!),
         transitionsBuilder: slideTransition,
       );
     },

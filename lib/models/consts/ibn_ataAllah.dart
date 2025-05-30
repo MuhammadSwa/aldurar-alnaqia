@@ -1,4 +1,4 @@
-import 'package:yosria/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
 const ibnAtaAllahCollection = <Zikr>[
   monagaIbnAtaAllah,

@@ -1,7 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:yosria/services/location_service.dart';
+import 'package:aldurar_alnaqia/services/location_service.dart';
 import 'package:universal_platform/universal_platform.dart';
 
 class LocationButtonWidget extends StatefulWidget {

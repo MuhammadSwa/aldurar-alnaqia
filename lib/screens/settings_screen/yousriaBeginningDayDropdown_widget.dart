@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:yosria/common/helpers/helpers.dart';
-import 'package:yosria/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 class YousriaBeginningDayDropDown extends StatelessWidget {
   const YousriaBeginningDayDropDown({super.key});

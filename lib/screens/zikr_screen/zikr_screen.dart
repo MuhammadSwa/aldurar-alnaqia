@@ -2,10 +2,10 @@ import 'package:easy_rich_text/easy_rich_text.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/instance_manager.dart';
-import 'package:yosria/models/azkar_models.dart';
-import 'package:yosria/screens/download_manager_screen/download_controller.dart';
-import 'package:yosria/screens/settings_screen/font_settings_widget.dart';
-import 'package:yosria/screens/zikr_screen/playAudio_btn_zikr_page.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/playAudio_btn_zikr_page.dart';
 
 class ZikrScreen extends StatelessWidget {
   final String title;

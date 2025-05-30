@@ -1,6 +1,6 @@
 import 'package:adhan/adhan.dart';
 import 'package:get/get.dart';
-import 'package:yosria/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 class PrayerTimingsController extends GetxController {
   PrayerTimes? prayerTimings = PrayerTimeings.getPrayersTimings();

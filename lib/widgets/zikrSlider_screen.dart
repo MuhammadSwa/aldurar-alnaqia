@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yosria/models/consts/alhadra_collection.dart';
-import 'package:yosria/screens/zikr_screen/zikr_screen.dart';
-import 'package:yosria/widgets/azkarListView/helia_nasab_screen.dart';
+import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
 
 class ZikrsliderScreen extends StatelessWidget {
   const ZikrsliderScreen(this.titles, {super.key});

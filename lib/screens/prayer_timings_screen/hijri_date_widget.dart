@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hijri/hijri_calendar.dart';
-import 'package:yosria/screens/prayer_timings_screen/adjust_hijri_day_dialogBox.dart';
-import 'package:yosria/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialogBox.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 
 class HijriDateWidget extends StatefulWidget {
   const HijriDateWidget({super.key, required this.date});

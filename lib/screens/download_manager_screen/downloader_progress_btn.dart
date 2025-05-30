@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/instance_manager.dart';
-import 'package:yosria/screens/download_manager_screen/delete_downloaded_btn.dart';
-import 'package:yosria/screens/download_manager_screen/download_controller.dart';
-import 'package:yosria/screens/download_manager_screen/download_manager_progress_widget.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/delete_downloaded_btn.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_progress_widget.dart';
 
 class DownloaderProgressBtn extends StatelessWidget {
   const DownloaderProgressBtn(

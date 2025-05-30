@@ -3,8 +3,8 @@ import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/instance_manager.dart';
 import 'package:hijri/hijri_calendar.dart';
-import 'package:yosria/screens/prayer_timings_screen/prayerTimingsController.dart';
-import 'package:yosria/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 class AdjustHijriDayDialogbox extends StatefulWidget {
   const AdjustHijriDayDialogbox({super.key});

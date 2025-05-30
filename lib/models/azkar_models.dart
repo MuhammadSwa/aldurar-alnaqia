@@ -1,16 +1,16 @@
 // TODO: rethink the entire model system.
 
-import 'package:yosria/models/consts/ahzab_alshazly_collection.dart';
-import 'package:yosria/models/consts/alhadra_collection.dart';
-import 'package:yosria/models/consts/azkar_algomari_collection.dart';
-import 'package:yosria/models/consts/azkar_morning_evening_collection.dart';
-import 'package:yosria/models/consts/chosen_salawat.dart';
-import 'package:yosria/models/consts/dalayil_alkhayrat_collection.dart';
-import 'package:yosria/models/consts/orphans.dart';
-import 'package:yosria/models/consts/poems_collection.dart';
-import 'package:yosria/models/consts/salawat_yousria_collection.dart';
-import 'package:yosria/models/consts/tareeqa_bios_collection.dart';
-import 'package:yosria/models/consts/ibn_ataAllah.dart';
+import 'package:aldurar_alnaqia/models/consts/ahzab_alshazly_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/azkar_algomari_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/azkar_morning_evening_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
+import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/orphans.dart';
+import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/tareeqa_bios_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/ibn_ataAllah.dart';
 
 class Zikr {
   final String title;
@@ -26,7 +26,6 @@ class Zikr {
     this.footer = '',
   });
 }
-
 
 class AllAzkar {
   final Map<String, Zikr> azkarCategMap;

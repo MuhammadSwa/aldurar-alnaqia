@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/instance_manager.dart';
-import 'package:yosria/screens/settings_screen/font_settings_widget.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 
 abstract class BaseTheme {
-  static final double bodyMediumFontSize = Get.put(FontController()).fontSize.value;
+  static final double bodyMediumFontSize =
+      Get.put(FontController()).fontSize.value;
   static const double bodyMediumHeight = 1.8;
 
   static const double bodySmallFontSize = 14;

@@ -1,11 +1,9 @@
 // import 'package:easy_search_bar/easy_search_bar.dart';
 import 'package:easy_search_bar_2/easy_search_bar_2.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 // import 'package:go_router/go_router.dart';
-import 'package:yosria/models/azkar_models.dart';
-import 'package:drop_down_search_field/drop_down_search_field.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
 class SearchBarWidget extends StatefulWidget implements PreferredSizeWidget {
   const SearchBarWidget({super.key});

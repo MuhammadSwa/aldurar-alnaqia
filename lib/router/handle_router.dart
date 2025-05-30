@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yosria/router/zikrCollection_route.dart';
-import 'package:yosria/router/zikrPage_router.dart';
-import 'package:yosria/screens/download_manager_screen/download_manager_screen.dart';
-import 'package:yosria/screens/library_screen/library_screen.dart';
-import 'package:yosria/screens/library_screen/pdf_viewer_widget.dart';
-import 'package:yosria/screens/social_screen/social_screen.dart';
-import 'package:yosria/widgets/azkarListView/helia_nasab_screen.dart';
-import 'package:yosria/widgets/main_wrapper.dart';
-import 'package:yosria/router/page_transitions.dart';
-import 'package:yosria/router/todayZikrRoute.dart';
-import 'package:yosria/router/week_collection_router.dart';
-import 'package:yosria/screens/prayer_timings_screen/prayer_timings_screen.dart';
-import 'package:yosria/screens/award_list_screen/awrad_list_screen.dart';
-import 'package:yosria/screens/home_screen/home_screen.dart';
-import 'package:yosria/screens/settings_screen/settings_screen.dart';
-import 'package:yosria/widgets/zikrSlider_screen.dart';
+import 'package:aldurar_alnaqia/router/zikrCollection_route.dart';
+import 'package:aldurar_alnaqia/router/zikrPage_router.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/pdf_viewer_widget.dart';
+import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
+import 'package:aldurar_alnaqia/router/page_transitions.dart';
+import 'package:aldurar_alnaqia/router/todayZikrRoute.dart';
+import 'package:aldurar_alnaqia/router/week_collection_router.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
+import 'package:aldurar_alnaqia/screens/award_list_screen/awrad_list_screen.dart';
+import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/settings_screen.dart';
+import 'package:aldurar_alnaqia/widgets/zikrSlider_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');

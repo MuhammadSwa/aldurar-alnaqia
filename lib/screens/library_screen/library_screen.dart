@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/instance_manager.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yosria/common/helpers/helpers.dart';
-import 'package:yosria/screens/download_manager_screen/download_controller.dart';
-import 'package:yosria/widgets/stream_download_dialog.dart';
+import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
 
 const booksTitles = <String, String>{
   'الدرر النقية في أوراد الطريقة اليسرية الصديقية الشاذلية':

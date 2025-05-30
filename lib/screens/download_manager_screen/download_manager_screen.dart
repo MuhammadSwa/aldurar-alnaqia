@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/instance_manager.dart';
-import 'package:yosria/models/azkar_models.dart';
-import 'package:yosria/screens/download_manager_screen/download_controller.dart';
-import 'package:yosria/screens/download_manager_screen/downloader_progress_btn.dart';
-import 'package:yosria/screens/library_screen/library_screen.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/downloader_progress_btn.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
 
 class DownloadManagerPage extends StatelessWidget {
   DownloadManagerPage({super.key, required this.index});

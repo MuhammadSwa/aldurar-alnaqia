@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/instance_manager.dart';
-import 'package:yosria/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 class FontController extends GetxController {
   var fontSize = SharedPreferencesService.getFontSize().obs;

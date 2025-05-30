@@ -5,15 +5,15 @@ import 'package:path_provider/path_provider.dart';
 // import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:yosria/common/helpers/helpers.dart';
-import 'package:yosria/screens/library_screen/library_screen.dart';
-// import 'package:yosria/common/helpers/helpers.dart';
-// import 'package:yosria/screens/library_screen/library_screen.dart';
-import 'package:yosria/screens/library_screen/pdfViewer/markers_view.dart';
-import 'package:yosria/screens/library_screen/pdfViewer/outline_view.dart';
-import 'package:yosria/screens/library_screen/pdfViewer/search_view.dart';
-import 'package:yosria/screens/library_screen/pdfViewer/thumbnails_view.dart';
-// import 'package:yosria/screens/library_screen/pdfViewer/password_dialog.dart';
+import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
+// import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+// import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/pdfViewer/markers_view.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/pdfViewer/outline_view.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/pdfViewer/search_view.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/pdfViewer/thumbnails_view.dart';
+// import 'package:aldurar_alnaqia/screens/library_screen/pdfViewer/password_dialog.dart';
 
 // import 'package:url_launcher/url_launcher.dart';
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:yosria/screens/award_list_screen/awrad_list_screen.dart';
-import 'package:yosria/screens/home_screen/home_screen.dart';
-import 'package:yosria/screens/library_screen/library_screen.dart';
-import 'package:yosria/screens/prayer_timings_screen/prayer_timings_screen.dart';
+import 'package:aldurar_alnaqia/screens/award_list_screen/awrad_list_screen.dart';
+import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
 
 class BottonNavBar extends StatelessWidget {
   BottonNavBar({super.key});

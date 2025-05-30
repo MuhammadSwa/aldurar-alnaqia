@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:adhan/adhan.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:yosria/screens/prayer_timings_screen/adjust_hijri_day_dialogBox.dart';
-import 'package:yosria/screens/prayer_timings_screen/manual_coordination_form.dart';
-import 'package:yosria/screens/prayer_timings_screen/hijri_date_widget.dart';
-import 'package:yosria/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialogBox.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/manual_coordination_form.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 
 class PrayerTimingsScreen extends StatelessWidget {
   const PrayerTimingsScreen({super.key});

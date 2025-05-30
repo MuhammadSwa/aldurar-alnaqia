@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:yosria/common/helpers/helpers.dart';
-import 'package:yosria/models/consts/alhadra_collection.dart';
-import 'package:yosria/models/consts/azkar_morning_evening_collection.dart';
-import 'package:yosria/models/consts/ibn_ataAllah.dart';
-import 'package:yosria/widgets/azkarListView/azkarListView_widget.dart';
-import 'package:yosria/models/consts/ahzab_alshazly_collection.dart';
-import 'package:yosria/models/consts/azkar_algomari_collection.dart';
-import 'package:yosria/models/consts/chosen_salawat.dart';
-import 'package:yosria/models/consts/orphans.dart';
-import 'package:yosria/models/consts/poems_collection.dart';
-import 'package:yosria/models/consts/salawat_yousria_collection.dart';
-import 'package:yosria/services/shared_prefs.dart';
-import 'package:yosria/widgets/zikrSlider_screen.dart';
+import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/azkar_morning_evening_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/ibn_ataAllah.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
+import 'package:aldurar_alnaqia/models/consts/ahzab_alshazly_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/azkar_algomari_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
+import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/widgets/zikrSlider_screen.dart';
 // TODO: instad of engDay make it numbers for previty and List
 
 class DayAzkarList extends StatelessWidget {

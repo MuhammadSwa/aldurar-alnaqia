@@ -2,9 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
-import 'package:yosria/models/consts/alhadra_collection.dart';
-import 'package:yosria/models/consts/orphans.dart';
-import 'package:yosria/screens/zikr_screen/zikr_screen.dart';
+import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/orphans.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
 
 class HeliaNasabScreen extends StatelessWidget {
   const HeliaNasabScreen({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/instance_manager.dart';
-import 'package:yosria/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 
 class DeleteDownloadedBtn extends StatelessWidget {
   const DeleteDownloadedBtn(
