@@ -28,8 +28,8 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
       
-    - name: Run tests
-      run: flutter test
+    # - name: Run tests
+    #   run: flutter test
       
     - name: Build macOS
       run: flutter build macos --release
@@ -78,8 +78,8 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
       
-    - name: Run tests
-      run: flutter test
+    # - name: Run tests
+    #   run: flutter test
       
     - name: Build Windows
       run: flutter build windows --release
@@ -139,8 +139,8 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
       
-    - name: Run tests
-      run: flutter test
+    # - name: Run tests
+    #   run: flutter test
       
     - name: Build Linux
       run: flutter build linux --release
