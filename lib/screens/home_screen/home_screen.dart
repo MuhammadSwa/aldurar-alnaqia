@@ -1,7 +1,7 @@
+import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
-import 'package:aldurar_alnaqia/screens/home_screen/home_popup_menu.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/bookmarks_controller.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrOfTheDayTile_widget.dart';
@@ -16,10 +16,8 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('الطريقة اليسرية'),
-        actions: const [
-          HomePopUpMenu(),
-        ],
       ),
+      drawer: const MyDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [

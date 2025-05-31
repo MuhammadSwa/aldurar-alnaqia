@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/instance_manager.dart';
@@ -24,6 +25,7 @@ class LibraryScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('المكتبة'),
         ),
+        drawer: const MyDrawer(),
         body: ListView(
           children: [
             for (String title in booksTitles.keys) ...{

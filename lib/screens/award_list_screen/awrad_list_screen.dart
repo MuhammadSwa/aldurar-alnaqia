@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
 import 'package:aldurar_alnaqia/screens/award_list_screen/search_bar_widget.dart';
@@ -19,6 +20,7 @@ class _AwradListScreenState extends State<AwradListScreen> {
 
     return Scaffold(
       appBar: const SearchBarWidget(),
+      drawer: const MyDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [

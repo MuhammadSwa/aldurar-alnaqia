@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:aldurar_alnaqia/main.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';

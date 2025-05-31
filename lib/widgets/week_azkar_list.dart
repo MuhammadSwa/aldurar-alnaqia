@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/main.dart';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';

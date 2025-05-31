@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:adhan/adhan.dart';
 import 'package:get/get.dart';
@@ -17,6 +18,7 @@ class PrayerTimingsScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('مواقيت الصلاة'),
         ),
+        drawer: const MyDrawer(),
         body: SingleChildScrollView(
           child: Column(
             children: [
