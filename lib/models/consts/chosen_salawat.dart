@@ -1,17 +1,26 @@
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
 const chosenSalawatCollection = [
-  salahAzimia,
-  salahIbnBashish,
-  salahAlbaha,
-  salahAlfateh,
-  salahAlmohtag,
-  salahAlmotardy,
-  salahNoorania,
-  salahAlqasm,
   salahAlshafia,
+  salahIbnBashish,
+  salahNoorania,
   salahZatia,
+  salahAzimia,
+  salahAnmozagia,
+  salahAlqasm,
+  salahAlmotardy,
+  salahAlfateh,
+  salahAlbaha,
+  salahAlmohtag,
 ];
+
+const salahAnmozagia = Zikr(
+    title: 'الصلاة الأنموذجية',
+    notes:
+        'الصَّلَاةُ الأُنْمُوذَجِيَّةُ لِسَيِّدِي أَبِي الفَيْضِ مُحَمَّد بْنِ عَبْدِ الكَبِيِر الكَتَّانِي رضي اللَّه عنه',
+    content: '''
+اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا وَمَوْلَانَا أَحْمَدِ الَّذِي جَعَلْتَ اسْمَهُ مُتَّحِدّاً[^1] بِاسْمِكَ وَنَعْتِكَ وَصُورَةَ هَيْكَلِهِ الجِسْمانيِ عَلَى صُورَةِ أُنْمُوذَجِ حَقِيقَةِ خَلَقَ اللهُ سَيِّدَنَا آدَمَ عَلَى صُورَتِهِ، وَفَجَّرْتَ عُنْصرَ مَوْضوعِ مَادَّةِ مَحْمُولِهِ مِنْ أَنِيَّةِ (أَنَا اللَّهُ)، بَلْ حَتَى إَذَا جَاءَهْ لَمْ يَجِدْهُ شَيْئّاً وَوَجَدَ اللَّهّ عِنْدَهُ وَآلِهِ وَصَحْبِهِ وَسَلِّمْ.
+    ''');
 
 const salahAzimia = Zikr(
     title: 'الصلاة العظيمية',

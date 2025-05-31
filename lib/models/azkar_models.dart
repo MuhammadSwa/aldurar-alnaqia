@@ -103,6 +103,7 @@ final allAzkar = AllAzkar(azkarCategMap: {
 
   //
   salahAzimia.title: salahAzimia,
+  salahAnmozagia.title: salahAnmozagia,
   salahIbnBashish.title: salahIbnBashish,
   salahAlbaha.title: salahAlbaha,
   salahAlfateh.title: salahAlfateh,
