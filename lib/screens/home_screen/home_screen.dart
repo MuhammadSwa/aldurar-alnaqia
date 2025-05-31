@@ -1,4 +1,5 @@
 import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
@@ -24,6 +25,10 @@ class HomePage extends StatelessWidget {
             ZikrOfTheDayTile(
                 title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
                 route: '/home/todaysZikr'),
+
+            ZikrOfTheDayTile(
+                title: 'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum()]}',
+                route: '/home/zikr/${dalayilAlkhayratCollection[todaysNum()].title}'),
             const Divider(),
 
             const BookmarksTilesHomeScreen(),

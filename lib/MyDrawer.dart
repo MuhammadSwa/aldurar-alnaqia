@@ -62,6 +62,17 @@ class MyDrawer extends StatelessWidget {
             title: 'كيفية قراءة الأوراد',
             onTap: () => launchUrl(Uri.parse('https://youtu.be/IyrWSL4jd00')),
           ),
+
+          _buildDrawerItem(
+            icon: SvgPicture.asset(
+              'assets/icons/youtube-icon-svgrepo-com.svg',
+              semanticsLabel: 'youtube_icon',
+              width: 24,
+            ),
+            title: 'أسئلة المتابعين',
+            onTap: () => launchUrl(Uri.parse(
+                'https://www.youtube.com/playlist?list=PLEkQk5xrP-tkGXuZ9atE3k_7it12rUPTs')),
+          ),
           // _buildDrawerItem(
           //   icon: Icons.notifications_rounded,
           //   title: 'Notifications',

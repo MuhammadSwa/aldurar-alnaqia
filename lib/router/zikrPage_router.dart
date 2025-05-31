@@ -12,6 +12,7 @@ GoRoute zikrPageRoute() {
       // TODO: find a better way to handle helia and azkar week
       final zikr = state.pathParameters['zikr'];
 
+      print(zikr);
       if (zikr == alhyliaAndNasab.title) {
         return handleHeliaNasab();
       }

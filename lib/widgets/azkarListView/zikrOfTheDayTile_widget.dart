@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class ZikrOfTheDayTile extends StatelessWidget{
+class ZikrOfTheDayTile extends StatelessWidget {
   const ZikrOfTheDayTile({super.key, required this.title, required this.route});
   final String title;
   final String route;
