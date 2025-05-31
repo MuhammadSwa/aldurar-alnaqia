@@ -37,6 +37,14 @@ final _sites = <_SocialSite>[
   ),
 
   _SocialSite(
+    title: 'Dr. Yosry Gabr in English',
+    url:
+        'https://www.facebook.com/people/Dr-Yosry-Gabr-in-English/61574856976137',
+    icon: const Icon(Icons.facebook),
+    iconColor: Colors.blue,
+  ),
+
+  _SocialSite(
       title: 'قناة اليوتيوب',
       url: 'https://www.youtube.com/c/MohamadSameh',
       icon: SvgPicture.asset(
@@ -48,6 +56,25 @@ final _sites = <_SocialSite>[
       iconColor: Colors.transparent),
 
   _SocialSite(
+    title: 'حساب الساوند كلاود',
+    url: 'https://soundcloud.com/dryosrygabr',
+    icon: SvgPicture.asset(
+      'assets/icons/soundcloud-svgrepo-com.svg',
+      semanticsLabel: 'soundcloud_icon',
+      width: 24,
+    ),
+    iconColor: Colors.transparent,
+  ),
+
+  //
+  _SocialSite(
+    title: 'قناة التليجرام',
+    url: 'https://t.me/DrYosryGabr',
+    icon: const Icon(Icons.telegram),
+    iconColor: Colors.blue,
+  ),
+
+  _SocialSite(
     title: 'صفحة الانستجرام',
     url: 'http://www.instagram.com/DrYosryGabr',
     icon: SvgPicture.asset(
@@ -57,30 +84,24 @@ final _sites = <_SocialSite>[
     ),
     iconColor: Colors.transparent,
   ),
-  //
+
   _SocialSite(
-    title: 'قناة التليجرام',
-    url: 'https://t.me/DrYosryGabr',
-    icon: const Icon(Icons.telegram),
-    iconColor: Colors.blue,
+    title: 'Dr. Yosry Gabr in English',
+    url: 'https://www.instagram.com/dryosrygabr_en/',
+    icon: SvgPicture.asset(
+      'assets/icons/instagram-svgrepo-com.svg',
+      semanticsLabel: 'instagram_icon',
+      width: 24,
+    ),
+    iconColor: Colors.transparent,
   ),
+
   //
   _SocialSite(
     title: 'صفحة التيك توك',
     url: 'http://www.tiktok.com/@dryosrygabr',
     icon: const Icon(Icons.tiktok),
     iconColor: Colors.deepPurple,
-  ),
-
-  _SocialSite(
-    title: 'حساب الساوند كلاود',
-    url: 'https://soundcloud.com/dryosrygabr',
-    icon: SvgPicture.asset(
-      'assets/icons/soundcloud-svgrepo-com.svg',
-      semanticsLabel: 'soundcloud_icon',
-      width: 24,
-    ),
-    iconColor: Colors.transparent,
   ),
 
   _SocialSite(
