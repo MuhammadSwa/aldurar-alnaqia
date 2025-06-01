@@ -14,29 +14,22 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('الطريقة اليسرية'),
-      ),
-      drawer: const MyDrawer(),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            ZikrOfTheDayTile(
-                title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-                route: '/home/todaysZikr'),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          ZikrOfTheDayTile(
+              title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
+              route: '/home/todaysZikr'),
 
-            ZikrOfTheDayTile(
-                title:
-                    'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-                route:
-                    '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}'),
-            const Divider(),
+          ZikrOfTheDayTile(
+              title: 'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
+              route:
+                  '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}'),
+          const Divider(),
 
-            const BookmarksTilesHomeScreen(),
-            //
-          ],
-        ),
+          const BookmarksTilesHomeScreen(),
+          //
+        ],
       ),
     );
   }

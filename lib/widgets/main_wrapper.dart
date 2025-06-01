@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +25,23 @@ class _MainWrapperState extends State<MainWrapper> {
     );
   }
 
+  // Helper to get the title for the AppBar based on the current tab
+  String _getCurrentTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'الرئيسية';
+      case 1:
+        return 'مواقيت الصلاة';
+      case 2:
+        return 'الأوراد';
+      case 3:
+        return 'المكتبة';
+      // case 4: return 'عن الطريقة';
+      default:
+        return 'Aldurar Alnaqia'; // Default title
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = Get.put(Controller());
@@ -35,6 +53,13 @@ class _MainWrapperState extends State<MainWrapper> {
     return Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
+          appBar: AppBar(
+            // ADDED AppBar HERE
+            title: Text(_getCurrentTitle(widget.navigationShell.currentIndex)),
+            // The hamburger icon to open the drawer will be automatically added
+            // because this Scaffold has a 'drawer' property.
+          ),
+          drawer: const MyDrawer(),
           body: Center(
             child: ConstrainedBox(
               constraints:

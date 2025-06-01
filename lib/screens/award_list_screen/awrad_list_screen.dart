@@ -19,44 +19,40 @@ class _AwradListScreenState extends State<AwradListScreen> {
     List<String> collectionTitles = azkarCollections.getTitles().sublist(0, 8);
     List<String> azkarTitles = orphanAzkar.getTitles();
 
-    return Scaffold(
-      appBar: const SearchBarWidget(),
-      drawer: const MyDrawer(),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const ZikrListViewTile(
-                title: 'أوراد الأسبوع', route: '/awradScreen/weekCollection'),
-            AzkarListViewWidget(
-              titles: collectionTitles,
-              route: '/awradScreen/zikrCollection',
-              barTitle: 'الأذكار',
-              scrollable: false,
-            ),
-            // TODO: A HACK asrGomma should be on top of taragm, util i rethink of better implementation
-            AzkarListViewWidget(
-              titles: [asrGomaa.title],
-              route: '/awradScreen/zikr',
-              barTitle: 'الأذكار',
-              scrollable: false,
-            ),
-            const AzkarListViewWidget(
-              // titles: [...tareeqaBiosCollection.map((e) => e.title)],
-              titles: ['تراجم رجال الطريقة'],
-              route: '/awradScreen/zikrCollection',
-              barTitle: 'الأذكار',
-              scrollable: false,
-            ),
-            //
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const ZikrListViewTile(
+              title: 'أوراد الأسبوع', route: '/awradScreen/weekCollection'),
+          AzkarListViewWidget(
+            titles: collectionTitles,
+            route: '/awradScreen/zikrCollection',
+            barTitle: 'الأذكار',
+            scrollable: false,
+          ),
+          // TODO: A HACK asrGomma should be on top of taragm, util i rethink of better implementation
+          AzkarListViewWidget(
+            titles: [asrGomaa.title],
+            route: '/awradScreen/zikr',
+            barTitle: 'الأذكار',
+            scrollable: false,
+          ),
+          const AzkarListViewWidget(
+            // titles: [...tareeqaBiosCollection.map((e) => e.title)],
+            titles: ['تراجم رجال الطريقة'],
+            route: '/awradScreen/zikrCollection',
+            barTitle: 'الأذكار',
+            scrollable: false,
+          ),
+          //
 
-            AzkarListViewWidget(
-              titles: azkarTitles,
-              route: '/awradScreen/zikr',
-              barTitle: 'الأذكار',
-              scrollable: false,
-            ),
-          ],
-        ),
+          AzkarListViewWidget(
+            titles: azkarTitles,
+            route: '/awradScreen/zikr',
+            barTitle: 'الأذكار',
+            scrollable: false,
+          ),
+        ],
       ),
     );
   }

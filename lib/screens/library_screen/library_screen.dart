@@ -27,18 +27,13 @@ class LibraryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: const Text('المكتبة'),
-        ),
-        drawer: const MyDrawer(),
-        body: ListView(
-          children: [
-            for (String title in booksTitles.keys) ...{
-              BookListTile(title: title, url: booksTitles[title]!)
-            }
-          ],
-        ));
+    return ListView(
+      children: [
+        for (String title in booksTitles.keys) ...{
+          BookListTile(title: title, url: booksTitles[title]!)
+        }
+      ],
+    );
   }
 }
 

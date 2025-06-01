@@ -18,24 +18,18 @@ class PrayerTimingsScreen extends StatelessWidget {
     Get.lazyPut(() => PrayerTimingsController(), fenix: true);
     Get.lazyPut(() => HijriOffsetController(), fenix: true);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('مواقيت الصلاة'),
-      ),
-      drawer: const MyDrawer(),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _ActionButtonsRow(),
-            SizedBox(height: 20),
-            _DateDisplayRow(),
-            SizedBox(height: 20),
-            _NextPrayerCard(),
-            SizedBox(height: 20),
-            _PrayerTimingsCard(),
-          ],
-        ),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          _ActionButtonsRow(),
+          SizedBox(height: 20),
+          _DateDisplayRow(),
+          SizedBox(height: 20),
+          _NextPrayerCard(),
+          SizedBox(height: 20),
+          _PrayerTimingsCard(),
+        ],
       ),
     );
   }
