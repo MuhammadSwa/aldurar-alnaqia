@@ -43,36 +43,46 @@ class MyDrawer extends StatelessWidget {
                 size: 20,
               ),
               title: 'الصفحات الرسمية',
-              onTap: () => context.push('/social')),
-          _buildDrawerItem(
-            icon: const Icon(
-              Icons.cloud_download_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-            title: 'إدارة التحميلات',
-            onTap: () => context.push('/downloadManager/0'),
-          ),
-          _buildDrawerItem(
-            icon: SvgPicture.asset(
-              'assets/icons/youtube-icon-svgrepo-com.svg',
-              semanticsLabel: 'youtube_icon',
-              width: 24,
-            ),
-            title: 'كيفية قراءة الأوراد',
-            onTap: () => launchUrl(Uri.parse('https://youtu.be/IyrWSL4jd00')),
-          ),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/social');
+              }),
 
           _buildDrawerItem(
-            icon: SvgPicture.asset(
-              'assets/icons/youtube-icon-svgrepo-com.svg',
-              semanticsLabel: 'youtube_icon',
-              width: 24,
-            ),
-            title: 'أسئلة المتابعين',
-            onTap: () => launchUrl(Uri.parse(
-                'https://www.youtube.com/playlist?list=PLEkQk5xrP-tkGXuZ9atE3k_7it12rUPTs')),
-          ),
+              icon: const Icon(
+                Icons.cloud_download_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              title: 'إدارة التحميلات',
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/downloadManager/0');
+              }),
+          _buildDrawerItem(
+              icon: SvgPicture.asset(
+                'assets/icons/youtube-icon-svgrepo-com.svg',
+                semanticsLabel: 'youtube_icon',
+                width: 24,
+              ),
+              title: 'كيفية قراءة الأوراد',
+              onTap: () {
+                Navigator.pop(context);
+                launchUrl(Uri.parse('https://youtu.be/IyrWSL4jd00'));
+              }),
+
+          _buildDrawerItem(
+              icon: SvgPicture.asset(
+                'assets/icons/youtube-icon-svgrepo-com.svg',
+                semanticsLabel: 'youtube_icon',
+                width: 24,
+              ),
+              title: 'أسئلة المتابعين',
+              onTap: () {
+                Navigator.pop(context);
+                launchUrl(Uri.parse(
+                    'https://www.youtube.com/playlist?list=PLEkQk5xrP-tkGXuZ9atE3k_7it12rUPTs'));
+              }),
           // _buildDrawerItem(
           //   icon: Icons.notifications_rounded,
           //   title: 'Notifications',
