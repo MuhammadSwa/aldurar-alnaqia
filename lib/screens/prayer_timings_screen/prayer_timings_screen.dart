@@ -14,220 +14,377 @@ class PrayerTimingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: const Text('مواقيت الصلاة'),
-        ),
-        drawer: const MyDrawer(),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              // this should be on dialog (adjust hijri date.).confirm btn
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      showDialog(
-                          context: context,
-                          builder: (builder) => ManualCoordinatesForm());
-                    },
-                    label: const Text('إعدادات المواقيت'),
-                    icon: const Icon(Icons.settings),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      showDialog(
-                          context: context,
-                          builder: (builder) {
-                            return const AdjustHijriDayDialogbox();
-                          });
-                    },
-                    label: const Text('تعديل اليوم الهجرى'),
-                    icon: const Icon(Icons.date_range),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-//
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  const NextPrayerWidget(),
+    // Initialize controllers here - only once when screen is built
+    Get.lazyPut(() => PrayerTimingsController(), fenix: true);
+    Get.lazyPut(() => HijriOffsetController(), fenix: true);
 
-                  // TODO: update this whenever prayerTimings changes
-                  // GetBuilder<PrayerTimingsController>(
-                  //     init: PrayerTimingsController(),
-                  //     builder: (pc) {
-                  //       return
-                  // },
-                  GetBuilder<HijriOffsetController>(
-                      init: HijriOffsetController(),
-                      builder: (c) {
-                        final date = c.getHijriDayByoffest();
-                        return HijriDateWidget(date: date);
-                      }),
-                ],
-              ),
-//
-              const PrayerTimingsWidget(),
-            ],
-          ),
-        ));
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('مواقيت الصلاة'),
+      ),
+      drawer: const MyDrawer(),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _ActionButtonsRow(),
+            SizedBox(height: 20),
+            _DateDisplayRow(),
+            SizedBox(height: 20),
+            _NextPrayerCard(),
+            SizedBox(height: 20),
+            _PrayerTimingsCard(),
+          ],
+        ),
+      ),
+    );
   }
 }
 
-class NextPrayerWidget extends StatefulWidget {
-  const NextPrayerWidget({
-    super.key,
+class _ActionButtonsRow extends StatelessWidget {
+  const _ActionButtonsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Expanded(
+          child: _ActionButton(
+            onPressed: () => _showManualCoordinatesDialog(context),
+            label: 'إعدادات المواقيت',
+            icon: Icons.settings,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _ActionButton(
+            onPressed: () => _showHijriAdjustDialog(context),
+            label: 'تعديل اليوم الهجرى',
+            icon: Icons.date_range,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showManualCoordinatesDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => ManualCoordinatesForm(),
+    );
+  }
+
+  void _showHijriAdjustDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const AdjustHijriDayDialogbox(),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String label;
+  final IconData icon;
+
+  const _ActionButton({
+    required this.onPressed,
+    required this.label,
+    required this.icon,
   });
 
   @override
-  State<NextPrayerWidget> createState() => _NextPrayerWidgetState();
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      label: Text(label, textAlign: TextAlign.center),
+      icon: Icon(icon),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
 }
 
-class _NextPrayerWidgetState extends State<NextPrayerWidget> {
-  late Timer timer;
-
-  final pc = Get.put(PrayerTimingsController());
-  late Duration timeLeft;
-  late String prayerName;
+class _DateDisplayRow extends StatelessWidget {
+  const _DateDisplayRow();
 
   @override
-  void dispose() {
-    timer.cancel();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        const Expanded(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(12.0),
+              child: _GeorgianDateWidget(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: GetBuilder<HijriOffsetController>(
+                builder: (controller) {
+                  final date = controller.getHijriDayByoffest();
+                  return HijriDateWidget(date: date);
+                },
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
+}
 
-  @override
-  void initState() {
-    timeLeft = PrayerTimeings.timeLeftForNextPrayer().$1;
-    prayerName = PrayerTimeings.timeLeftForNextPrayer().$2;
+class _GeorgianDateWidget extends StatelessWidget {
+  const _GeorgianDateWidget();
 
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (timeLeft.inSeconds == 0) {
-        setState(() {
-          timeLeft = PrayerTimeings.timeLeftForNextPrayer().$1;
-          prayerName = PrayerTimeings.timeLeftForNextPrayer().$2;
-        });
-      } else {
-        setState(() {
-          timeLeft = PrayerTimeings.timeLeftForNextPrayer().$1;
+  static const Map<int, String> _arabicMonths = {
+    1: 'يناير',
+    2: 'فبراير',
+    3: 'مارس',
+    4: 'أبريل',
+    5: 'مايو',
+    6: 'يونيو',
+    7: 'يوليو',
+    8: 'أغسطس',
+    9: 'سبتمبر',
+    10: 'أكتوبر',
+    11: 'نوفمبر',
+    12: 'ديسمبر',
+  };
 
-          // timeLeft = timeLeft - const Duration(seconds: 1);
-        });
-      }
-    });
-
-    ever(pc.timeLeftForNextPrayer, (_) {
-      setState(() {
-        timeLeft = PrayerTimeings.timeLeftForNextPrayer().$1;
-        prayerName = PrayerTimeings.timeLeftForNextPrayer().$2;
-      });
-    });
-
-    super.initState();
+  String _formatDate(DateTime date) {
+    return '${date.day} ${_arabicMonths[date.month]} ${date.year}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          '$prayerName بعد ${timeLeft.toString().split('.').first}',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-      ],
+    return StreamBuilder<DateTime>(
+      stream: Stream.periodic(
+        const Duration(minutes: 1),
+        (_) => DateTime.now(),
+      ),
+      initialData: DateTime.now(),
+      builder: (context, snapshot) {
+        return Text(
+          _formatDate(snapshot.data!),
+          style: Theme.of(context).textTheme.titleMedium!,
+          textDirection: TextDirection.rtl,
+        );
+      },
     );
   }
 }
 
-class PrayerTimingsWidget extends StatelessWidget {
-  const PrayerTimingsWidget({super.key});
-  static late PrayerTimes? prayerTimes;
+class _NextPrayerCard extends StatelessWidget {
+  const _NextPrayerCard();
 
-  TableRow _buildTableRow(String name, DateTime? time) {
-    late final String period;
-    late final intl.DateFormat customFormat;
-    if (time != null) {
-      period = (time.hour >= 12) ? 'م' : 'ص';
-      customFormat = intl.DateFormat('hh:mm $period', 'en_US');
-    }
-
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(name, style: const TextStyle(fontSize: 16)),
-        ),
-        if (time == null) ...{
-          const Text('00:00', style: TextStyle(fontSize: 16)),
-        } else ...{
-          Text(
-            customFormat.format(time),
-            style: const TextStyle(fontSize: 16),
-          )
-        },
-      ],
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      elevation: 4,
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: _NextPrayerCountdown(),
+      ),
     );
   }
+}
+
+class _NextPrayerCountdown extends StatelessWidget {
+  const _NextPrayerCountdown();
 
   @override
   Widget build(BuildContext context) {
     return GetBuilder<PrayerTimingsController>(
-        init: PrayerTimingsController(),
-        builder: (c) {
-          prayerTimes = c.prayerTimings;
-          SunnahTimes? sunnahTimes;
-          if (prayerTimes != null) {
-            sunnahTimes = SunnahTimes(prayerTimes!);
-          }
-          final duha = prayerTimes?.sunrise.add(const Duration(minutes: 20));
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              if (prayerTimes == null) ...{
-                Text(
-                  'برجاء تحديد الموقع',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              } else ...{
-                Text(
-                  'مواقيت الصلاة',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              },
-              const SizedBox(height: 10),
-              Table(
-                columnWidths: {
-                  0: FixedColumnWidth(MediaQuery.sizeOf(context).width / 3),
-                  1: FixedColumnWidth(MediaQuery.sizeOf(context).width / 3)
-                },
-                border: TableBorder(
-                  horizontalInside: BorderSide(
-                      width: 1,
-                      color: Theme.of(context).colorScheme.secondaryFixed),
-                ),
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                children: [
-                  _buildTableRow('المغرب', prayerTimes?.maghrib),
-                  _buildTableRow('العشاء', prayerTimes?.isha),
-                  _buildTableRow('منتصف الليل', sunnahTimes?.middleOfTheNight),
-                  _buildTableRow(
-                      'الثلث الأخير', sunnahTimes?.lastThirdOfTheNight),
-                  _buildTableRow('الفجر', prayerTimes?.fajr),
-                  _buildTableRow('الشروق', prayerTimes?.sunrise),
-                  _buildTableRow('الضحى', duha),
-                  _buildTableRow('الظهر', prayerTimes?.dhuhr),
-                  _buildTableRow('العصر', prayerTimes?.asr),
-                ],
-              ),
-            ],
+      builder: (controller) {
+        if (controller.prayerTimings == null) {
+          return const Text(
+            'برجاء تحديد الموقع أولاً',
+            style: TextStyle(fontSize: 16),
           );
-        });
+        }
+
+        return StreamBuilder<DateTime>(
+          stream: Stream.periodic(
+            const Duration(seconds: 1),
+            (_) => DateTime.now(),
+          ),
+          initialData: DateTime.now(),
+          builder: (context, snapshot) {
+            final result = PrayerTimeings.timeLeftForNextPrayer();
+            final timeLeft = result.$1;
+            final prayerName = result.$2;
+
+            return Column(
+              children: [
+                Text(
+                  prayerName,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'بعد ${_formatDuration(timeLeft)}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+}
+
+class _PrayerTimingsCard extends StatelessWidget {
+  const _PrayerTimingsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              'مواقيت الصلاة',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            const _PrayerTimingsTable(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrayerTimingsTable extends StatelessWidget {
+  const _PrayerTimingsTable();
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<PrayerTimingsController>(
+      builder: (controller) {
+        final prayerTimes = controller.prayerTimings;
+
+        if (prayerTimes == null) {
+          return const Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Text(
+              'برجاء تحديد الموقع لعرض المواقيت',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+          );
+        }
+
+        final sunnahTimes = SunnahTimes(prayerTimes);
+        final duhaTime = prayerTimes.sunrise.add(const Duration(minutes: 20));
+
+        final prayers = [
+          _PrayerTime('المغرب', prayerTimes.maghrib),
+          _PrayerTime('العشاء', prayerTimes.isha),
+          _PrayerTime('منتصف الليل', sunnahTimes.middleOfTheNight),
+          _PrayerTime('الثلث الأخير', sunnahTimes.lastThirdOfTheNight),
+          _PrayerTime('الفجر', prayerTimes.fajr),
+          _PrayerTime('الشروق', prayerTimes.sunrise),
+          _PrayerTime('الضحى', duhaTime),
+          _PrayerTime('الظهر', prayerTimes.dhuhr),
+          _PrayerTime('العصر', prayerTimes.asr),
+        ];
+
+        return Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Table(
+            columnWidths: const {
+              0: FlexColumnWidth(2),
+              1: FlexColumnWidth(1),
+            },
+            children: prayers
+                .map((prayer) => _buildTableRow(context, prayer))
+                .toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  TableRow _buildTableRow(BuildContext context, _PrayerTime prayer) {
+    return TableRow(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+            width: 0.5,
+          ),
+        ),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: Text(
+            prayer.name,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.right,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: Text(
+            _formatTime(prayer.time),
+            style: const TextStyle(
+              fontSize: 16,
+              fontFamily: 'monospace',
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    final period = (time.hour >= 12) ? 'م' : 'ص';
+    final format = intl.DateFormat('hh:mm', 'en_US');
+    return '${format.format(time)} $period';
+  }
+}
+
+class _PrayerTime {
+  final String name;
+  final DateTime time;
+
+  const _PrayerTime(this.name, this.time);
 }
