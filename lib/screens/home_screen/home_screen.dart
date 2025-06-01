@@ -1,5 +1,6 @@
 import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
@@ -12,24 +13,40 @@ import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart'
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
+  static final GlobalKey<ScaffoldState> _scaffoldKey =
+      GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          ZikrOfTheDayTile(
-              title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-              route: '/home/todaysZikr'),
+    Get.lazyPut(() => GlobalDrawerController());
+    final drawerController = Get.find<GlobalDrawerController>();
 
-          ZikrOfTheDayTile(
-              title: 'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-              route:
-                  '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}'),
-          const Divider(),
+    drawerController.registerScaffoldKey(_scaffoldKey);
 
-          const BookmarksTilesHomeScreen(),
-          //
-        ],
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: const Text('الصفحة الرئيسية'),
+      ),
+      drawer: const MyDrawer(),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            ZikrOfTheDayTile(
+                title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
+                route: '/home/todaysZikr'),
+
+            ZikrOfTheDayTile(
+                title:
+                    'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
+                route:
+                    '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}'),
+            const Divider(),
+
+            const BookmarksTilesHomeScreen(),
+            //
+          ],
+        ),
       ),
     );
   }

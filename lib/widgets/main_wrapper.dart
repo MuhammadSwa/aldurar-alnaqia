@@ -1,8 +1,53 @@
-import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/audioPlayer/audioPlayer.dart';
+
+class GlobalDrawerController extends GetxController {
+  final List<GlobalKey<ScaffoldState>> _scaffoldKeys = [];
+
+  // Register a scaffold key
+  void registerScaffoldKey(GlobalKey<ScaffoldState> key) {
+    if (!_scaffoldKeys.contains(key)) {
+      _scaffoldKeys.add(key);
+    }
+  }
+
+  // Unregister a scaffold key
+  void unregisterScaffoldKey(GlobalKey<ScaffoldState> key) {
+    _scaffoldKeys.remove(key);
+  }
+
+bool hasOpenDrawer() {
+    for (final key in _scaffoldKeys) {
+      if (key.currentState?.isDrawerOpen == true) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Close all open drawers
+  void closeAllDrawers() {
+    for (final key in _scaffoldKeys) {
+      if (key.currentState?.isDrawerOpen == true) {
+        Navigator.of(key.currentContext!).pop();
+      }
+    }
+
+    // for (final key in _scaffoldKeys) {
+    //   if (key.currentState?.isDrawerOpen == true) {
+    //     key.currentState?.closeDrawer();
+    //   }
+    // }
+  }
+
+  @override
+  void onClose() {
+    _scaffoldKeys.clear();
+    super.onClose();
+  }
+}
 
 class MainWrapper extends StatefulWidget {
   const MainWrapper({
@@ -10,7 +55,6 @@ class MainWrapper extends StatefulWidget {
     super.key,
   });
   final StatefulNavigationShell navigationShell;
-
   @override
   State<MainWrapper> createState() => _MainWrapperState();
 }
@@ -18,94 +62,91 @@ class MainWrapper extends StatefulWidget {
 class _MainWrapperState extends State<MainWrapper> {
   int selectedIndex = 0;
 
-  void _goBranch(int index) {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the global drawer controller early
+    Get.lazyPut(() => GlobalDrawerController());
+  }
+
+  void _goBranch(int index) async {
+    // Get the drawer controller and close all drawers before navigating
+    try {
+      final drawerController = Get.find<GlobalDrawerController>();
+
+      if (drawerController.hasOpenDrawer()) {
+        // Close instantly without animation to avoid flickering
+        drawerController.closeAllDrawers();
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+    } catch (e) {
+      print('GlobalDrawerController not found: $e');
+    }
+
     widget.navigationShell.goBranch(
       index,
       initialLocation: index == widget.navigationShell.currentIndex,
     );
   }
 
-  // Helper to get the title for the AppBar based on the current tab
-  String _getCurrentTitle(int index) {
-    switch (index) {
-      case 0:
-        return 'الرئيسية';
-      case 1:
-        return 'مواقيت الصلاة';
-      case 2:
-        return 'الأوراد';
-      case 3:
-        return 'المكتبة';
-      // case 4: return 'عن الطريقة';
-      default:
-        return 'Aldurar Alnaqia'; // Default title
-    }
-  }
-
-@override
-Widget build(BuildContext context) {
-  final c = Get.put(Controller());
-
-  return Scaffold( // 1. Outer Scaffold (optional, could be just a Container or nothing if MainWrapper is always full screen)
-    // backgroundColor: Colors.grey, // To see the area outside the ConstrainedBox
-    body: Center( // 2. Center the ConstrainedBox
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1000, maxHeight: 1000),
-        child: Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold( // 3. This is your actual, constrained Scaffold
-            appBar: AppBar(
-              title: Text(_getCurrentTitle(widget.navigationShell.currentIndex)),
-            ),
-            drawer: const MyDrawer(),
-            body: Center( // It's good practice to Center the body content too
-              child: Column(
-                children: [
-                  Expanded(
-                    child: widget.navigationShell,
-                  ),
-                  Obx(() {
-                    if (c.url.value.isNotEmpty) { // Check for non-empty string
-                      return const AudioControllerWidget();
-                    } else {
-                      return Container(); // Return an empty container
-                    }
-                  }),
-                ],
+  @override
+  Widget build(BuildContext context) {
+    final c = Get.put(Controller());
+    return Scaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000, maxHeight: 1000),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              body: Center(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: widget.navigationShell,
+                    ),
+                    Obx(() {
+                      if (c.url.value.isNotEmpty) {
+                        return const AudioControllerWidget();
+                      } else {
+                        return Container();
+                      }
+                    }),
+                  ],
+                ),
               ),
-            ),
-            bottomNavigationBar: NavigationBar(
-              indicatorShape: const StadiumBorder(),
-              destinations: const [
-                NavigationDestination(
-                    selectedIcon: Icon(Icons.home, color: Colors.green),
-                    icon: Icon(Icons.home_outlined),
-                    label: 'الرئيسية'),
-                NavigationDestination(
-                    icon: Icon(Icons.timer_outlined),
-                    selectedIcon: Icon(Icons.timer, color: Colors.green),
-                    label: 'مواقيت الصلاة'),
-                NavigationDestination(
-                    selectedIcon: Icon(Icons.list, color: Colors.green),
-                    icon: Icon(Icons.list_outlined),
-                    label: 'الأوراد'),
-                NavigationDestination(
-                    selectedIcon: Icon(Icons.book, color: Colors.green),
-                    icon: Icon(Icons.book_outlined),
-                    label: 'المكتبة'),
-              ],
-              onDestinationSelected: (index) {
-                setState(() {
-                  selectedIndex = index;
-                });
-                _goBranch(selectedIndex);
-              },
-              selectedIndex: selectedIndex,
+              bottomNavigationBar: NavigationBar(
+                indicatorShape: const StadiumBorder(),
+                destinations: const [
+                  NavigationDestination(
+                      selectedIcon: Icon(Icons.home, color: Colors.green),
+                      icon: Icon(Icons.home_outlined),
+                      label: 'الرئيسية'),
+                  NavigationDestination(
+                      icon: Icon(Icons.timer_outlined),
+                      selectedIcon: Icon(Icons.timer, color: Colors.green),
+                      label: 'مواقيت الصلاة'),
+                  NavigationDestination(
+                      selectedIcon: Icon(Icons.list, color: Colors.green),
+                      icon: Icon(Icons.list_outlined),
+                      label: 'الأوراد'),
+                  NavigationDestination(
+                      selectedIcon: Icon(Icons.book, color: Colors.green),
+                      icon: Icon(Icons.book_outlined),
+                      label: 'المكتبة'),
+                ],
+                onDestinationSelected: (index) {
+                  setState(() {
+                    selectedIndex = index;
+                  });
+                  _goBranch(selectedIndex);
+                },
+                selectedIndex: selectedIndex,
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

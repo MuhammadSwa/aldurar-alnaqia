@@ -55,8 +55,11 @@ class _HijriDateWidgetState extends State<HijriDateWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final TextScaler textScaler = MediaQuery.of(context).textScaler;
     return Text(
-        '${hijriDate?.hDay} ${hijriDate?.longMonthName} ${hijriDate?.hYear}',
-        style: Theme.of(context).textTheme.titleMedium!);
+      '${hijriDate?.hDay} ${hijriDate?.longMonthName} ${hijriDate?.hYear}',
+      style: Theme.of(context).textTheme.titleMedium!,
+      textScaler: textScaler,
+    );
   }
 }

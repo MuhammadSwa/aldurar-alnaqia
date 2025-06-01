@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:adhan/adhan.dart';
 import 'package:get/get.dart';
@@ -12,24 +14,41 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsContr
 class PrayerTimingsScreen extends StatelessWidget {
   const PrayerTimingsScreen({super.key});
 
+  static final GlobalKey<ScaffoldState> _scaffoldKey =
+      GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
     // Initialize controllers here - only once when screen is built
     Get.lazyPut(() => PrayerTimingsController(), fenix: true);
     Get.lazyPut(() => HijriOffsetController(), fenix: true);
 
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          _ActionButtonsRow(),
-          SizedBox(height: 20),
-          _DateDisplayRow(),
-          SizedBox(height: 20),
-          _NextPrayerCard(),
-          SizedBox(height: 20),
-          _PrayerTimingsCard(),
-        ],
+    Get.lazyPut(() => GlobalDrawerController());
+// Get the global drawer controller
+    final drawerController = Get.find<GlobalDrawerController>();
+
+    // Register this scaffold key
+    drawerController.registerScaffoldKey(_scaffoldKey);
+
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: const Text('مواقيت الصلاة'),
+      ),
+      drawer: const MyDrawer(),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _ActionButtonsRow(),
+            SizedBox(height: 20),
+            _DateDisplayRow(),
+            SizedBox(height: 20),
+            _NextPrayerCard(),
+            SizedBox(height: 20),
+            _PrayerTimingsCard(),
+          ],
+        ),
       ),
     );
   }
@@ -114,24 +133,24 @@ class _DateDisplayRow extends StatelessWidget {
       children: [
         const Expanded(
           child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(12.0),
-              child: _GeorgianDateWidget(),
-            ),
-          ),
+              child: Padding(
+            padding: EdgeInsets.all(12.0),
+            child: Center(child: _GeorgianDateWidget()),
+          )),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: GetBuilder<HijriOffsetController>(
-                builder: (controller) {
-                  final date = controller.getHijriDayByoffest();
-                  return HijriDateWidget(date: date);
-                },
-              ),
-            ),
+                padding: const EdgeInsets.all(12.0),
+                child: Center(
+                  child: GetBuilder<HijriOffsetController>(
+                    builder: (controller) {
+                      final date = controller.getHijriDayByoffest();
+                      return HijriDateWidget(date: date);
+                    },
+                  ),
+                )),
           ),
         ),
       ],
@@ -163,6 +182,7 @@ class _GeorgianDateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TextScaler textScaler = MediaQuery.of(context).textScaler;
     return StreamBuilder<DateTime>(
       stream: Stream.periodic(
         const Duration(minutes: 1),
@@ -174,6 +194,7 @@ class _GeorgianDateWidget extends StatelessWidget {
           _formatDate(snapshot.data!),
           style: Theme.of(context).textTheme.titleMedium!,
           textDirection: TextDirection.rtl,
+          textScaler: textScaler,
         );
       },
     );
@@ -381,4 +402,13 @@ class _PrayerTime {
   final DateTime time;
 
   const _PrayerTime(this.name, this.time);
+}
+
+class ScaleSize {
+  static double textScaleFactor(BuildContext context,
+      {double maxTextScaleFactor = 2}) {
+    final width = MediaQuery.of(context).size.width;
+    double val = (width / 1400) * maxTextScaleFactor;
+    return max(1, min(val, maxTextScaleFactor));
+  }
 }
