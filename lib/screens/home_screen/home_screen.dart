@@ -27,8 +27,10 @@ class HomePage extends StatelessWidget {
                 route: '/home/todaysZikr'),
 
             ZikrOfTheDayTile(
-                title: 'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum()]}',
-                route: '/home/zikr/${dalayilAlkhayratCollection[todaysNum()].title}'),
+                title:
+                    'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
+                route:
+                    '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}'),
             const Divider(),
 
             const BookmarksTilesHomeScreen(),

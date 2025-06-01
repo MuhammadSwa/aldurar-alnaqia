@@ -136,10 +136,10 @@ final allAzkar = AllAzkar(azkarCategMap: {
 
 // azkar that doesn't belong to any collection.
 final orphanAzkar = AllAzkar(azkarCategMap: {
+  // asrGomaa.title: asrGomaa,
   sanadAltareeqa.title: sanadAltareeqa,
   adabAltareeqa.title: adabAltareeqa,
   waseyaGamea.title: waseyaGamea,
-  asrGomaa.title: asrGomaa,
 });
 
 class AzkarCollections {
