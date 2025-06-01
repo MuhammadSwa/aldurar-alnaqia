@@ -57,6 +57,15 @@ class AwradListScreen extends StatelessWidget {
               barTitle: 'الأذكار',
               scrollable: false,
             ),
+
+            AzkarListViewWidget(
+              titles: azkarTitles,
+              route: '/awradScreen/zikr',
+              barTitle: 'الأذكار',
+              scrollable: false,
+            ),
+
+            // TODO: hack
             const AzkarListViewWidget(
               // titles: [...tareeqaBiosCollection.map((e) => e.title)],
               titles: ['تراجم رجال الطريقة'],
@@ -65,13 +74,6 @@ class AwradListScreen extends StatelessWidget {
               scrollable: false,
             ),
             //
-
-            AzkarListViewWidget(
-              titles: azkarTitles,
-              route: '/awradScreen/zikr',
-              barTitle: 'الأذكار',
-              scrollable: false,
-            ),
           ],
         ),
       ),
