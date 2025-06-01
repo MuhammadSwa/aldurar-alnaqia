@@ -47,22 +47,22 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-    signingConfigs {
-      create("release") {
-        keyAlias = keystoreProperties["keyAlias"] as String?
-        keyPassword = keystoreProperties["keyPassword"] as String?
-        val storeFilePath = keystoreProperties["storeFile"] as String?
-        storeFile = storeFilePath?.let { file(it) }
-        storePassword = keystoreProperties["storePassword"] as String?
-      }
-    }
-
-    buildTypes {
-        getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
-            // Other configurations...
-        }
-    }
+    // signingConfigs {
+    //   create("release") {
+    //     keyAlias = keystoreProperties["keyAlias"] as String?
+    //     keyPassword = keystoreProperties["keyPassword"] as String?
+    //     val storeFilePath = keystoreProperties["storeFile"] as String?
+    //     storeFile = storeFilePath?.let { file(it) }
+    //     storePassword = keystoreProperties["storePassword"] as String?
+    //   }
+    // }
+    //
+    // buildTypes {
+    //     getByName("release") {
+    //         signingConfig = signingConfigs.getByName("release")
+    //         // Other configurations...
+    //     }
+    // }
 }
 
 flutter {

@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
   MyApp({super.key, required this.theme});
   final AdaptiveThemeMode? theme;
 
-  final _router = handleRouter();
+  final _router = AppRouter.createRouter();
 
   @override
   Widget build(BuildContext context) {
