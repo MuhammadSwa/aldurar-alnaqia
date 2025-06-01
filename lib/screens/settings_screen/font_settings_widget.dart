@@ -31,7 +31,7 @@ class _FontFamilySettingsWidgetState extends State<FontFamilySettingsWidget> {
   String araFontFamily() {
     final fc = Get.put(FontController());
     final eng = fc.fontFamily.value;
-    return eng == 'Amiri' ? 'أميري' : 'قرآن أميري';
+    return eng == 'Amiri' ? 'عثماني' : 'عثماني ملون';
   }
 
   final fc = Get.put(FontController());
@@ -58,12 +58,12 @@ class _FontFamilySettingsWidgetState extends State<FontFamilySettingsWidget> {
             DropdownMenuItem(
               alignment: Alignment.centerRight,
               value: 'Amiri',
-              child: Text('أميري'),
+              child: Text('عثماني'),
             ),
             DropdownMenuItem(
               alignment: Alignment.centerRight,
               value: 'AmiriQuran',
-              child: Text('قرآن أميري'),
+              child: Text('عثماني ملون'),
             ),
           ],
         ),

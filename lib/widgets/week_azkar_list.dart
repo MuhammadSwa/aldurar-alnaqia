@@ -70,7 +70,7 @@ class WeekCollectionAzkar {
       poemmadhWithQuarn.title
     ],
     [hizbAlbahr.title, hizbAlnawawi.title],
-    [poemMonfarigaGazali.title, poemMonfarigaNahawi.title],
+    [poemMonfarigaGazali.title, poemMonfarigaNahawi.title, poemBanatSuad.title],
   ];
 
   static List<String> getYousriaForToday() {

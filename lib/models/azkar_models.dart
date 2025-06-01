@@ -122,10 +122,12 @@ final allAzkar = AllAzkar(azkarCategMap: {
   hadraPrayerAfterAzkar.title: hadraPrayerAfterAzkar,
   yaRasoulAllah.title: yaRasoulAllah,
 
-// orphans
-  sanadAltareeqa.title: sanadAltareeqa,
+  // ibnAtaAllah
   monagaIbnAtaAllah.title: monagaIbnAtaAllah,
   hawatfAlhaqaeq.title: hawatfAlhaqaeq,
+
+// orphans
+  sanadAltareeqa.title: sanadAltareeqa,
   adabAltareeqa.title: adabAltareeqa,
   waseyaGamea.title: waseyaGamea,
   asrGomaa.title: asrGomaa,

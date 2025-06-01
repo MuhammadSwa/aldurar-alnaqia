@@ -1,6 +1,5 @@
 import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
-import 'package:aldurar_alnaqia/models/consts/tareeqa_bios_collection.dart';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
 import 'package:aldurar_alnaqia/screens/award_list_screen/search_bar_widget.dart';
@@ -17,7 +16,7 @@ class AwradListScreen extends StatefulWidget {
 class _AwradListScreenState extends State<AwradListScreen> {
   @override
   Widget build(BuildContext context) {
-    List<String> collectionTitles = azkarCollections.getTitles().sublist(0, 7);
+    List<String> collectionTitles = azkarCollections.getTitles().sublist(0, 8);
     List<String> azkarTitles = orphanAzkar.getTitles();
 
     return Scaffold(
