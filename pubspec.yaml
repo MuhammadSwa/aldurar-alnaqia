@@ -64,6 +64,7 @@ dependencies:
   drop_down_search_field: ^1.1.2+2
   easy_search_bar_2: ^1.0.0
   background_downloader: ^9.1.1
+  text_responsive: ^1.2.1
   # timezone: ^0.9.3
   # flutter_timezone: ^1.0.8
   # workmanager: ^0.5.2

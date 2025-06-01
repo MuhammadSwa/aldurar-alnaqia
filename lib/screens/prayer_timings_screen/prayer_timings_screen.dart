@@ -10,6 +10,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_d
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/manual_coordination_form.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:text_responsive/text_responsive.dart';
 
 class PrayerTimingsScreen extends StatelessWidget {
   const PrayerTimingsScreen({super.key});
@@ -111,7 +112,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: onPressed,
-      label: Text(label, textAlign: TextAlign.center),
+      label: InlineTextWidget(label, textAlign: TextAlign.center),
       icon: Icon(icon),
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -182,7 +183,6 @@ class _GeorgianDateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextScaler textScaler = MediaQuery.of(context).textScaler;
     return StreamBuilder<DateTime>(
       stream: Stream.periodic(
         const Duration(minutes: 1),
@@ -190,11 +190,10 @@ class _GeorgianDateWidget extends StatelessWidget {
       ),
       initialData: DateTime.now(),
       builder: (context, snapshot) {
-        return Text(
+        return InlineTextWidget(
+          style: Theme.of(context).textTheme.titleMedium,
           _formatDate(snapshot.data!),
-          style: Theme.of(context).textTheme.titleMedium!,
           textDirection: TextDirection.rtl,
-          textScaler: textScaler,
         );
       },
     );
@@ -366,7 +365,7 @@ class _PrayerTimingsTable extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: Text(
+          child: InlineTextWidget(
             prayer.name,
             style: const TextStyle(
               fontSize: 16,
@@ -377,7 +376,7 @@ class _PrayerTimingsTable extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: Text(
+          child: InlineTextWidget(
             _formatTime(prayer.time),
             style: const TextStyle(
               fontSize: 16,
