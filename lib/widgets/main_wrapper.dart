@@ -42,76 +42,70 @@ class _MainWrapperState extends State<MainWrapper> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final c = Get.put(Controller());
+@override
+Widget build(BuildContext context) {
+  final c = Get.put(Controller());
 
-    // ever(c.url, (url) {
-    //   print('changed $url');
-    // });
-
-    return Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          appBar: AppBar(
-            // ADDED AppBar HERE
-            title: Text(_getCurrentTitle(widget.navigationShell.currentIndex)),
-            // The hamburger icon to open the drawer will be automatically added
-            // because this Scaffold has a 'drawer' property.
-          ),
-          drawer: const MyDrawer(),
-          body: Center(
-            child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(maxWidth: 1000, maxHeight: 1000),
+  return Scaffold( // 1. Outer Scaffold (optional, could be just a Container or nothing if MainWrapper is always full screen)
+    // backgroundColor: Colors.grey, // To see the area outside the ConstrainedBox
+    body: Center( // 2. Center the ConstrainedBox
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000, maxHeight: 1000),
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold( // 3. This is your actual, constrained Scaffold
+            appBar: AppBar(
+              title: Text(_getCurrentTitle(widget.navigationShell.currentIndex)),
+            ),
+            drawer: const MyDrawer(),
+            body: Center( // It's good practice to Center the body content too
               child: Column(
                 children: [
                   Expanded(
                     child: widget.navigationShell,
                   ),
                   Obx(() {
-                    if (c.url.value != '') {
+                    if (c.url.value.isNotEmpty) { // Check for non-empty string
                       return const AudioControllerWidget();
-                    } else {}
-                    return Container();
+                    } else {
+                      return Container(); // Return an empty container
+                    }
                   }),
                 ],
               ),
             ),
+            bottomNavigationBar: NavigationBar(
+              indicatorShape: const StadiumBorder(),
+              destinations: const [
+                NavigationDestination(
+                    selectedIcon: Icon(Icons.home, color: Colors.green),
+                    icon: Icon(Icons.home_outlined),
+                    label: 'الرئيسية'),
+                NavigationDestination(
+                    icon: Icon(Icons.timer_outlined),
+                    selectedIcon: Icon(Icons.timer, color: Colors.green),
+                    label: 'مواقيت الصلاة'),
+                NavigationDestination(
+                    selectedIcon: Icon(Icons.list, color: Colors.green),
+                    icon: Icon(Icons.list_outlined),
+                    label: 'الأوراد'),
+                NavigationDestination(
+                    selectedIcon: Icon(Icons.book, color: Colors.green),
+                    icon: Icon(Icons.book_outlined),
+                    label: 'المكتبة'),
+              ],
+              onDestinationSelected: (index) {
+                setState(() {
+                  selectedIndex = index;
+                });
+                _goBranch(selectedIndex);
+              },
+              selectedIndex: selectedIndex,
+            ),
           ),
-          bottomNavigationBar: NavigationBar(
-            indicatorShape: const StadiumBorder(),
-            destinations: const [
-              NavigationDestination(
-                  // TODO: theme color here instead
-                  selectedIcon: Icon(Icons.home, color: Colors.green),
-                  icon: Icon(Icons.home_outlined),
-                  label: 'الرئيسية'),
-              NavigationDestination(
-                  icon: Icon(Icons.timer_outlined),
-                  selectedIcon: Icon(Icons.timer, color: Colors.green),
-                  label: 'مواقيت الصلاة'),
-              NavigationDestination(
-                  selectedIcon: Icon(Icons.list, color: Colors.green),
-                  icon: Icon(Icons.list_outlined),
-                  label: 'الأوراد'),
-              NavigationDestination(
-                  selectedIcon: Icon(Icons.book, color: Colors.green),
-                  icon: Icon(Icons.book_outlined),
-                  label: 'المكتبة'),
-              // NavigationDestination(
-              //     selectedIcon: Icon(Icons.info, color: Colors.green),
-              //     icon: Icon(Icons.info_outline_rounded),
-              //     label: 'عن الطريقة'),
-            ],
-            onDestinationSelected: (index) {
-              setState(() {
-                selectedIndex = index;
-              });
-              _goBranch(selectedIndex);
-            },
-            selectedIndex: selectedIndex,
-          ),
-        ));
-  }
+        ),
+      ),
+    ),
+  );
+}
 }

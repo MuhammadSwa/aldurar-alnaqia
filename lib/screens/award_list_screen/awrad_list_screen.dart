@@ -1,8 +1,6 @@
-import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
-import 'package:aldurar_alnaqia/screens/award_list_screen/search_bar_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
