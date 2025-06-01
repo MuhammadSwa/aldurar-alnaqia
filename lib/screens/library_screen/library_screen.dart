@@ -1,3 +1,5 @@
+import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/instance_manager.dart';
@@ -24,14 +26,33 @@ const booksTitles = <String, String>{
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
 
+  static final GlobalKey<ScaffoldState> _scaffoldKey =
+      GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        for (String title in booksTitles.keys) ...{
-          BookListTile(title: title, url: booksTitles[title]!)
-        }
-      ],
+    Get.lazyPut(() => GlobalDrawerController());
+    final drawerController = Get.find<GlobalDrawerController>();
+
+    drawerController.registerScaffoldKey(_scaffoldKey);
+
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: const MyDrawer(),
+      appBar: AppBar(
+        title: const Text('المكتبة'),
+        leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            tooltip: 'فتح القائمة'),
+      ),
+      body: ListView(
+        children: [
+          for (String title in booksTitles.keys) ...{
+            BookListTile(title: title, url: booksTitles[title]!)
+          }
+        ],
+      ),
     );
   }
 }

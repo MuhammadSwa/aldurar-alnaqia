@@ -35,6 +35,10 @@ class PrayerTimingsScreen extends StatelessWidget {
       key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('مواقيت الصلاة'),
+        leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            tooltip: 'فتح القائمة'),
       ),
       drawer: const MyDrawer(),
       body: const SingleChildScrollView(

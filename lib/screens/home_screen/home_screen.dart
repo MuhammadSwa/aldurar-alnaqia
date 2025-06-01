@@ -26,7 +26,11 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('الصفحة الرئيسية'),
+        title: const Text('الدرر النقية'),
+        leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            tooltip: 'فتح القائمة'),
       ),
       drawer: const MyDrawer(),
       body: SingleChildScrollView(

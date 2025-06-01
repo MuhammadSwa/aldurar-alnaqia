@@ -13,6 +13,7 @@ class MyDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       elevation: 0,
+      semanticLabel: 'القائمة الجانبية',
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20),
         children: [
