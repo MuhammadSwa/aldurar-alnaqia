@@ -279,22 +279,11 @@ class _PrayerTimingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return const Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              'مواقيت الصلاة',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            const _PrayerTimingsTable(),
-          ],
-        ),
+        padding: EdgeInsets.all(16.0),
+        child: _PrayerTimingsTable(),
       ),
     );
   }
