@@ -1,6 +1,7 @@
 import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
+import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
@@ -11,10 +12,13 @@ import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  HomePage({super.key});
 
   static final GlobalKey<ScaffoldState> _scaffoldKey =
       GlobalKey<ScaffoldState>();
+
+  // final AwradSearchController searchController =
+  //     Get.put(AwradSearchController());
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +35,13 @@ class HomePage extends StatelessWidget {
             icon: const Icon(Icons.menu),
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
             tooltip: 'فتح القائمة'),
+        actions: [
+          SearchWidget(
+            // onSearch: searchController.handleSearch,
+            hintText: 'بحث في الأوراد',
+            suggestions: allAzkar.getTitles(),
+          ),
+        ],
       ),
       drawer: const MyDrawer(),
       body: SingleChildScrollView(

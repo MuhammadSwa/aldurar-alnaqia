@@ -87,7 +87,7 @@ class AppRouter {
         GoRoute(
           path: RoutePaths.home,
           name: RouteNames.home,
-          builder: (context, state) => const HomePage(),
+          builder: (context, state) => HomePage(),
           routes: [
             _createTodayZikrRoute(),
             _createWeekCollectionRoute('home'),

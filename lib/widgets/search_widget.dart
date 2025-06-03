@@ -1,18 +1,19 @@
 import 'dart:ui';
 
+import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart'; // Assuming GetX is still used elsewhere
 import 'package:go_router/go_router.dart';
 
+// TODO: الهمزة والألف نفس الشي
 // SearchWidget remains the same
 class SearchWidget extends StatefulWidget {
-  final Function(String)? onSearch;
+  // final Function(String)? onSearch;
   final String? hintText;
   final List<String>? suggestions;
 
   const SearchWidget({
     super.key,
-    this.onSearch,
+    // this.onSearch,
     this.hintText = 'Search...',
     this.suggestions,
   });
@@ -35,7 +36,7 @@ class _SearchWidgetState extends State<SearchWidget> {
       builder: (context) => SearchModal(
         controller: _controller,
         focusNode: _focusNode,
-        onSearch: widget.onSearch,
+        // onSearch: widget.onSearch,
         hintText: widget.hintText,
         suggestions: widget.suggestions,
       ),
@@ -62,7 +63,7 @@ class _SearchWidgetState extends State<SearchWidget> {
 class SearchModal extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
-  final Function(String)? onSearch;
+  // final Function(String)? onSearch;
   final String? hintText;
   final List<String>? suggestions;
 
@@ -70,7 +71,7 @@ class SearchModal extends StatefulWidget {
     super.key,
     required this.controller,
     required this.focusNode,
-    this.onSearch,
+    // this.onSearch,
     this.hintText,
     this.suggestions,
   });
@@ -132,17 +133,17 @@ class _SearchModalState extends State<SearchModal> {
   void _performSearch(String query) {
     final trimmedQuery = query.trim();
     if (trimmedQuery.isNotEmpty) {
-      widget.onSearch
-          ?.call(trimmedQuery); // Call the onSearch callback if provided
+      // widget.onSearch
+      //     ?.call(trimmedQuery); // Call the onSearch callback if provided
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
 
       // Example navigation, adjust as per your app's routing
       // If SearchModal is part of a specific feature, it might navigate within that feature.
       // For generic search, the onSearch callback is often preferred.
       context.go('/awradScreen/zikr/$trimmedQuery');
-
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
     }
   }
 
@@ -158,8 +159,6 @@ class _SearchModalState extends State<SearchModal> {
   @override
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
-    // FocusNode is disposed by SearchWidget, controller might also be managed there or passed externally.
-    // If controller is created here, dispose it here. Here it's passed, so SearchWidget handles it.
     super.dispose();
   }
 
@@ -177,8 +176,7 @@ class _SearchModalState extends State<SearchModal> {
           itemBuilder: (context, index) {
             final suggestion = _filteredSuggestions[index];
             return ListTile(
-              leading: const Icon(Icons.description,
-                  color: Colors.grey), // Consider themable color
+              leading: BookmarkButton(bookmarkId: suggestion),
               title: Text(
                 suggestion,
                 style: const TextStyle(
@@ -194,7 +192,7 @@ class _SearchModalState extends State<SearchModal> {
           child: Text(
             widget.controller.text.isEmpty
                 ? 'Type to see suggestions' // Should not happen if suggestions are provided initially and query is empty
-                : 'No results found for "${widget.controller.text}"',
+                : 'لا توجد نتائج بحث ل"${widget.controller.text}"',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[300], // Consider themable color
@@ -231,9 +229,6 @@ class _SearchModalState extends State<SearchModal> {
       child: Container(
         height: MediaQuery.of(context).size.height * 0.9,
         decoration: const BoxDecoration(
-          // backgroundColor: Colors.transparent ensures blur is visible.
-          // If you want a semi-transparent overlay on top of blur:
-          // color: Theme.of(context).bottomSheetTheme.modalBackgroundColor?.withOpacity(0.5) ?? Colors.black.withOpacity(0.1),
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -295,7 +290,7 @@ class _SearchModalState extends State<SearchModal> {
                         Navigator.of(context).pop();
                       }
                     },
-                    child: const Text('Cancel'), // Consider themable style
+                    child: const Text('إلغاء'), // Consider themable style
                   ),
                 ],
               ),
@@ -309,15 +304,5 @@ class _SearchModalState extends State<SearchModal> {
         ),
       ),
     );
-  }
-}
-
-// GetX Controller for managing search state (remains as is, assuming it's used elsewhere)
-class AwradSearchController extends GetxController {
-  final RxString searchResult = ''.obs;
-
-  void handleSearch(String query) {
-    searchResult.value = query;
-    // Get.toNamed('/awradScreen/zikr/$query');
   }
 }

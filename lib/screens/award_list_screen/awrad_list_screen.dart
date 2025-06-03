@@ -20,7 +20,8 @@ class AwradListScreen extends StatelessWidget {
   static final GlobalKey<ScaffoldState> _scaffoldKey =
       GlobalKey<ScaffoldState>();
 
-  final AwradSearchController controller = Get.put(AwradSearchController());
+  // final AwradSearchController searchController =
+  //     Get.put(AwradSearchController());
 
   final List<String> collectionTitles =
       azkarCollections.getTitles().sublist(0, 8);
@@ -43,7 +44,7 @@ class AwradListScreen extends StatelessWidget {
             tooltip: 'فتح القائمة'),
         actions: [
           SearchWidget(
-            onSearch: controller.handleSearch,
+            // onSearch: searchController.handleSearch,
             hintText: 'بحث في الأوراد',
             suggestions: allAzkar.getTitles(),
           ),
