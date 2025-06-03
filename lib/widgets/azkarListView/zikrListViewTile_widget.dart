@@ -19,30 +19,58 @@ class ZikrListViewTile extends StatelessWidget {
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       trailing: const Icon(Icons.chevron_right),
-      leading: SizedBox(child: GetBuilder<BookmarksController>(builder: (c) {
+      leading: BookmarkButton(bookmarkId: title),
+      onTap: () {
+        context.go(route);
+      },
+    );
+  }
+}
+
+class BookmarkButton extends StatelessWidget {
+  const BookmarkButton({
+    super.key,
+    required this.bookmarkId,
+    this.onBookmarkToggled,
+    this.showSnackBar = true,
+  });
+
+  final String bookmarkId;
+  final Function(bool wasBookmarked)? onBookmarkToggled;
+  final bool showSnackBar;
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<BookmarksController>(
+      builder: (controller) {
+        final isBookmarked = controller.isBookmarked(bookmarkId);
+
         return IconButton(
           highlightColor: Colors.lightGreenAccent,
           onPressed: () {
-            final wasBookmark = c.toggleBookmark(title);
-            final message = wasBookmark
-                ? 'تم الحذف من المحفوظات'
-                : 'تم الإضافة إلى المحفوظات';
+            final wasBookmark = controller.toggleBookmark(bookmarkId);
 
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                duration: const Duration(milliseconds: 700),
-                content: Text(message),
-              ),
-            );
+            // Call the callback if provided
+            onBookmarkToggled?.call(wasBookmark);
+
+            // Show snackbar if enabled
+            if (showSnackBar) {
+              final message = wasBookmark
+                  ? 'تم الحذف من المحفوظات'
+                  : 'تم الإضافة إلى المحفوظات';
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  duration: const Duration(milliseconds: 700),
+                  content: Text(message),
+                ),
+              );
+            }
           },
-          icon: c.bookmarks.contains(title)
+          icon: isBookmarked
               ? const Icon(Icons.bookmark)
               : const Icon(Icons.bookmark_outline_rounded),
         );
-      })),
-      onTap: () {
-        context.go(route);
       },
     );
   }

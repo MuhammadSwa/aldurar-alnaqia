@@ -31,6 +31,10 @@ class BookmarksController extends GetxController {
     return wasBookmark;
   }
 
+  bool isBookmarked(String bookmarkId) {
+    return bookmarks.contains(bookmarkId);
+  }
+
   // void setBookmarks(List<String> bookmarks) {
   //   SharedPreferencesService.setBookmarks(bookmarks);
   // }

@@ -43,9 +43,6 @@ class SharedPreferencesService {
     return _sharedPreferences!.getString('asrCalculation') ?? 'shafi';
   }
 
-  // add bookmark to the list,
-  // remove bookmarks  from the list
-  // remove all bookmarks.
   static List<String> getBookmarks() {
     return _sharedPreferences!.getStringList('bookmarks') ?? [];
   }
