@@ -1,6 +1,7 @@
 import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
+import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
@@ -15,15 +16,18 @@ import 'package:get/get.dart';
 // }
 
 class AwradListScreen extends StatelessWidget {
-  const AwradListScreen({super.key});
+  AwradListScreen({super.key});
   static final GlobalKey<ScaffoldState> _scaffoldKey =
       GlobalKey<ScaffoldState>();
 
+  final AwradSearchController controller = Get.put(AwradSearchController());
+
+  final List<String> collectionTitles =
+      azkarCollections.getTitles().sublist(0, 8);
+  final List<String> azkarTitles = orphanAzkar.getTitles();
+
   @override
   Widget build(BuildContext context) {
-    List<String> collectionTitles = azkarCollections.getTitles().sublist(0, 8);
-    List<String> azkarTitles = orphanAzkar.getTitles();
-
     Get.lazyPut(() => GlobalDrawerController());
     final drawerController = Get.find<GlobalDrawerController>();
 
@@ -32,11 +36,18 @@ class AwradListScreen extends StatelessWidget {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('اوراد الطريقة'),
+        title: const Text('أوراد الطريقة'),
         leading: IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
             tooltip: 'فتح القائمة'),
+        actions: [
+          SearchWidget(
+            onSearch: controller.handleSearch,
+            hintText: 'بحث في الأوراد',
+            suggestions: allAzkar.getTitles(),
+          ),
+        ],
       ),
       drawer: const MyDrawer(),
       body: SingleChildScrollView(

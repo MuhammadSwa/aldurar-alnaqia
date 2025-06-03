@@ -33,7 +33,7 @@ class AppRouter {
         // Standalone routes (not in bottom nav)
         _createSocialRoute(),
         _createDownloadManagerRoute(),
-        // _createSliderRoute(),
+        _createSliderRoute(),
 
         // Bottom navigation shell with main tabs
         StatefulShellRoute.indexedStack(
@@ -117,7 +117,7 @@ class AppRouter {
         GoRoute(
           path: RoutePaths.awrad,
           name: RouteNames.awrad,
-          builder: (context, state) => const AwradListScreen(),
+          builder: (context, state) => AwradListScreen(),
           routes: [
             _createWeekCollectionRoute('awrad'),
             _createZikrCollectionRoute('awrad'),
