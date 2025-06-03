@@ -1,10 +1,11 @@
 import 'dart:ui';
 
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/bookmark_button.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // TODO: الهمزة والألف نفس الشي
+// NOTE: do you ne to virturalize the list for performance?
 // SearchWidget remains the same
 class SearchWidget extends StatefulWidget {
   // final Function(String)? onSearch;

@@ -8,20 +8,10 @@ import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart'
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:get/get.dart';
 
-// class AwradListScreen extends StatefulWidget {
-//   const AwradListScreen({super.key});
-//
-//   @override
-//   State<AwradListScreen> createState() => _AwradListScreenState();
-// }
-
 class AwradListScreen extends StatelessWidget {
   AwradListScreen({super.key});
   static final GlobalKey<ScaffoldState> _scaffoldKey =
       GlobalKey<ScaffoldState>();
-
-  // final AwradSearchController searchController =
-  //     Get.put(AwradSearchController());
 
   final List<String> collectionTitles =
       azkarCollections.getTitles().sublist(0, 8);
