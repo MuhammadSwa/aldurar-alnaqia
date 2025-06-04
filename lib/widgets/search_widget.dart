@@ -8,13 +8,13 @@ import 'package:go_router/go_router.dart';
 // NOTE: do you ne to virturalize the list for performance?
 // SearchWidget remains the same
 class SearchWidget extends StatefulWidget {
-  // final Function(String)? onSearch;
+  final Function(String)? onSearch;
   final String? hintText;
   final List<String>? suggestions;
 
   const SearchWidget({
     super.key,
-    // this.onSearch,
+    this.onSearch,
     this.hintText = 'Search...',
     this.suggestions,
   });
@@ -37,7 +37,7 @@ class _SearchWidgetState extends State<SearchWidget> {
       builder: (context) => SearchModal(
         controller: _controller,
         focusNode: _focusNode,
-        // onSearch: widget.onSearch,
+        onSearch: widget.onSearch,
         hintText: widget.hintText,
         suggestions: widget.suggestions,
       ),
@@ -56,7 +56,7 @@ class _SearchWidgetState extends State<SearchWidget> {
     return IconButton(
       icon: const Icon(Icons.search),
       onPressed: _showSearchModal,
-      tooltip: 'Search',
+      tooltip: 'بحث',
     );
   }
 }
@@ -64,7 +64,7 @@ class _SearchWidgetState extends State<SearchWidget> {
 class SearchModal extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
-  // final Function(String)? onSearch;
+  final Function(String)? onSearch;
   final String? hintText;
   final List<String>? suggestions;
 
@@ -72,7 +72,7 @@ class SearchModal extends StatefulWidget {
     super.key,
     required this.controller,
     required this.focusNode,
-    // this.onSearch,
+    this.onSearch,
     this.hintText,
     this.suggestions,
   });
@@ -83,7 +83,7 @@ class SearchModal extends StatefulWidget {
 
 class _SearchModalState extends State<SearchModal> {
   List<String> _filteredSuggestions = [];
-  // bool _showSuggestions = false; // Removed
+  // bool _showSuggestions = false; 
 
   @override
   void initState() {
@@ -134,8 +134,8 @@ class _SearchModalState extends State<SearchModal> {
   void _performSearch(String query) {
     final trimmedQuery = query.trim();
     if (trimmedQuery.isNotEmpty) {
-      // widget.onSearch
-      //     ?.call(trimmedQuery); // Call the onSearch callback if provided
+      widget.onSearch
+          ?.call(trimmedQuery); // Call the onSearch callback if provided
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -144,7 +144,7 @@ class _SearchModalState extends State<SearchModal> {
       // Example navigation, adjust as per your app's routing
       // If SearchModal is part of a specific feature, it might navigate within that feature.
       // For generic search, the onSearch callback is often preferred.
-      context.go('/awradScreen/zikr/$trimmedQuery');
+      // context.go('/awradScreen/zikr/$trimmedQuery');
     }
   }
 

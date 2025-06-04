@@ -7,6 +7,7 @@ import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.da
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 
 class AwradListScreen extends StatelessWidget {
   AwradListScreen({super.key});
@@ -24,6 +25,10 @@ class AwradListScreen extends StatelessWidget {
 
     drawerController.registerScaffoldKey(_scaffoldKey);
 
+    void handleSearch(String query) {
+      context.go('/awradScreen/zikr/$query');
+    }
+
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -34,7 +39,7 @@ class AwradListScreen extends StatelessWidget {
             tooltip: 'فتح القائمة'),
         actions: [
           SearchWidget(
-            // onSearch: searchController.handleSearch,
+            onSearch: handleSearch,
             hintText: 'بحث في الأوراد',
             suggestions: allAzkar.getTitles(),
           ),

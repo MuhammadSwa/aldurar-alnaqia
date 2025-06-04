@@ -10,6 +10,7 @@ import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.da
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrOfTheDayTile_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
+import 'package:go_router/go_router.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -22,6 +23,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handleSearch(String query) {
+      context.go('/home/zikr/$query');
+    }
+
     Get.lazyPut(() => GlobalDrawerController());
     final drawerController = Get.find<GlobalDrawerController>();
 
@@ -37,7 +42,7 @@ class HomePage extends StatelessWidget {
             tooltip: 'فتح القائمة'),
         actions: [
           SearchWidget(
-            // onSearch: searchController.handleSearch,
+            onSearch: handleSearch,
             hintText: 'بحث في الأوراد',
             suggestions: allAzkar.getTitles(),
           ),

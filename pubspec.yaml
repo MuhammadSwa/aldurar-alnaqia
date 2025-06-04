@@ -38,13 +38,6 @@ dependencies:
   hijri: ^3.0.0
   # flutter_local_notifications: ^17.1.0
 
-  # use the easy_search_bar: ^3.0.0 to work with flutter beta channel.
-  # TODO: make your own search?
-  # easy_search_bar:
-  #   git:
-  #     url: https://github.com/4inka/flutter_easy_search_bar.git
-  #     ref: 3.0.0
-  # card_swiper: ^3.0.1
   adaptive_theme: ^3.6.0
   easy_rich_text: ^2.1.0
   just_audio: ^0.9.38
@@ -61,8 +54,6 @@ dependencies:
   desktop_window: ^0.4.0
   universal_platform: ^1.1.0
   file_selector: ^1.0.3
-  drop_down_search_field: ^1.1.2+2
-  easy_search_bar_2: ^1.0.0
   background_downloader: ^9.1.1
   text_responsive: ^1.2.1
   # timezone: ^0.9.3
