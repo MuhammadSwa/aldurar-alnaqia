@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/utils/showSnackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
@@ -60,12 +61,7 @@ class _AdjustHijriDayDialogboxState extends State<AdjustHijriDayDialogbox> {
               hc.setHiJriDayOffset(_selectedOffset);
               Navigator.of(context).pop();
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  duration: Duration(milliseconds: 700),
-                  content: Text('تم تعديل اليوم الهجري بنجاح.'),
-                ),
-              );
+              showSnackBar(context, 'تم تعديل اليوم الهجري بنجاح.');
             },
             child: const Text('حفظ'),
           ),

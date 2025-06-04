@@ -3,6 +3,7 @@ import 'package:aldurar_alnaqia/MyDrawer.dart'; // Assuming this exists
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_timeData.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_controller.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
+import 'package:aldurar_alnaqia/utils/showSnackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 // import 'package:aldurar_alnaqia/widgets/main_wrapper.dart'; // Assuming GlobalDrawerController is from here or similar
@@ -376,20 +377,7 @@ class _AdjustHijriDayDialogRefactoredState
             prayerController.updateHijriOffset(_selectedOffset);
             Navigator.of(context).pop();
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                duration: Duration(milliseconds: 700),
-                content: Text('تم تعديل اليوم الهجري بنجاح.'),
-              ),
-            );
-
-            // Get.snackbar(
-            //   'تم الحفظ',
-            //   'تم تعديل اليوم الهجري بنجاح.',
-            //   snackPosition: SnackPosition.BOTTOM,
-            //   backgroundColor: Colors.green.shade100,
-            //   colorText: Colors.green.shade800,
-            // );
+            showSnackBar(context, 'تم تعديل اليوم الهجري بنجاح.');
           },
           child: const Text('حفظ'),
         ),

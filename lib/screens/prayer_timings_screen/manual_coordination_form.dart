@@ -1,3 +1,5 @@
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/calculation_method_info.dart';
+import 'package:aldurar_alnaqia/utils/showSnackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/asr_calc_segmented_button.dart';
@@ -10,7 +12,9 @@ class ManualCoordinatesFormModel {
   double _latitude = 0.0;
   double _longitude = 0.0;
   String asrCalculation = 'shafi';
-  String method = 'egyptian';
+  // String method = 'egyptian';
+
+  String method = CalculationMethodInfo.methods.first.key;
 
   double get latitude => _latitude;
   double get longitude => _longitude;
@@ -30,11 +34,10 @@ class ManualCoordinatesForm extends StatelessWidget {
   ManualCoordinatesForm({super.key});
 
   final _formKey = GlobalKey<FormState>();
-
-  final controller = <String, TextEditingController>{
-    'latitude': TextEditingController(),
-    'longitude': TextEditingController(),
-  };
+  final _latController = TextEditingController();
+  final _lngController = TextEditingController();
+  // String method = CalculationMethodInfo.methods.first.key;
+  // String _selectedAsrCalc = 'shafi';
 
   final ManualCoordinatesFormModel _formModel = ManualCoordinatesFormModel();
 
@@ -44,14 +47,41 @@ class ManualCoordinatesForm extends StatelessWidget {
 
   void onGettingLocation(
       {required String latitude, required String longitude}) {
-    controller['latitude']!.text = latitude;
-    controller['longitude']!.text = longitude;
+    _latController.text = latitude;
+    _lngController.text = longitude;
     _formModel.setLatitude(latitude);
     _formModel.setLongitude(longitude);
   }
 
   @override
   Widget build(BuildContext context) {
+    void saveSettings() {
+      if (!_formKey.currentState!.validate()) return;
+
+      // _prayerController.updateSettings(
+      //   latitude: double.parse(_latController.text),
+      //   longitude: double.parse(_lngController.text),
+      //   calculationMethod: _selectedMethod,
+      //   asrCalculation: _selectedAsrCalc,
+      // );
+      //
+      // Navigator.of(context).pop();
+      // _showSuccessSnackbar();
+
+      // TODO: validate lat and long are 90 and -90, 180 and -180
+      final method = _formModel.method;
+      final asrCalculation = _formModel.asrCalculation;
+      Get.put(PrayerTimingsController()).setPrayerSettings(
+        lat: double.parse(_latController.text),
+        long: double.parse(_lngController.text),
+        method: method,
+        asrCalc: asrCalculation,
+      );
+
+      Navigator.of(context).pop();
+      showSnackBar(context, 'تم حفظ إعدادات مواقيت الصلاة بنجاح');
+    }
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Dialog(
@@ -63,11 +93,8 @@ class ManualCoordinatesForm extends StatelessWidget {
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                // crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'حدد الإحداثيات',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
                   const SizedBox(
                     height: 10,
                   ),
@@ -78,7 +105,9 @@ class ManualCoordinatesForm extends StatelessWidget {
                     height: 10,
                   ),
                   CoordinatesTextInputWidget(
-                      controller: controller, formModel: _formModel),
+                      latController: _latController,
+                      lngController: _lngController,
+                      formModel: _formModel),
                   const SizedBox(
                     height: 10,
                   ),
@@ -94,21 +123,7 @@ class ManualCoordinatesForm extends StatelessWidget {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        // TODO: validate lat and long are 90 and -90, 180 and -180
-                        final lat = _formModel.latitude;
-                        final long = _formModel.longitude;
-                        final method = _formModel.method;
-                        final asrCalculation = _formModel.asrCalculation;
-                        Get.put(PrayerTimingsController()).setPrayerSettings(
-                          lat: lat,
-                          long: long,
-                          method: method,
-                          asrCalc: asrCalculation,
-                        );
-                        Navigator.pop(context);
-                        // pop if you make timings setting screen
-                      }
+                      saveSettings();
                     },
                     child: const Text('تأكيد'),
                   ),

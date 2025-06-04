@@ -2,92 +2,100 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/manual_coordination_form.dart';
 
-// TODO: extract validation, make TextFormField it's own widget?
 class CoordinatesTextInputWidget extends StatelessWidget {
   const CoordinatesTextInputWidget(
-      {super.key, required this.controller, required this.formModel});
+      {super.key,
+      required this.latController,
+      required this.lngController,
+      required this.formModel});
 
-  final Map<String, TextEditingController> controller;
+  // final Map<String, TextEditingController> controller;
+
+  final TextEditingController latController;
+  final TextEditingController lngController;
   final ManualCoordinatesFormModel formModel;
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width),
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 10,
+    return Row(
+      children: [
+        Expanded(
+          child: _buildCoordinateField(
+            controller: latController,
+            label: 'خط العرض',
+            hint: 'مثال: 30.0444',
+            validator: _validateLatitude,
           ),
-          Expanded(
-            child: TextFormField(
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'برجاء إدخال خط العرض';
-                }
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildCoordinateField(
+            controller: lngController,
+            label: 'خط الطول',
+            hint: 'مثال: 31.2357',
+            validator: _validateLongitude,
+          ),
+        ),
+      ],
+    );
+  }
 
-                if (double.tryParse(value) == null) {
-                  return 'برجاء ادخال رقم';
-                }
-                if (double.parse(value) > 180 || double.parse(value) < -180) {
-                  return 'يجب ان يكون خط العرض بين 90 و -90';
-                }
-                return null;
-              },
-              onChanged: (value) => formModel.setLatitude(value),
-              controller: controller['latitude'],
-              decoration: const InputDecoration(
-                labelText: 'العرض',
-                helperText: 'مثال: 30.0',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_on),
-              ),
-              keyboardType: const TextInputType.numberWithOptions(
-                  signed: true, decimal: true),
-              inputFormatters: [
-                // only allow negative or positive doubles.
-                FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d*')),
-                // FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,8}')),
-              ],
-            ),
-          ),
-          const SizedBox(
-            width: 10,
-          ),
-          Expanded(
-            child: TextFormField(
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'برجاء إدخال خط الطول';
-                }
-                if (double.tryParse(value) == null) {
-                  return 'برجاء ادخال رقم';
-                }
-                if (double.parse(value) > 180 || double.parse(value) < -180) {
-                  return 'يجب ان يكون خط الطول بين -180 و 180';
-                }
-                return null;
-              },
-              onChanged: (value) => formModel.setLongitude(value),
-              controller: controller['longitude'],
-              decoration: const InputDecoration(
-                labelText: 'الطول',
-                helperText: 'مثال: 30.0',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_on),
-              ),
-              keyboardType: const TextInputType.numberWithOptions(
-                  signed: true, decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d*')),
-              ],
-            ),
-          ),
-          const SizedBox(
-            width: 10,
-          ),
-        ],
+  Widget _buildCoordinateField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required String? Function(String?) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      validator: validator,
+      keyboardType: const TextInputType.numberWithOptions(
+        signed: true,
+        decimal: true,
+      ),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d*')),
+      ],
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: const OutlineInputBorder(),
+        prefixIcon: const Icon(Icons.location_on),
       ),
     );
+  }
+
+  String? _validateLatitude(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'برجاء إدخال خط العرض';
+    }
+
+    final lat = double.tryParse(value);
+    if (lat == null) {
+      return 'برجاء إدخال رقم صحيح';
+    }
+
+    if (lat < -90 || lat > 90) {
+      return 'خط العرض يجب أن يكون بين -90 و 90';
+    }
+
+    return null;
+  }
+
+  String? _validateLongitude(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'برجاء إدخال خط الطول';
+    }
+
+    final lng = double.tryParse(value);
+    if (lng == null) {
+      return 'برجاء إدخال رقم صحيح';
+    }
+
+    if (lng < -180 || lng > 180) {
+      return 'خط الطول يجب أن يكون بين -180 و 180';
+    }
+
+    return null;
   }
 }

@@ -2,6 +2,7 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/calculation_method_info.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_service.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_controller.dart';
+import 'package:aldurar_alnaqia/utils/showSnackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -317,12 +318,7 @@ class _PrayerSettingsDialogState extends State<PrayerSettingsDialog> {
   }
 
   void _showSuccessSnackbar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        duration: Duration(milliseconds: 700),
-        content: Text('تم حفظ إعدادات مواقيت الصلاة بنجاح'),
-      ),
-    );
+    showSnackBar(context, 'تم حفظ إعدادات مواقيت الصلاة بنجاح');
 
     // Get.snackbar(
     //   'تم الحفظ',

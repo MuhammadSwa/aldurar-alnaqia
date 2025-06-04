@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/utils/showSnackbar.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/bookmarks_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -7,12 +8,12 @@ class BookmarkButton extends StatelessWidget {
     super.key,
     required this.bookmarkId,
     this.onBookmarkToggled,
-    this.showSnackBar = true,
+    this.showSnackBarBool = true,
   });
 
   final String bookmarkId;
   final Function(bool wasBookmarked)? onBookmarkToggled;
-  final bool showSnackBar;
+  final bool showSnackBarBool;
 
   @override
   Widget build(BuildContext context) {
@@ -29,17 +30,12 @@ class BookmarkButton extends StatelessWidget {
             onBookmarkToggled?.call(wasBookmark);
 
             // Show snackbar if enabled
-            if (showSnackBar) {
+            if (showSnackBarBool) {
               final message = wasBookmark
                   ? 'تم الحذف من المحفوظات'
                   : 'تم الإضافة إلى المحفوظات';
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  duration: const Duration(milliseconds: 700),
-                  content: Text(message),
-                ),
-              );
+              showSnackBar(context, message);
             }
           },
           icon: isBookmarked

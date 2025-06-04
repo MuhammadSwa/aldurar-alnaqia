@@ -22,7 +22,7 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
       );
     }).catchError((error) {
       showDialog(
-        // TODO: fix this use get dialog?
+        // TODO: fix this
         context: context,
         builder: (builder) =>
             const AlertWidget(msg: 'برجاء تشغيل خدمة تحديد الموقع'),
@@ -43,13 +43,13 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       icon: _isLoading
-          ? const CircularProgressIndicator()
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
           : const Icon(Icons.location_on),
-      label: const Text(
-        'تحديد تلقائي',
-        // TODO: use theme for ElevatedButton Text.
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
+      label: const Text('تحديد الموقع تلقائياً'),
       onPressed: () {
         if (UniversalPlatform.isLinux) {
           showDialog(
