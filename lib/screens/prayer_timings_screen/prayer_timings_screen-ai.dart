@@ -2,7 +2,7 @@
 import 'package:aldurar_alnaqia/MyDrawer.dart'; // Assuming this exists
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_timeData.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_controller.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog-ai.dart';
 import 'package:aldurar_alnaqia/utils/showSnackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

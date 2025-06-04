@@ -1,4 +1,4 @@
-import 'package:adhan/adhan.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation_method_info.dart';
 import 'package:flutter/material.dart';
 
 class CalcMethodDropDown extends StatefulWidget {
@@ -10,21 +10,6 @@ class CalcMethodDropDown extends StatefulWidget {
 }
 
 class _CalcMethodDropDownState extends State<CalcMethodDropDown> {
-  final arabicMethods = {
-    CalculationMethod.egyptian: 'مصر',
-    CalculationMethod.karachi: 'كراتشي',
-    CalculationMethod.muslim_world_league: 'رابطة العالم الإسلامي',
-    CalculationMethod.dubai: 'دبي',
-    CalculationMethod.qatar: 'قطر',
-    CalculationMethod.kuwait: 'الكويت',
-    CalculationMethod.turkey: 'تركيا',
-    CalculationMethod.tehran: 'طهران',
-    CalculationMethod.singapore: 'سنغافورة',
-    CalculationMethod.umm_al_qura: 'أم القري',
-    CalculationMethod.north_america: 'أمريكا الشمالية',
-    CalculationMethod.moon_sighting_committee: 'لجنة رؤية القمر',
-    CalculationMethod.other: 'أخرى',
-  };
   String? method;
   @override
   Widget build(BuildContext context) {
@@ -35,21 +20,34 @@ class _CalcMethodDropDownState extends State<CalcMethodDropDown> {
         }
         return null;
       },
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'طريقة الحساب',
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(Icons.calculate),
+      ),
       value: method,
       hint: Text(
         'طريقة الحساب',
         style: Theme.of(context).textTheme.titleSmall,
       ),
-      items: CalculationMethod.values.map((e) {
+      items: CalculationMethodInfo.methods.map((method) {
         return DropdownMenuItem(
-          alignment: Alignment.centerRight,
-          value: e.name,
-          child: Text(
-            arabicMethods[e]!,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
+          value: method.key,
+          child: Text(method.arabicName, overflow: TextOverflow.ellipsis),
         );
       }).toList(),
+
+      // items: CalculationMethod.values.map((e) {
+      //   return DropdownMenuItem(
+      //     alignment: Alignment.centerRight,
+      //     value: e.name,
+      //     child: Text(
+      //       arabicMethods[e]!,
+      //       style: Theme.of(context).textTheme.titleSmall,
+      //     ),
+      //   );
+      // }).toList(),
       onChanged: (value) {
         setState(() {
           method = value;

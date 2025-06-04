@@ -1,6 +1,7 @@
 // models/calculation_method_info.dart
 class CalculationMethodInfo {
-  final String key;
+  final String
+      key; // These keys MUST match adhan_dart's CalculationMethod names
   final String arabicName;
 
   const CalculationMethodInfo({
@@ -9,29 +10,55 @@ class CalculationMethodInfo {
   });
 
   static const List<CalculationMethodInfo> methods = [
-    CalculationMethodInfo(key: 'egyptian', arabicName: 'مصر'),
-    CalculationMethodInfo(key: 'karachi', arabicName: 'كراتشي'),
+    // Ensure these keys match the method names in adhan_dart.CalculationMethod
+    // e.g., adhan_dart.CalculationMethod.muslimWorldLeague() means key 'muslimWorldLeague'
     CalculationMethodInfo(
         key: 'muslim_world_league', arabicName: 'رابطة العالم الإسلامي'),
-    CalculationMethodInfo(key: 'dubai', arabicName: 'دبي'),
-    CalculationMethodInfo(key: 'qatar', arabicName: 'قطر'),
-    CalculationMethodInfo(key: 'kuwait', arabicName: 'الكويت'),
-    CalculationMethodInfo(key: 'turkey', arabicName: 'تركيا'),
-    CalculationMethodInfo(key: 'tehran', arabicName: 'طهران'),
-    CalculationMethodInfo(key: 'singapore', arabicName: 'سنغافورة'),
-    CalculationMethodInfo(key: 'umm_al_qura', arabicName: 'أم القرى'),
-    CalculationMethodInfo(key: 'north_america', arabicName: 'أمريكا الشمالية'),
     CalculationMethodInfo(
-        key: 'moon_sighting_committee', arabicName: 'لجنة رؤية القمر'),
+        key: 'egyptian', arabicName: 'الهيئة المصرية العامة للمساحة'),
+    CalculationMethodInfo(
+        key: 'karachi', arabicName: 'جامعة العلوم الإسلامية، كراتشي'),
+    CalculationMethodInfo(
+        key: 'umm_al_qura', arabicName: 'جامعة أم القرى، مكة المكرمة'),
+    CalculationMethodInfo(
+        key: 'dubai', arabicName: 'هيئة دبي للأوقاف والشؤون الإسلامية'),
+    CalculationMethodInfo(
+        key: 'qatar', arabicName: 'وزارة الأوقاف والشؤون الإسلامية القطرية'),
+    CalculationMethodInfo(
+        key: 'kuwait', arabicName: 'وزارة الأوقاف والشؤون الإسلامية الكويتية'),
+    CalculationMethodInfo(
+        key: 'moon_sighting_committee', arabicName: 'لجنة رؤية الهلال'),
+    CalculationMethodInfo(
+        key: 'singapore', arabicName: 'المجلس الإسلامي في سنغافورة (MUIS)'),
+    CalculationMethodInfo(
+        key: 'turkey',
+        arabicName: 'رئاسة الشؤون الدينية التركية (ديانت)'), // Note: 'turkiye'
+    CalculationMethodInfo(
+        key: 'tehran', arabicName: 'معهد الجيوفيزياء بجامعة طهران'),
+    CalculationMethodInfo(
+        key: 'north_america',
+        arabicName: 'الجمعية الإسلامية لأمريكا الشمالية (ISNA)'),
+    // Add 'other' if you want to allow it, though its parameters are 0 by default.
+    // CalculationMethodInfo(key: 'other', arabicName: 'أخرى (مخصص)'),
   ];
 
   static String getArabicName(String key) {
-    return methods
-        .firstWhere(
-          (method) => method.key == key,
-          orElse: () =>
-              const CalculationMethodInfo(key: 'other', arabicName: 'أخرى'),
-        )
-        .arabicName;
+    try {
+      return methods.firstWhere((method) => method.key == key).arabicName;
+    } catch (e) {
+      print(
+          "Warning: Arabic name for adhan_dart calculation method key '$key' not found. Returning key itself.");
+      return key;
+    }
+  }
+
+  static String? getKeyFromArabicName(String arabicName) {
+    try {
+      return methods
+          .firstWhere((method) => method.arabicName == arabicName)
+          .key;
+    } catch (e) {
+      return null; // Not found
+    }
   }
 }

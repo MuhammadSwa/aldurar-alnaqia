@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/manual_coordination_form.dart';
 
 class CoordinatesTextInputWidget extends StatelessWidget {
-  const CoordinatesTextInputWidget(
-      {super.key,
-      required this.latController,
-      required this.lngController,
-      required this.formModel});
+  const CoordinatesTextInputWidget({
+    super.key,
+    required this.latController,
+    required this.lngController,
+  });
 
   // final Map<String, TextEditingController> controller;
 
   final TextEditingController latController;
   final TextEditingController lngController;
-  final ManualCoordinatesFormModel formModel;
 
   @override
   Widget build(BuildContext context) {

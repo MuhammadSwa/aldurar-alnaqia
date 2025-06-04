@@ -7,7 +7,7 @@ import 'package:adhan/adhan.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialogBox.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/manual_coordination_form.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:text_responsive/text_responsive.dart';
@@ -89,7 +89,7 @@ class _ActionButtonsRow extends StatelessWidget {
   void _showManualCoordinatesDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => ManualCoordinatesForm(),
+      builder: (context) => PrayerSettingsDialog(),
     );
   }
 

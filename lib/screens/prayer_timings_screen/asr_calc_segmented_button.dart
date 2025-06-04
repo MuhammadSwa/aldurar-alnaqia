@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 enum AsrCalculation { shafi, hanafi }
@@ -18,9 +17,10 @@ class _AsrCalculationWidget extends State<AsrCalcSegmentedButton> {
     return Column(
       children: [
         const Text(
-          "حساب وقت العصر على المذهب",
+          'مذهب حساب وقت العصر',
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 8),
         SegmentedButton<AsrCalculation>(
           segments: const [
             ButtonSegment<AsrCalculation>(
