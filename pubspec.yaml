@@ -58,6 +58,7 @@ dependencies:
   text_responsive: ^1.2.1
   adhan_dart: ^1.1.2
   timezone: ^0.10.1
+  flutter_timezone: ^4.1.1
   # timezone: ^0.9.3
   # flutter_timezone: ^1.0.8
   # workmanager: ^0.5.2

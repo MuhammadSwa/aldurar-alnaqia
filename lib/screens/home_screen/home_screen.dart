@@ -12,6 +12,7 @@ import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
 import 'package:go_router/go_router.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 import 'package:adhan_dart/adhan_dart.dart';
 
 class HomePage extends StatelessWidget {
@@ -21,6 +22,8 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(DateTime.now().timeZoneOffset);
+
     void handleSearch(String query) {
       context.go('/home/zikr/$query');
     }

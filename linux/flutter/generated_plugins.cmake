@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_window
   file_selector_linux
+  flutter_timezone
   media_kit_libs_linux
   url_launcher_linux
 )

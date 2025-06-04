@@ -43,6 +43,27 @@ class SharedPreferencesService {
     return _sharedPreferences!.getString('asrCalculation') ?? 'shafi';
   }
 
+  static void setHighLatitudeRule(String rule) {
+    _sharedPreferences!.setString('highLatitudeRule', rule);
+    // Store the high latitude rule
+  }
+
+  static String getHighLatitudeRule() {
+    return _sharedPreferences!.getString('highLatitudeRule') ??
+        'middle_of_night';
+    // Retrieve the high latitude rule, default to empty string
+  }
+
+  static void setTimezone(String timezone) {
+    // Store the timezone string
+    _sharedPreferences!.setString('timezone', timezone);
+  }
+
+  static String getTimezone() {
+    // Retrieve the timezone string
+    return _sharedPreferences!.getString('timezone') ?? '';
+  }
+
   static List<String> getBookmarks() {
     return _sharedPreferences!.getStringList('bookmarks') ?? [];
   }

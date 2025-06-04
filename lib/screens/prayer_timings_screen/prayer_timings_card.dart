@@ -1,9 +1,9 @@
 import 'package:intl/intl.dart' as intl;
-import 'package:adhan_dart/adhan_dart.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:text_responsive/text_responsive.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class PrayerTimingsCard extends StatelessWidget {
   const PrayerTimingsCard({super.key});
@@ -16,9 +16,10 @@ class PrayerTimingsCard extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: GetBuilder<PrayerTimingsController>(
           builder: (controller) {
-            final prayerTimes = controller.prayerTimings;
+            // Use timezone-aware prayer times instead of raw prayerTimes
+            final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
 
-            if (prayerTimes == null) {
+            if (timezonedPrayerTimes == null) {
               return const Padding(
                 padding: EdgeInsets.all(20.0),
                 child: Text(
@@ -29,20 +30,32 @@ class PrayerTimingsCard extends StatelessWidget {
               );
             }
 
-            final sunnahTimes = SunnahTimes(prayerTimes);
-            final duhaTime =
-                prayerTimes.sunrise!.add(const Duration(minutes: 20));
+            // Get current prayer to highlight it
+            final currentPrayer = PrayerTimeings.getCurrentPrayer();
+            final nextPrayerResult = controller.timeLeftForNextPrayer.value;
+            final nextPrayerName = _getArabicPrayerName(nextPrayerResult.$2);
+
+            // Calculate Sunnah times using timezone-aware times
+            final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
 
             final prayers = [
-              _PrayerTime('المغرب', prayerTimes.maghrib!),
-              _PrayerTime('العشاء', prayerTimes.isha!),
-              _PrayerTime('منتصف الليل', sunnahTimes.middleOfTheNight),
-              _PrayerTime('الثلث الأخير', sunnahTimes.lastThirdOfTheNight),
-              _PrayerTime('الفجر', prayerTimes.fajr!),
-              _PrayerTime('الشروق', prayerTimes.sunrise!),
-              _PrayerTime('الضحى', duhaTime),
-              _PrayerTime('الظهر', prayerTimes.dhuhr!),
-              _PrayerTime('العصر', prayerTimes.asr!),
+              _PrayerTime('المغرب', timezonedPrayerTimes['maghrib']!,
+                  isMainPrayer: true, englishName: 'maghrib'),
+              _PrayerTime('العشاء', timezonedPrayerTimes['isha']!,
+                  isMainPrayer: true, englishName: 'isha'),
+              _PrayerTime('منتصف الليل', sunnahTimes['middleOfNight']!,
+                  isMainPrayer: false),
+              _PrayerTime('الثلث الأخير', sunnahTimes['lastThirdOfNight']!,
+                  isMainPrayer: false),
+              _PrayerTime('الفجر', timezonedPrayerTimes['fajr']!,
+                  isMainPrayer: true, englishName: 'fajr'),
+              _PrayerTime('الشروق', timezonedPrayerTimes['sunrise']!,
+                  isMainPrayer: true, englishName: 'sunrise'),
+              _PrayerTime('الضحى', sunnahTimes['duha']!, isMainPrayer: false),
+              _PrayerTime('الظهر', timezonedPrayerTimes['dhuhr']!,
+                  isMainPrayer: true, englishName: 'dhuhr'),
+              _PrayerTime('العصر', timezonedPrayerTimes['asr']!,
+                  isMainPrayer: true, englishName: 'asr'),
             ];
 
             return Container(
@@ -58,7 +71,13 @@ class PrayerTimingsCard extends StatelessWidget {
                   1: FlexColumnWidth(1),
                 },
                 children: prayers
-                    .map((prayer) => _buildTableRow(context, prayer))
+                    .map((prayer) => _buildTableRow(
+                          context,
+                          prayer,
+                          isCurrentPrayer: currentPrayer != null &&
+                              prayer.englishName == currentPrayer,
+                          isNextPrayer: prayer.name == nextPrayerName,
+                        ))
                     .toList(),
               ),
             );
@@ -68,21 +87,24 @@ class PrayerTimingsCard extends StatelessWidget {
     );
   }
 
-  TableRow _buildTableRow(BuildContext context, _PrayerTime prayer) {
-//     // Highlight main prayers differently, or add an icon, or based on prayerData.isMainPrayer
-//     // For now, just using the name and time.
-//
-//     final result = PrayerTimeings.timeLeftForNextPrayer();
-//     final prayerName = result.$2;
-//     final bool isNextPrayer = prayer.name == prayerName;
-//
-//     final Color? rowColor = isNextPrayer
-//         ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
-//         : null;
+  TableRow _buildTableRow(
+    BuildContext context,
+    _PrayerTime prayer, {
+    bool isCurrentPrayer = false,
+    bool isNextPrayer = false,
+  }) {
+    Color? rowColor;
+
+    if (isCurrentPrayer) {
+      rowColor = Theme.of(context).colorScheme.primary.withOpacity(0.1);
+    } else if (isNextPrayer) {
+      rowColor =
+          Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3);
+    }
 
     return TableRow(
       decoration: BoxDecoration(
-        // color: rowColor,
+        color: rowColor,
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -93,22 +115,53 @@ class PrayerTimingsCard extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: InlineTextWidget(
-            prayer.name,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.right,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Prayer indicator icons
+              if (isCurrentPrayer)
+                Icon(
+                  Icons.circle,
+                  size: 8,
+                  color: Theme.of(context).colorScheme.primary,
+                )
+              else if (isNextPrayer)
+                Icon(
+                  Icons.schedule,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                )
+              else
+                const SizedBox(width: 16),
+
+              Expanded(
+                child: InlineTextWidget(
+                  prayer.name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight:
+                        prayer.isMainPrayer ? FontWeight.w600 : FontWeight.w500,
+                    color: isCurrentPrayer
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
           ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           child: InlineTextWidget(
             _formatTime(prayer.time),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontFamily: 'monospace',
+              fontWeight: isCurrentPrayer ? FontWeight.w600 : FontWeight.normal,
+              color: isCurrentPrayer
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
             ),
             textAlign: TextAlign.center,
           ),
@@ -117,16 +170,75 @@ class PrayerTimingsCard extends StatelessWidget {
     );
   }
 
-  String _formatTime(DateTime time) {
+  String _formatTime(tz.TZDateTime time) {
     final period = (time.hour >= 12) ? 'م' : 'ص';
     final format = intl.DateFormat('hh:mm', 'en_US');
     return '${format.format(time)} $period';
+  }
+
+  // Calculate Sunnah times using timezone-aware prayer times
+  Map<String, tz.TZDateTime> _calculateSunnahTimes(
+      Map<String, tz.TZDateTime> prayerTimes) {
+    final maghrib = prayerTimes['maghrib']!;
+    final fajr = prayerTimes['fajr']!;
+    final sunrise = prayerTimes['sunrise']!;
+
+    // Calculate middle of the night (between Maghrib and Fajr)
+    final nightDuration = fajr.add(const Duration(days: 1)).difference(maghrib);
+    final middleOfNight =
+        maghrib.add(Duration(milliseconds: nightDuration.inMilliseconds ~/ 2));
+
+    // Calculate last third of the night
+    final lastThirdOfNight = fajr
+        .subtract(Duration(milliseconds: nightDuration.inMilliseconds ~/ 3));
+
+    // Calculate Duha time (20 minutes after sunrise)
+    final duhaTime = sunrise.add(const Duration(minutes: 20));
+
+    return {
+      'middleOfNight': middleOfNight,
+      'lastThirdOfNight': lastThirdOfNight,
+      'duha': duhaTime,
+    };
+  }
+
+  // Convert English prayer names to Arabic
+  String _getArabicPrayerName(String englishName) {
+    switch (englishName.toLowerCase()) {
+      case 'fajr':
+      case 'الفجر':
+        return 'الفجر';
+      case 'sunrise':
+      case 'الشروق':
+        return 'الشروق';
+      case 'dhuhr':
+      case 'الظهر':
+        return 'الظهر';
+      case 'asr':
+      case 'العصر':
+        return 'العصر';
+      case 'maghrib':
+      case 'المغرب':
+        return 'المغرب';
+      case 'isha':
+      case 'العشاء':
+        return 'العشاء';
+      default:
+        return englishName;
+    }
   }
 }
 
 class _PrayerTime {
   final String name;
-  final DateTime time;
+  final tz.TZDateTime time;
+  final bool isMainPrayer;
+  final String? englishName;
 
-  const _PrayerTime(this.name, this.time);
+  const _PrayerTime(
+    this.name,
+    this.time, {
+    this.isMainPrayer = false,
+    this.englishName,
+  });
 }
