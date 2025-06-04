@@ -346,8 +346,21 @@ class _PrayerTimingsTable extends StatelessWidget {
   }
 
   TableRow _buildTableRow(BuildContext context, _PrayerTime prayer) {
+    // Highlight main prayers differently, or add an icon, or based on prayerData.isMainPrayer
+    // For now, just using the name and time.
+
+// TODO: refactor this
+    final result = PrayerTimeings.timeLeftForNextPrayer();
+    final prayerName = result.$2;
+    final bool isNextPrayer = prayer.name == prayerName;
+
+    final Color? rowColor = isNextPrayer
+        ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+        : null;
+
     return TableRow(
       decoration: BoxDecoration(
+        color: rowColor,
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
