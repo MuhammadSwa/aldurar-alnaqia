@@ -1,5 +1,5 @@
 import 'package:intl/intl.dart' as intl;
-import 'package:adhan/adhan.dart';
+import 'package:adhan_dart/adhan_dart.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -31,18 +31,18 @@ class PrayerTimingsCard extends StatelessWidget {
 
             final sunnahTimes = SunnahTimes(prayerTimes);
             final duhaTime =
-                prayerTimes.sunrise.add(const Duration(minutes: 20));
+                prayerTimes.sunrise!.add(const Duration(minutes: 20));
 
             final prayers = [
-              _PrayerTime('المغرب', prayerTimes.maghrib),
-              _PrayerTime('العشاء', prayerTimes.isha),
+              _PrayerTime('المغرب', prayerTimes.maghrib!),
+              _PrayerTime('العشاء', prayerTimes.isha!),
               _PrayerTime('منتصف الليل', sunnahTimes.middleOfTheNight),
               _PrayerTime('الثلث الأخير', sunnahTimes.lastThirdOfTheNight),
-              _PrayerTime('الفجر', prayerTimes.fajr),
-              _PrayerTime('الشروق', prayerTimes.sunrise),
+              _PrayerTime('الفجر', prayerTimes.fajr!),
+              _PrayerTime('الشروق', prayerTimes.sunrise!),
               _PrayerTime('الضحى', duhaTime),
-              _PrayerTime('الظهر', prayerTimes.dhuhr),
-              _PrayerTime('العصر', prayerTimes.asr),
+              _PrayerTime('الظهر', prayerTimes.dhuhr!),
+              _PrayerTime('العصر', prayerTimes.asr!),
             ];
 
             return Container(
@@ -72,7 +72,6 @@ class PrayerTimingsCard extends StatelessWidget {
 //     // Highlight main prayers differently, or add an icon, or based on prayerData.isMainPrayer
 //     // For now, just using the name and time.
 //
-// // TODO: refactor this
 //     final result = PrayerTimeings.timeLeftForNextPrayer();
 //     final prayerName = result.$2;
 //     final bool isNextPrayer = prayer.name == prayerName;

@@ -1,4 +1,4 @@
-import 'package:adhan/adhan.dart';
+import 'package:adhan_dart/adhan_dart.dart';
 import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
@@ -26,51 +26,60 @@ class PrayerTimingsController extends GetxController {
 
 class PrayerTimeings {
   static PrayerTimes? getPrayersTimings() {
-    Coordinates myCoordinates = Coordinates(
+    Coordinates coordinates = Coordinates(
       SharedPreferencesService.getLatitude(),
       SharedPreferencesService.getLongitude(),
     );
     final method = SharedPreferencesService.getMethod();
     final asrCalc = SharedPreferencesService.getAsrCalculation();
+
     if (method == '' ||
         asrCalc == '' ||
-        myCoordinates.latitude == 0.0 ||
-        myCoordinates.longitude == 0.0) {
+        coordinates.latitude == 0.0 ||
+        coordinates.longitude == 0.0) {
       return null;
     }
 
     final CalculationParameters params;
     switch (method) {
       case 'egyptian':
-        params = CalculationMethod.egyptian.getParameters();
+        params = CalculationMethod.egyptian();
         break;
       case 'karachi':
-        params = CalculationMethod.karachi.getParameters();
+        params = CalculationMethod.karachi();
         break;
       case 'muslim_world_league':
-        params = CalculationMethod.muslim_world_league.getParameters();
+        params = CalculationMethod.muslimWorldLeague();
         break;
       case 'dubai':
-        params = CalculationMethod.dubai.getParameters();
+        params = CalculationMethod.dubai();
+        break;
       case 'qatar':
-        params = CalculationMethod.qatar.getParameters();
+        params = CalculationMethod.qatar();
+        break;
       case 'kuwait':
-        params = CalculationMethod.kuwait.getParameters();
+        params = CalculationMethod.kuwait();
+        break;
       case 'turkey':
-        params = CalculationMethod.turkey.getParameters();
+        params = CalculationMethod.turkiye();
+        break;
       case 'tehran':
-        params = CalculationMethod.tehran.getParameters();
+        params = CalculationMethod.tehran();
+        break;
       case 'singapore':
-        params = CalculationMethod.singapore.getParameters();
+        params = CalculationMethod.singapore();
+        break;
       case 'umm_al_qura':
-        params = CalculationMethod.umm_al_qura.getParameters();
+        params = CalculationMethod.ummAlQura();
+        break;
       case 'north_america':
-        params = CalculationMethod.north_america.getParameters();
+        params = CalculationMethod.northAmerica();
+        break;
       case 'moon_sighting_committee':
-        params = CalculationMethod.moon_sighting_committee.getParameters();
+        params = CalculationMethod.moonsightingCommittee();
         break;
       default:
-        params = CalculationMethod.other.getParameters();
+        params = CalculationMethod.other();
         break;
     }
 
@@ -80,7 +89,12 @@ class PrayerTimeings {
       params.madhab = Madhab.hanafi;
     }
 
-    return PrayerTimes.today(myCoordinates, params);
+    return PrayerTimes(
+      coordinates: coordinates,
+      date: DateTime.now(),
+      calculationParameters: params,
+      precision: true,
+    );
   }
 
   static (Duration, String) timeLeftForNextPrayer() {
@@ -89,43 +103,80 @@ class PrayerTimeings {
       return (const Duration(hours: 0, minutes: 0, seconds: 0), '');
     }
 
-    Prayer nextPrayer = prayerTimes.nextPrayer();
+    String nextPrayer = prayerTimes.nextPrayer();
     DateTime? nextPrayerTime = prayerTimes.timeForPrayer(nextPrayer);
-    if (nextPrayer == Prayer.none) {
-      nextPrayer = Prayer.fajr;
-      nextPrayerTime =
-          prayerTimes.timeForPrayer(nextPrayer)!.add(const Duration(days: 1));
+
+    // Handle case when next prayer is tomorrow's Fajr
+    if (nextPrayer == 'fajrafter') {
+      nextPrayerTime = prayerTimes.fajrafter;
     }
 
-    final timeLeft =
-        // nextPrayerTime!.difference(DateTime.now()).toString().split('.').first;
-        nextPrayerTime!.difference(DateTime.now());
+    if (nextPrayerTime == null) {
+      return (const Duration(hours: 0, minutes: 0, seconds: 0), '');
+    }
+
+    final timeLeft = nextPrayerTime.difference(DateTime.now());
 
     final String prayerName;
-    switch (prayerTimes.nextPrayer()) {
-      case Prayer.none:
+    switch (nextPrayer) {
+      case 'fajr':
+      case 'fajrafter':
         prayerName = 'الفجر';
         break;
-      case Prayer.fajr:
-        prayerName = 'الفجر';
-        break;
-      case Prayer.sunrise:
+      case 'sunrise':
         prayerName = 'الشروق';
         break;
-      case Prayer.dhuhr:
+      case 'dhuhr':
         prayerName = 'الظهر';
         break;
-      case Prayer.asr:
+      case 'asr':
         prayerName = 'العصر';
         break;
-      case Prayer.maghrib:
+      case 'maghrib':
         prayerName = 'المغرب';
         break;
-      case Prayer.isha:
+      case 'isha':
         prayerName = 'العشاء';
         break;
+      default:
+        prayerName = 'الفجر';
+        break;
     }
-    // return '$prayerName بعد $timeLeft';
+
     return (timeLeft, prayerName);
+  }
+
+  // Helper method to get current prayer
+  static String? getCurrentPrayer() {
+    final prayerTimes = getPrayersTimings();
+    if (prayerTimes == null) return null;
+
+    return prayerTimes.currentPrayer(date: DateTime.now());
+  }
+
+  // Helper method to get all prayer times for display
+  static Map<String, DateTime>? getAllPrayerTimes() {
+    final prayerTimes = getPrayersTimings();
+    if (prayerTimes == null) return null;
+
+    return {
+      'fajr': prayerTimes.fajr!,
+      'sunrise': prayerTimes.sunrise!,
+      'dhuhr': prayerTimes.dhuhr!,
+      'asr': prayerTimes.asr!,
+      'maghrib': prayerTimes.maghrib!,
+      'isha': prayerTimes.isha!,
+    };
+  }
+
+  // Helper method to get Qibla direction
+  static double? getQiblaDirection() {
+    final lat = SharedPreferencesService.getLatitude();
+    final lng = SharedPreferencesService.getLongitude();
+
+    if (lat == 0.0 || lng == 0.0) return null;
+
+    final coordinates = Coordinates(lat, lng);
+    return Qibla.qibla(coordinates);
   }
 }

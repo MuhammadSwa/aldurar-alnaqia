@@ -74,7 +74,7 @@ class CoordinatesTextInputWidget extends StatelessWidget {
     }
 
     if (lat < -90 || lat > 90) {
-      return 'خط العرض يجب أن يكون بين -90 و 90';
+      return 'بين -90 و 90';
     }
 
     return null;
@@ -91,7 +91,7 @@ class CoordinatesTextInputWidget extends StatelessWidget {
     }
 
     if (lng < -180 || lng > 180) {
-      return 'خط الطول يجب أن يكون بين -180 و 180';
+      return 'بين -180 و 180';
     }
 
     return null;
