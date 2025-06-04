@@ -2,10 +2,9 @@ import 'dart:ui';
 
 import 'package:aldurar_alnaqia/widgets/azkarListView/bookmark_button.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 // TODO: الهمزة والألف نفس الشي
-// NOTE: do you ne to virturalize the list for performance?
+// NOTE: do you ne to virturalize the list for performance? ListView.builder?
 // SearchWidget remains the same
 class SearchWidget extends StatefulWidget {
   final Function(String)? onSearch;
@@ -29,7 +28,7 @@ class _SearchWidgetState extends State<SearchWidget> {
 
   void _showSearchModal() {
     // Clear previous text before showing modal if desired, or manage state differently
-    // _controller.clear(); // Optional: clear text each time modal opens
+    _controller.clear(); // clear text each time modal opens
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -83,7 +82,7 @@ class SearchModal extends StatefulWidget {
 
 class _SearchModalState extends State<SearchModal> {
   List<String> _filteredSuggestions = [];
-  // bool _showSuggestions = false; 
+  // bool _showSuggestions = false;
 
   @override
   void initState() {
@@ -140,11 +139,6 @@ class _SearchModalState extends State<SearchModal> {
       if (mounted) {
         Navigator.of(context).pop();
       }
-
-      // Example navigation, adjust as per your app's routing
-      // If SearchModal is part of a specific feature, it might navigate within that feature.
-      // For generic search, the onSearch callback is often preferred.
-      // context.go('/awradScreen/zikr/$trimmedQuery');
     }
   }
 
@@ -226,84 +220,86 @@ class _SearchModalState extends State<SearchModal> {
     }
 
     return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.9,
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.green[400], // Consider themable color
-                borderRadius: BorderRadius.circular(2),
-              ),
+        filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
+        child: SafeArea(
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.9,
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.green[400], // Consider themable color
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
 
-            // Search header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: widget.controller,
-                      focusNode: widget.focusNode,
-                      decoration: InputDecoration(
-                        hintText: widget.hintText,
-                        hintStyle: TextStyle(
-                            color: Colors.grey[300]), // Consider themable color
-                        prefixIcon:
-                            const Icon(Icons.search), // Consider themable color
-                        suffixIcon: widget.controller.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(
-                                    Icons.clear), // Consider themable color
-                                onPressed: () {
-                                  widget.controller.clear();
-                                  // _onTextChanged will be called by the listener.
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          // borderSide: BorderSide.none, // If you prefer no border lines
+                // Search header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: widget.controller,
+                          focusNode: widget.focusNode,
+                          decoration: InputDecoration(
+                            hintText: widget.hintText,
+                            hintStyle: TextStyle(
+                                color: Colors
+                                    .grey[300]), // Consider themable color
+                            prefixIcon: const Icon(
+                                Icons.search), // Consider themable color
+                            suffixIcon: widget.controller.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                        Icons.clear), // Consider themable color
+                                    onPressed: () {
+                                      widget.controller.clear();
+                                      // _onTextChanged will be called by the listener.
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              // borderSide: BorderSide.none, // If you prefer no border lines
+                            ),
+                            filled: false, // If true, define fillColor
+                            // fillColor: Colors.grey[800], // Example if filled: true
+                          ),
+                          onSubmitted: _performSearch,
+                          textInputAction: TextInputAction.search,
+                          style: const TextStyle(
+                              color: Colors
+                                  .white), // Input text color, consider theming
                         ),
-                        filled: false, // If true, define fillColor
-                        // fillColor: Colors.grey[800], // Example if filled: true
                       ),
-                      onSubmitted: _performSearch,
-                      textInputAction: TextInputAction.search,
-                      style: const TextStyle(
-                          color: Colors
-                              .white), // Input text color, consider theming
-                    ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          if (mounted) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        child: const Text('إلغاء'), // Consider themable style
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () {
-                      if (mounted) {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    child: const Text('إلغاء'), // Consider themable style
-                  ),
-                ],
-              ),
-            ),
+                ),
 
-            // Suggestions or content area
-            Expanded(
-              child: suggestionsArea,
+                // Suggestions or content area
+                Expanded(
+                  child: suggestionsArea,
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }
