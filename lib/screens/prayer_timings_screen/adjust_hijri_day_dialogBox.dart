@@ -17,55 +17,58 @@ class AdjustHijriDayDialogbox extends StatefulWidget {
 class _AdjustHijriDayDialogboxState extends State<AdjustHijriDayDialogbox> {
   final hc = Get.put(HijriOffsetController());
 
-  var offset = Get.put(HijriOffsetController()).offset.value;
+  var _selectedOffset = Get.put(HijriOffsetController()).offset.value;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
-        content: SegmentedButton<int>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment<int>(
-              value: -2,
-              label: Text('-2'),
-            ),
-            ButtonSegment<int>(
-              value: -1,
-              label: Text('-1'),
-            ),
-            ButtonSegment<int>(
-              value: 0,
-              label: Text('0'),
-            ),
-            ButtonSegment<int>(
-              value: 1,
-              label: Text('1'),
-            ),
-            ButtonSegment<int>(
-              value: 2,
-              label: Text('2'),
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+                'التعديل الحالي: ${_selectedOffset > 0 ? '+' : ''}$_selectedOffset يوم',
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            SegmentedButton<int>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment<int>(value: -2, label: Text('-2')),
+                ButtonSegment<int>(value: -1, label: Text('-1')),
+                ButtonSegment<int>(value: 0, label: Text('0')),
+                ButtonSegment<int>(value: 1, label: Text('+1')),
+                ButtonSegment<int>(value: 2, label: Text('+2')),
+              ],
+              selected: <int>{_selectedOffset},
+              onSelectionChanged: (Set<int> newSelection) {
+                setState(() {
+                  _selectedOffset = newSelection.first;
+                });
+              },
             ),
           ],
-          selected: <int>{offset},
-          onSelectionChanged: (value) {
-            setState(
-              () {
-                offset = value.first;
-              },
-            );
-          },
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('إلغاء'),
+          ),
           ElevatedButton(
             onPressed: () {
-              hc.setHiJriDayOffset(offset);
-              Navigator.pop(context);
+              hc.setHiJriDayOffset(_selectedOffset);
+              Navigator.of(context).pop();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  duration: Duration(milliseconds: 700),
+                  content: Text('تم تعديل اليوم الهجري بنجاح.'),
+                ),
+              );
             },
-            child: const Text('تأكيد'),
+            child: const Text('حفظ'),
           ),
-          // ],
         ]);
   }
 }
