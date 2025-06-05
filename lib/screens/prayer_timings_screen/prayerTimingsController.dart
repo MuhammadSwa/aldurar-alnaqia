@@ -7,13 +7,12 @@ import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 class PrayerTimingsController extends GetxController {
-  PrayerTimes? prayerTimings; // Initialize later
+  PrayerTimes? prayerTimings;
   Rx<(Duration, String)> timeLeftForNextPrayer =
-      (const Duration(seconds: 0), '').obs; // Initialize later
+      (const Duration(seconds: 0), '').obs;
+  RxBool isInitialized = false.obs;
 
-  RxBool isInitialized = false.obs; // To track async initialization
-
-  Timer? _timer; // Timer to update next prayer reactively
+  Timer? _timer;
 
   @override
   void onInit() async {
@@ -23,27 +22,21 @@ class PrayerTimingsController extends GetxController {
 
   @override
   void onClose() {
-    // Clean up timer when controller is disposed
     _timer?.cancel();
     super.onClose();
   }
 
   Future<void> _initializeController() async {
     isInitialized.value = false;
-    // Initialize timezones first
     tz.initializeTimeZones();
 
     try {
-      // Get the device's local timezone ID (e.g., "America/New_York")
       final String localTimezoneName = await FlutterTimezone.getLocalTimezone();
-      // Set this as the local location for the timezone package
       tz.setLocalLocation(tz.getLocation(localTimezoneName));
-      // Store it in SharedPreferences (optional but recommended)
       SharedPreferencesService.setTimezone(localTimezoneName);
       print("Device timezone set to: ${tz.local.name}");
     } catch (e) {
       print("Failed to get or set local timezone: $e");
-      // Fallback: Try to load a previously stored timezone, or default to UTC if none
       final String? storedTimezone = SharedPreferencesService.getTimezone();
       if (storedTimezone != null && storedTimezone.isNotEmpty) {
         try {
@@ -58,29 +51,29 @@ class PrayerTimingsController extends GetxController {
             "No stored timezone and native detection failed. tz.local remains default (likely UTC).");
       }
     }
-    // Now that timezone is configured (or attempted), load prayer timings
+
     prayerTimings = PrayerTimeings.getPrayersTimings();
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
     isInitialized.value = true;
 
-    // Start the timer to update next prayer automatically
     _startTimer();
-
-    update(); // Notify listeners
+    update();
   }
 
   void _startTimer() {
-    // Cancel existing timer if any
     _timer?.cancel();
 
-    // Update every minute to check for next prayer changes
-    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+    // Update every second for accurate countdown
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final newTimeLeft = PrayerTimeings.timeLeftForNextPrayer();
 
-      // Update the observable - this will trigger reactive widgets to rebuild
-      if (timeLeftForNextPrayer.value.$2 != newTimeLeft.$2 ||
-          timeLeftForNextPrayer.value.$1 != newTimeLeft.$1) {
-        timeLeftForNextPrayer.value = newTimeLeft;
+      // Always update to reflect current countdown
+      timeLeftForNextPrayer.value = newTimeLeft;
+
+      // If we've crossed into a new prayer time (prayer name changed),
+      // recalculate prayer timings for accuracy
+      if (timeLeftForNextPrayer.value.$2 != newTimeLeft.$2) {
+        prayerTimings = PrayerTimeings.getPrayersTimings();
       }
     });
   }
@@ -101,18 +94,13 @@ class PrayerTimingsController extends GetxController {
       SharedPreferencesService.setHighLatitudeRule(highLatitudeRule);
     }
 
-    // Recalculate prayer timings with new settings
-    // The timezone context (tz.local) is already set
     prayerTimings = PrayerTimeings.getPrayersTimings();
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
 
-    // Restart timer with new prayer times
     _startTimer();
-
     update();
   }
 
-  // Manual method to update next prayer (can be called if needed)
   void updateNextPrayer() {
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
   }

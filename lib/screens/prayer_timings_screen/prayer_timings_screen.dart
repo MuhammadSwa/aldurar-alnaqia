@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,7 @@ class PrayerTimingsScreen extends StatelessWidget {
             SizedBox(height: 20),
             _DateDisplayRow(),
             SizedBox(height: 20),
-            _NextPrayerCard(),
+            NextPrayerCountdown(),
             SizedBox(height: 20),
             PrayerTimingsCard(),
           ],
@@ -200,76 +201,6 @@ class _GeorgianDateWidget extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class _NextPrayerCard extends StatelessWidget {
-  const _NextPrayerCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Card(
-      elevation: 4,
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: _NextPrayerCountdown(),
-      ),
-    );
-  }
-}
-
-class _NextPrayerCountdown extends StatelessWidget {
-  const _NextPrayerCountdown();
-
-  @override
-  Widget build(BuildContext context) {
-    return GetBuilder<PrayerTimingsController>(
-      builder: (controller) {
-        if (controller.prayerTimings == null) {
-          return const Text(
-            'برجاء تحديد الموقع أولاً',
-            style: TextStyle(fontSize: 16),
-          );
-        }
-
-        return StreamBuilder<DateTime>(
-          stream: Stream.periodic(
-            const Duration(seconds: 1),
-            (_) => DateTime.now(),
-          ),
-          initialData: DateTime.now(),
-          builder: (context, snapshot) {
-            final result = PrayerTimeings.timeLeftForNextPrayer();
-            final timeLeft = result.$1;
-            final prayerName = result.$2;
-
-            return Column(
-              children: [
-                Text(
-                  prayerName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'بعد ${_formatDuration(timeLeft)}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
 }
 
