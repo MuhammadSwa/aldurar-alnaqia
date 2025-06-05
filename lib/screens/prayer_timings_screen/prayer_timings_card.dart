@@ -30,11 +30,6 @@ class PrayerTimingsCard extends StatelessWidget {
               );
             }
 
-            // Get current prayer to highlight it
-            final currentPrayer = PrayerTimeings.getCurrentPrayer();
-            final nextPrayerResult = controller.timeLeftForNextPrayer.value;
-            final nextPrayerName = _getArabicPrayerName(nextPrayerResult.$2);
-
             // Calculate Sunnah times using timezone-aware times
             final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
 
@@ -74,9 +69,7 @@ class PrayerTimingsCard extends StatelessWidget {
                     .map((prayer) => _buildTableRow(
                           context,
                           prayer,
-                          isCurrentPrayer: currentPrayer != null &&
-                              prayer.englishName == currentPrayer,
-                          isNextPrayer: prayer.name == nextPrayerName,
+                          controller, // Pass controller to access reactive values
                         ))
                     .toList(),
               ),
@@ -89,83 +82,92 @@ class PrayerTimingsCard extends StatelessWidget {
 
   TableRow _buildTableRow(
     BuildContext context,
-    _PrayerTime prayer, {
-    bool isCurrentPrayer = false,
-    bool isNextPrayer = false,
-  }) {
-    Color? rowColor;
-
-    if (isCurrentPrayer) {
-      rowColor = Theme.of(context).colorScheme.primary.withOpacity(0.1);
-    } else if (isNextPrayer) {
-      rowColor =
-          Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3);
-    }
-
+    _PrayerTime prayer,
+    PrayerTimingsController controller, // Add controller parameter
+  ) {
+    // Use Obx to make this reactive to timeLeftForNextPrayer changes
     return TableRow(
-      decoration: BoxDecoration(
-        color: rowColor,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-            width: 0.5,
-          ),
-        ),
-      ),
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Prayer indicator icons
-              if (isCurrentPrayer)
-                Icon(
-                  Icons.circle,
-                  size: 8,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-              else if (isNextPrayer)
-                Icon(
-                  Icons.schedule,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-              else
-                const SizedBox(width: 16),
+        Obx(() {
+          // Get current next prayer to highlight it reactively
+          final nextPrayerResult = controller.timeLeftForNextPrayer.value;
+          final nextPrayerName = _getArabicPrayerName(nextPrayerResult.$2);
+          final bool isNextPrayer = prayer.name == nextPrayerName;
 
-              Expanded(
-                child: InlineTextWidget(
-                  prayer.name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight:
-                        prayer.isMainPrayer ? FontWeight.w600 : FontWeight.w500,
-                    color: isCurrentPrayer
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                  ),
-                  textAlign: TextAlign.right,
+          Color? rowColor;
+          if (isNextPrayer) {
+            rowColor =
+                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3);
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              color: rowColor,
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                  width: 0.5,
                 ),
               ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          child: InlineTextWidget(
-            _formatTime(prayer.time),
-            style: TextStyle(
-              fontSize: 16,
-              fontFamily: 'monospace',
-              fontWeight: isCurrentPrayer ? FontWeight.w600 : FontWeight.normal,
-              color: isCurrentPrayer
-                  ? Theme.of(context).colorScheme.primary
-                  : null,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: InlineTextWidget(
+                      prayer.name,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: prayer.isMainPrayer
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+        Obx(() {
+          // Get current next prayer to highlight it reactively
+          final nextPrayerResult = controller.timeLeftForNextPrayer.value;
+          final nextPrayerName = _getArabicPrayerName(nextPrayerResult.$2);
+          final bool isNextPrayer = prayer.name == nextPrayerName;
+
+          Color? rowColor;
+          if (isNextPrayer) {
+            rowColor =
+                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3);
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              color: rowColor,
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                  width: 0.5,
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              child: InlineTextWidget(
+                _formatTime(prayer.time),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.normal,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }),
       ],
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -12,13 +13,19 @@ class PrayerTimingsController extends GetxController {
 
   RxBool isInitialized = false.obs; // To track async initialization
 
+  Timer? _timer; // Timer to update next prayer reactively
+
   @override
   void onInit() async {
     super.onInit();
-    // Initialize timezones when controller is created
-    // tz.initializeTimeZones();
-    // tz.initializeTimeZones();
     _initializeController();
+  }
+
+  @override
+  void onClose() {
+    // Clean up timer when controller is disposed
+    _timer?.cancel();
+    super.onClose();
   }
 
   Future<void> _initializeController() async {
@@ -55,7 +62,27 @@ class PrayerTimingsController extends GetxController {
     prayerTimings = PrayerTimeings.getPrayersTimings();
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
     isInitialized.value = true;
+
+    // Start the timer to update next prayer automatically
+    _startTimer();
+
     update(); // Notify listeners
+  }
+
+  void _startTimer() {
+    // Cancel existing timer if any
+    _timer?.cancel();
+
+    // Update every minute to check for next prayer changes
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      final newTimeLeft = PrayerTimeings.timeLeftForNextPrayer();
+
+      // Update the observable - this will trigger reactive widgets to rebuild
+      if (timeLeftForNextPrayer.value.$2 != newTimeLeft.$2 ||
+          timeLeftForNextPrayer.value.$1 != newTimeLeft.$1) {
+        timeLeftForNextPrayer.value = newTimeLeft;
+      }
+    });
   }
 
   void setPrayerSettings({
@@ -63,14 +90,12 @@ class PrayerTimingsController extends GetxController {
     required double long,
     required String method,
     required String asrCalc,
-    // required String timezone, // Add timezone parameter
     String? highLatitudeRule,
   }) {
     SharedPreferencesService.setLatitude(lat);
     SharedPreferencesService.setLongitude(long);
     SharedPreferencesService.setMethod(method);
     SharedPreferencesService.setAsrCalculation(asrCalc);
-    // SharedPreferencesService.setTimezone(timezone);
 
     if (highLatitudeRule != null) {
       SharedPreferencesService.setHighLatitudeRule(highLatitudeRule);
@@ -80,10 +105,20 @@ class PrayerTimingsController extends GetxController {
     // The timezone context (tz.local) is already set
     prayerTimings = PrayerTimeings.getPrayersTimings();
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
+
+    // Restart timer with new prayer times
+    _startTimer();
+
     update();
+  }
+
+  // Manual method to update next prayer (can be called if needed)
+  void updateNextPrayer() {
+    timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
   }
 }
 
+// Rest of the PrayerTimeings class remains the same...
 class PrayerTimeings {
   static PrayerTimes? getPrayersTimings() {
     Coordinates coordinates = Coordinates(
@@ -92,7 +127,6 @@ class PrayerTimeings {
     );
     final method = SharedPreferencesService.getMethod();
     final asrCalc = SharedPreferencesService.getAsrCalculation();
-    // final timezoneStr = SharedPreferencesService.getTimezone();
 
     if (method == '' ||
         asrCalc == '' ||
@@ -105,9 +139,6 @@ class PrayerTimeings {
       // Use tz.local, which should have been configured in PrayerTimingsController.onInit
       // Create timezone-aware current date using the device's local timezone
       final tz.TZDateTime dateForCalculation = tz.TZDateTime.now(tz.local);
-
-      // Create timezone-aware current date
-      // final date = tz.TZDateTime.from(DateTime.now(), timezone);
 
       final CalculationParameters params;
       switch (method) {
@@ -198,12 +229,7 @@ class PrayerTimeings {
     }
 
     try {
-      // final timezoneStr = SharedPreferencesService.getTimezone();
-      // final timezone = tz.getLocation(timezoneStr);
-      // final now = tz.TZDateTime.from(DateTime.now(), timezone);
-
       final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-
 
       String nextPrayer = prayerTimes.nextPrayer();
       DateTime? nextPrayerTime = prayerTimes.timeForPrayer(nextPrayer);
@@ -218,7 +244,8 @@ class PrayerTimeings {
       }
 
       // Convert to local timezone
-      final tz.TZDateTime localNextPrayerTime = tz.TZDateTime.from(nextPrayerTime, tz.local);
+      final tz.TZDateTime localNextPrayerTime =
+          tz.TZDateTime.from(nextPrayerTime, tz.local);
       final timeLeft = localNextPrayerTime.difference(now);
 
       final String prayerName;
@@ -278,12 +305,6 @@ class PrayerTimeings {
       final timezone = tz.local;
 
       return {
-        // 'fajr': tz.TZDateTime.from(prayerTimes.fajr!, timezone),
-        // 'sunrise': tz.TZDateTime.from(prayerTimes.sunrise!, timezone),
-        // 'dhuhr': tz.TZDateTime.from(prayerTimes.dhuhr!, timezone),
-        // 'asr': tz.TZDateTime.from(prayerTimes.asr!, timezone),
-        // 'maghrib': tz.TZDateTime.from(prayerTimes.maghrib!, timezone),
-        // 'isha': tz.TZDateTime.from(prayerTimes.isha!, timezone),
         'fajr': tz.TZDateTime.from(prayerTimes.fajr!, timezone),
         'sunrise': tz.TZDateTime.from(prayerTimes.sunrise!, timezone),
         'dhuhr': tz.TZDateTime.from(prayerTimes.dhuhr!, timezone),

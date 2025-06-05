@@ -11,9 +11,6 @@ import 'package:aldurar_alnaqia/widgets/azkarListView/zikrOfTheDayTile_widget.da
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
 import 'package:go_router/go_router.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:adhan_dart/adhan_dart.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -27,29 +24,6 @@ class HomePage extends StatelessWidget {
     void handleSearch(String query) {
       context.go('/home/zikr/$query');
     }
-
-    // Coordinates coordinates = Coordinates(31.30, 30.63);
-    // // Coordinates coordinates = Coordinates(30.63, 31.30);
-    // CalculationParameters params = CalculationMethod.egyptian();
-    // params.madhab = Madhab.shafi;
-    // PrayerTimes prayerTimes = PrayerTimes(
-    //     coordinates: coordinates,
-    //     date: DateTime.now(),
-    //     calculationParameters: params,
-    //     precision: true);
-    //
-    // DateTime fajrTime = prayerTimes.fajr!;
-    // DateTime sunriseTime = prayerTimes.sunrise!;
-    // DateTime dhuhrTime = prayerTimes.dhuhr!;
-    // DateTime asrTime = prayerTimes.asr!;
-    // DateTime maghribTime = prayerTimes.maghrib!;
-    // DateTime ishaTime = prayerTimes.isha!;
-    // print("Fajr: $fajrTime");
-    // print("Sunrise: $sunriseTime");
-    // print("Dhuhr: $dhuhrTime");
-    // print("Asr: $asrTime");
-    // print("Maghrib: $maghribTime");
-    // print("Isha: $ishaTime");
 
     Get.lazyPut(() => GlobalDrawerController());
     final drawerController = Get.find<GlobalDrawerController>();
