@@ -201,5 +201,6 @@ final azkarWithNarrations = <String, List<Zikr>>{
     day4Yousria,
     day5Yousria,
     day6Yousria,
-  ]
+  ],
+  'ورد يوم السبت': [poemMohamadia]
 };

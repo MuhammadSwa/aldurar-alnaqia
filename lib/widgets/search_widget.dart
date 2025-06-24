@@ -82,31 +82,36 @@ class SearchModal extends StatefulWidget {
 
 class _SearchModalState extends State<SearchModal> {
   List<String> _filteredSuggestions = [];
-  // bool _showSuggestions = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize with all suggestions if available, ensuring it's a mutable copy.
     _filteredSuggestions = List.from(widget.suggestions ?? const []);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        // Ensure widget is still in the tree
         widget.focusNode.requestFocus();
       }
     });
 
     widget.controller.addListener(_onTextChanged);
-    // Manually trigger _onTextChanged if controller already has text (e.g., if not cleared)
-    // This ensures initial state is correct if modal reopens with existing text.
     _onTextChanged();
   }
 
-  void _onTextChanged() {
-    if (!mounted) return; // Avoid calling setState if widget is disposed
+  /// Normalizes Arabic text for better search matching.
+  /// Treats different forms of Alif as one, and Teh Marbuta as Haa.
+  String _normalizeArabic(String text) {
+    return text
+        .replaceAll('أ', 'ا')
+        .replaceAll('إ', 'ا')
+        .replaceAll('آ', 'ا')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي');
+  }
 
-    // If no base suggestions are provided, or they are empty, _filteredSuggestions should remain empty.
+  void _onTextChanged() {
+    if (!mounted) return;
+
     if (widget.suggestions == null || widget.suggestions!.isEmpty) {
       if (_filteredSuggestions.isNotEmpty) {
         setState(() {
@@ -116,39 +121,61 @@ class _SearchModalState extends State<SearchModal> {
       return;
     }
 
-    final query = widget.controller.text.toLowerCase();
+    final query = widget.controller.text;
+    // Normalize query for better filtering
+    final normalizedQuery = _normalizeArabic(query.toLowerCase());
+
     setState(() {
       if (query.isEmpty) {
-        // If query is empty, show all original suggestions
         _filteredSuggestions = List.from(widget.suggestions!);
       } else {
-        // Otherwise, filter
+        // Filter suggestions based on the normalized query
         _filteredSuggestions = widget.suggestions!
-            .where((suggestion) => suggestion.toLowerCase().contains(query))
+            .where((suggestion) => _normalizeArabic(suggestion.toLowerCase())
+                .contains(normalizedQuery))
             .toList();
       }
     });
   }
 
+  /// Checks if the query matches a valid route before performing the search.
   void _performSearch(String query) {
     final trimmedQuery = query.trim();
-    if (trimmedQuery.isNotEmpty) {
-      widget.onSearch
-          ?.call(trimmedQuery); // Call the onSearch callback if provided
+    if (trimmedQuery.isEmpty) {
+      return; // Do nothing if the search query is empty
+    }
+
+    // Ensure we have suggestions to validate against
+    if (widget.suggestions == null || widget.suggestions!.isEmpty) {
+      return; // Cannot validate, so do nothing to prevent errors
+    }
+
+    final normalizedQuery = _normalizeArabic(trimmedQuery.toLowerCase());
+
+    // Find a suggestion that is an exact match to the query (after normalization)
+    final String matchingSuggestion = widget.suggestions!.firstWhere(
+      (suggestion) =>
+          _normalizeArabic(suggestion.toLowerCase()) == normalizedQuery,
+      orElse: () => '', // Return an empty string if no match is found
+    );
+
+    // Only proceed if a valid, matching route was found
+    if (matchingSuggestion.isNotEmpty) {
+      // Use the canonical suggestion name for navigation
+      widget.onSearch?.call(matchingSuggestion);
 
       if (mounted) {
         Navigator.of(context).pop();
       }
     }
+    // If no match is found, do nothing. The user stays on the search modal.
   }
 
   void _selectSuggestion(String suggestion) {
     widget.controller.text = suggestion;
-    widget.controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: suggestion.length)); // Move cursor to end
+    widget.controller.selection =
+        TextSelection.fromPosition(TextPosition(offset: suggestion.length));
     _performSearch(suggestion);
-    // _onTextChanged will be called by the listener, updating _filteredSuggestions.
-    // If you want to immediately close or hide suggestions after selection, handle here.
   }
 
   @override
@@ -161,12 +188,10 @@ class _SearchModalState extends State<SearchModal> {
   Widget build(BuildContext context) {
     Widget suggestionsArea;
 
-    // Case 1: Suggestions are available from the widget's input
     if (widget.suggestions != null && widget.suggestions!.isNotEmpty) {
       if (_filteredSuggestions.isNotEmpty) {
-        // Subcase 1.1: There are suggestions to display (either all or filtered)
         suggestionsArea = ListView.builder(
-          padding: EdgeInsets.zero, // Adjust padding as needed
+          padding: EdgeInsets.zero,
           itemCount: _filteredSuggestions.length,
           itemBuilder: (context, index) {
             final suggestion = _filteredSuggestions[index];
@@ -174,29 +199,26 @@ class _SearchModalState extends State<SearchModal> {
               leading: BookmarkButton(bookmarkId: suggestion),
               title: Text(
                 suggestion,
-                style: const TextStyle(
-                    color: Colors.white), // Consider themable color
+                style: const TextStyle(color: Colors.white),
               ),
               onTap: () => _selectSuggestion(suggestion),
             );
           },
         );
       } else {
-        // Subcase 1.2: Suggestions were provided, but the current filter query yields no results.
         suggestionsArea = Center(
           child: Text(
             widget.controller.text.isEmpty
-                ? 'Type to see suggestions' // Should not happen if suggestions are provided initially and query is empty
+                ? 'Type to see suggestions'
                 : 'لا توجد نتائج بحث ل"${widget.controller.text}"',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[300], // Consider themable color
+              color: Colors.grey[300],
             ),
           ),
         );
       }
     } else {
-      // Case 2: No suggestions were provided to the SearchModal initially.
       suggestionsArea = Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -204,14 +226,14 @@ class _SearchModalState extends State<SearchModal> {
             Icon(
               Icons.search,
               size: 64,
-              color: Colors.grey[400], // Consider themable color
+              color: Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
               'Enter your search query',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[300], // Consider themable color
+                color: Colors.grey[300],
               ),
             ),
           ],
@@ -229,18 +251,15 @@ class _SearchModalState extends State<SearchModal> {
             ),
             child: Column(
               children: [
-                // Handle bar
                 Container(
                   width: 40,
                   height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.green[400], // Consider themable color
+                    color: Colors.green[400],
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-
-                // Search header
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: Row(
@@ -251,33 +270,24 @@ class _SearchModalState extends State<SearchModal> {
                           focusNode: widget.focusNode,
                           decoration: InputDecoration(
                             hintText: widget.hintText,
-                            hintStyle: TextStyle(
-                                color: Colors
-                                    .grey[300]), // Consider themable color
-                            prefixIcon: const Icon(
-                                Icons.search), // Consider themable color
+                            hintStyle: TextStyle(color: Colors.grey[300]),
+                            prefixIcon: const Icon(Icons.search),
                             suffixIcon: widget.controller.text.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(
-                                        Icons.clear), // Consider themable color
+                                    icon: const Icon(Icons.clear),
                                     onPressed: () {
                                       widget.controller.clear();
-                                      // _onTextChanged will be called by the listener.
                                     },
                                   )
                                 : null,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              // borderSide: BorderSide.none, // If you prefer no border lines
                             ),
-                            filled: false, // If true, define fillColor
-                            // fillColor: Colors.grey[800], // Example if filled: true
+                            filled: false,
                           ),
                           onSubmitted: _performSearch,
                           textInputAction: TextInputAction.search,
-                          style: const TextStyle(
-                              color: Colors
-                                  .white), // Input text color, consider theming
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -287,13 +297,11 @@ class _SearchModalState extends State<SearchModal> {
                             Navigator.of(context).pop();
                           }
                         },
-                        child: const Text('إلغاء'), // Consider themable style
+                        child: const Text('إلغاء'),
                       ),
                     ],
                   ),
                 ),
-
-                // Suggestions or content area
                 Expanded(
                   child: suggestionsArea,
                 ),
