@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/bookmarks_controller.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikrOfTheDayTile_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
 import 'package:go_router/go_router.dart';
@@ -19,8 +18,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(DateTime.now().timeZoneOffset);
-
     void handleSearch(String query) {
       context.go('/home/zikr/$query');
     }
@@ -70,15 +67,31 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            ZikrOfTheDayTile(
-                title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-                route: '/home/todaysZikr'),
 
-            ZikrOfTheDayTile(
-                title:
-                    'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-                route:
-                    '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}'),
+            ListTile(
+              title: Text(
+                'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
+              ),
+              // leading: const Icon(Icons.today_rounded),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                context.go('/home/todaysZikr');
+              },
+            ),
+            ListTile(
+              title: Text(
+                'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
+              ),
+              // leading: const Icon(Icons.today_rounded),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                context.go(
+                    '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}');
+              },
+            ),
+            // ZikrOfTheDayTile(
+            //     title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
+            //     route: '/home/todaysZikr'),
             const Divider(),
             const BookmarksTilesHomeScreen(),
             //

@@ -30,7 +30,7 @@ class DayAzkarList extends StatelessWidget {
     final bool isToday = dayNum == DateTime.now().weekday;
     final titles = WeekCollectionAzkar.getDay(dayNum, isToday: isToday);
     return Scaffold(
-      floatingActionButton: FloatingSliderBtn(titles: titles),
+      // floatingActionButton: FloatingSliderBtn(titles: titles),
       appBar: AppBar(
         title: Text('ورد يوم ${arabicWeekdays[dayNum - 1]}'),
       ),

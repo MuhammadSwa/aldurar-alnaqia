@@ -213,12 +213,21 @@ class AppRouter {
     );
   }
 
+// TODO: get extra titles here
   static GoRoute _createZikrPageRoute(String prefix) {
     return GoRoute(
       path: 'zikr/:zikr',
       name: '${prefix}ZikrPage',
       pageBuilder: (context, state) {
         final zikr = state.pathParameters['zikr']!;
+// extra: {titles, index;
+        final extra = state.extra as Map<String, dynamic>; // <-- CHANGE
+        final titles = extra['titles'] as List<String>;
+        final index = extra['index'] as int;
+
+        print('-----------------');
+        print(index);
+        print(titles);
 
         // Handle special cases
         if (zikr == alhyliaAndNasab.title) {
@@ -228,7 +237,8 @@ class AppRouter {
           return RouteTransitions.slideTransition(const TareeqaSanadScreen());
         }
 
-        return RouteTransitions.slideTransition(ZikrScreen(title: zikr));
+        return RouteTransitions.slideTransition(
+            ZikrScreen(title: zikr, titles: titles, index: index));
       },
     );
   }
@@ -378,7 +388,7 @@ class ZikrCollectionScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(collection),
       ),
-      floatingActionButton: FloatingSliderBtn(titles: azkarTitles),
+      // floatingActionButton: FloatingSliderBtn(titles: azkarTitles),
       body: AzkarListViewWidget(
         titles: azkarTitles,
         route: '$basePath/zikr',

@@ -6,9 +6,13 @@ class ZikrListViewTile extends StatelessWidget {
   const ZikrListViewTile({
     super.key,
     required this.title,
+    this.titles,
+    this.index,
     required this.route,
   });
   final String title, route;
+  final List<String>? titles;
+  final int? index;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +24,8 @@ class ZikrListViewTile extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right),
       leading: BookmarkButton(bookmarkId: title),
       onTap: () {
-        context.go(route);
+        // TODO: pass titles to ZikrScreen
+        context.go(route, extra: {'titles': titles, 'index': index});
       },
     );
   }

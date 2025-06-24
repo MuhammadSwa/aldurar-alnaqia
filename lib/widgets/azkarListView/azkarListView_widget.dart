@@ -27,6 +27,10 @@ class AzkarListViewWidget extends StatelessWidget {
           final title = titles[index];
           return ZikrListViewTile(
             title: title,
+            // TODO: pass titles here as well. optional. if there are titles swipe
+            titles: titles,
+            // TODO: pass index
+            index: index,
             route: '$route/$title',
           );
         });
