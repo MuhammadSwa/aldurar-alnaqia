@@ -1,172 +1,179 @@
 import 'dart:io';
-
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/get_state_manager.dart';
+import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
+// TODO: move to controllers folder
 
-class TaskDownload {
-  final String taskId;
-  final String filename;
+enum DownloadType { narrations, books }
+
+extension DownloadTypeExtension on DownloadType {
+  String get extension => this == DownloadType.narrations ? 'mp3' : 'pdf';
+  String get directoryName => name;
+}
+
+class DownloadItem {
+  final String id;
+  final String title;
   final String url;
-  final Directory directory;
-  final BaseDirectory baseDirectory;
+  final DownloadType type;
 
-  TaskDownload({
-    required this.taskId,
-    required this.filename,
+  const DownloadItem({
+    required this.id,
+    required this.title,
     required this.url,
-    required this.directory,
-    required this.baseDirectory,
+    required this.type,
   });
 }
 
 class DownloaderController extends GetxController {
-  var queues = <String, ValueNotifier<double>>{}.obs;
-  // TODO: refactor this
-  // var filesDownloaded = <String>[].obs;
-  var filesDownloaded = <String, bool>{}.obs;
+  // Download progress tracking
+  final _downloadProgress = <String, ValueNotifier<double>>{}.obs;
+
+  // File status cache to avoid repeated file system checks
+  final _fileStatusCache = <String, bool>{}.obs;
+
+  // Application support directory path (cached)
+  String? _supportDirectoryPath;
+
+  // Getters
+  Map<String, ValueNotifier<double>> get downloadProgress => _downloadProgress;
+  Map<String, bool> get fileStatusCache => _fileStatusCache;
 
   @override
   void onInit() {
-    FileDownloader().trackTasks();
-    FileDownloader().updates.listen((update) {
-      switch (update) {
-        case TaskStatusUpdate():
-          // TODO: when downloaded add it to downloaded.
-          if (update.status == TaskStatus.complete ||
-              update.status == TaskStatus.canceled) {
-            queues.remove(update.task.taskId);
-            // filesDownloaded.add(update.task.taskId);
-            filesDownloaded[update.task.taskId] = true;
-          }
-        case TaskProgressUpdate():
-          queues[update.task.taskId] = ValueNotifier(update.progress);
-      }
-    });
-    // TODO: implement onInit
     super.onInit();
+    _initializeDownloader();
+    _initializeFileStatusCache();
   }
 
-  void addTaskToQueue(
-      {required String url,
-      required String id,
-      required String directory}) async {
-    final String extension = directory == 'narrations' ? 'mp3' : 'pdf';
+  void _initializeDownloader() {
+    FileDownloader().trackTasks();
+    FileDownloader().updates.listen(_handleDownloadUpdate);
+  }
+
+  void _handleDownloadUpdate(TaskUpdate update) {
+    switch (update) {
+      case TaskStatusUpdate():
+        _handleStatusUpdate(update);
+        break;
+      case TaskProgressUpdate():
+        _handleProgressUpdate(update);
+        break;
+    }
+  }
+
+  void _handleStatusUpdate(TaskStatusUpdate update) {
+    final taskId = update.task.taskId;
+
+    if (update.status == TaskStatus.complete) {
+      _downloadProgress.remove(taskId);
+      _fileStatusCache[taskId] = true;
+    } else if (update.status == TaskStatus.canceled ||
+        update.status == TaskStatus.failed) {
+      _downloadProgress.remove(taskId);
+      _fileStatusCache[taskId] = false;
+    }
+  }
+
+  void _handleProgressUpdate(TaskProgressUpdate update) {
+    _downloadProgress[update.task.taskId] = ValueNotifier(update.progress);
+  }
+
+  Future<void> _initializeFileStatusCache() async {
+    // Initialize cache with current file status
+    // This could be optimized further by checking directories in batch
+    _supportDirectoryPath = await _getSupportDirectoryPath();
+  }
+
+  Future<String> _getSupportDirectoryPath() async {
+    _supportDirectoryPath ??= (await getApplicationSupportDirectory()).path;
+    return _supportDirectoryPath!;
+  }
+
+  String _getFilePath(String id, DownloadType type) {
+    final supportDir = _supportDirectoryPath;
+    if (supportDir == null) {
+      throw StateError('Support directory not initialized');
+    }
+    return '$supportDir/${type.directoryName}/$id.${type.extension}';
+  }
+
+  Future<void> startDownload(DownloadItem item) async {
+    if (isDownloading(item.id)) return;
+
     final task = DownloadTask(
-      //wed
-      filename: '$id.$extension',
-      url: url,
-      directory: directory,
+      taskId: item.id,
+      filename: '${item.id}.${item.type.extension}',
+      url: item.url,
+      directory: item.type.directoryName,
       baseDirectory: BaseDirectory.applicationSupport,
-      taskId: id,
       allowPause: true,
       updates: Updates.statusAndProgress,
     );
 
-    FileDownloader().enqueue(task);
+    await FileDownloader().enqueue(task);
   }
 
-  Future<bool> isFileDownloaded(
-      {required String title, required directory}) async {
-    final String extension = directory == 'narrations' ? 'mp3' : 'pdf';
-    // late String supportDir;
-    final String supportDir = await () async {
-      final dir = await getApplicationSupportDirectory();
-      return dir.path;
-    }();
-    // );
+  Future<void> cancelDownload(String id) async {
+    await FileDownloader().cancelTaskWithId(id);
+    _downloadProgress.remove(id);
+  }
 
-    final path = '$supportDir/$directory/$title.$extension';
+  Future<void> deleteFile(String id, DownloadType type) async {
+    try {
+      final filePath = _getFilePath(id, type);
+      final file = File(filePath);
 
-    File file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
 
-    if (file.existsSync()) {
-      filesDownloaded[title] = true;
-      return true;
-    } else {
+      _fileStatusCache[id] = false;
+    } catch (e) {
+      debugPrint('Error deleting file: $e');
+    }
+  }
+
+  Future<bool> isFileDownloaded(String id, DownloadType type) async {
+    // Check cache first
+    if (_fileStatusCache.containsKey(id)) {
+      return _fileStatusCache[id]!;
+    }
+
+    // Check file system
+    try {
+      await _getSupportDirectoryPath(); // Ensure path is initialized
+      final filePath = _getFilePath(id, type);
+      final exists = await File(filePath).exists();
+
+      // Update cache
+      _fileStatusCache[id] = exists;
+      return exists;
+    } catch (e) {
+      debugPrint('Error checking file: $e');
       return false;
     }
   }
 
-  deleteFile({required String title, required directory}) async {
-    final String extension = directory == 'narrations' ? 'mp3' : 'pdf';
-
-    final String supportDir = await () async {
-      final dir = await getApplicationSupportDirectory();
-      return dir.path;
-    }();
-
-    final path = '$supportDir/$directory/$title.$extension';
-
-    File file = File(path);
-    if (file.existsSync()) {
-      file.deleteSync();
-    }
-
-    filesDownloaded.remove(title);
-    // deletedFiles.add(filename);
+  bool isDownloading(String id) {
+    return _downloadProgress.containsKey(id);
   }
 
-  // TODO: group tasks
-  // DownloadTsak(group: 'collectionx')
+  double? getDownloadProgress(String id) {
+    return _downloadProgress[id]?.value;
+  }
 
-  // TODO: individual or batch download.
-  // FileDownloader().downloadBatch(tasks);
+  // Batch operations
+  Future<void> cancelAllDownloads() async {
+    final downloadIds = _downloadProgress.keys.toList();
+    for (final id in downloadIds) {
+      await cancelDownload(id);
+    }
+  }
 
-  // TODO:
-  // await task.expectedFileSize() => show the file size in mb next to icon while downloading.
-  // timeRemaining, networkspeed
-  // networkSpeedAsString,timeRemainingAsString
-
-  // TODO:
-  // FileDownloader().taskCanResume(task);
-  // call resume instead of download or enqueue
-
-  // final List<TaskDownload> _downloads = [];
-  // List<TaskDownload> get downloads => _downloads;
-  //
-  // void removeAllDownloads() {
-  //   _downloads.clear();
-  //   update();
-  // }
-  //
-  // void pauseDownload(TaskDownload download) async {
-  //   await FlutterDownloader.pause(taskId: download.taskId);
-  //   download.taskId = '';
-  //   update();
-  // }
-  //
-  // void resumeDownload(TaskDownload download) async {
-  //   await FlutterDownloader.resume(taskId: download.taskId);
-  //   download.taskId = '';
-  //   update();
-  // }
-  //
-  //
-  // void cancelAllDownloads() async {
-  //   for (var download in _downloads) {
-  //     await FlutterDownloader.cancel(taskId: download.taskId);
-  //   }
-  //   _downloads.clear();
-  //   update();
-  // }
-  //
-  // void pauseAllDownloads() async {
-  //   for (var download in _downloads) {
-  //     await FlutterDownloader.pause(taskId: download.taskId);
-  //   }
-  //   _downloads.clear();
-  //   update();
-  // }
-  //
-  // void resumeAllDownloads() async {
-  //   for (var download in _downloads) {
-  //     await FlutterDownloader.resume(taskId: download.taskId);
-  //   }
-  //   _downloads.clear();
-  //   update();
-  // }
-  //
+  Future<void> refreshFileStatus(String id, DownloadType type) async {
+    _fileStatusCache.remove(id);
+    await isFileDownloaded(id, type);
+  }
 }

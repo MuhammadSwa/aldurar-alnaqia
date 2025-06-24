@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
-import 'package:aldurar_alnaqia/screens/notification_screen.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +50,26 @@ class HomePage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Row(
+                textDirection: TextDirection
+                    .rtl, // Ensures icon is on the right for Arabic
+                children: [
+                  Icon(Icons.today_rounded),
+                  SizedBox(width: 8),
+                  Text(
+                    'أوراد اليوم',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    // style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    //       fontWeight: FontWeight.bold,
+                    //     ),
+                  ),
+                ],
+              ),
+            ),
             ZikrOfTheDayTile(
                 title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
                 route: '/home/todaysZikr'),

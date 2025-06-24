@@ -1,4 +1,3 @@
-import 'package:aldurar_alnaqia/main.dart';
 import 'package:easy_rich_text/easy_rich_text.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
@@ -17,20 +16,23 @@ class ZikrScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Find the specific Zikr data using the title.
     final Zikr zikr = allAzkar.azkarCategMap[title]!;
-    final dc = Get.put(DownloaderController());
+    // Ensure the DownloaderController is available for child widgets.
+    Get.put(DownloaderController());
 
     return Scaffold(
       appBar: AppBar(
         actions: [
-          Obx(() {
-            // NOTE : don't delete this.
-            final fileDownloaded = dc.filesDownloaded[title];
-            return PlayAudioBtnZikrPage(
-              title: zikr.title,
-              url: zikr.url,
-            );
-          })
+          // Refactored to use the new API for PlayAudioBtnZikrPage.
+          // It now requires a unique `id` to manage its own state internally,
+          // removing the need for an external Obx wrapper.
+          PlayAudioBtnZikrPage(
+            id: zikr
+                .title, // Use the zikr title as the unique ID for the audio file.
+            title: zikr.title,
+            url: zikr.url,
+          ),
         ],
         title: Text(
           title,

@@ -11,9 +11,8 @@ class ZikrOfTheDayTile extends StatelessWidget {
     return ListTile(
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
-      leading: const Icon(Icons.today_rounded),
+      // leading: const Icon(Icons.today_rounded),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
         context.go(route);

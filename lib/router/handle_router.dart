@@ -65,7 +65,9 @@ class AppRouter {
       path: '${RoutePaths.downloadManager}/:index',
       builder: (context, state) {
         final index = int.parse(state.pathParameters['index']!);
-        return DownloadManagerPage(index: index);
+        return DownloadManagerPage(
+          initialIndex: index,
+        );
       },
     );
   }
