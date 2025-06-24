@@ -159,26 +159,27 @@ class DownloadSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+    // Use a Card for better UI and visual separation of each section.
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias, // Ensures ripple effect is contained
+      child: ExpansionTile(
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
         ),
-        const Divider(height: 1, indent: 16, endIndent: 16),
-        ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            return DownloadManagerTile(item: items[index]);
-          },
-        ),
-      ],
+        // The children are the list of downloadable items.
+        // They will only be built and shown when the tile is expanded.
+
+        // Optional: Customize icon colors for a nicer look.
+        iconColor: Theme.of(context).primaryColor,
+        collapsedIconColor: Theme.of(context).textTheme.bodySmall?.color,
+        children: items.map((item) => DownloadManagerTile(item: item)).toList(),
+      ),
     );
   }
 }
@@ -207,39 +208,6 @@ class DownloadManagerPage extends StatelessWidget {
               Tab(icon: Icon(Icons.book), text: 'الكتب'),
             ],
           ),
-          actions: [
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'cancel_all') {
-                  controller.cancelAllDownloads();
-                } else if (value == 'refresh') {
-                  controller.refreshPage();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'cancel_all',
-                  child: Row(
-                    children: [
-                      Icon(Icons.cancel_outlined),
-                      SizedBox(width: 8),
-                      Text('إلغاء الكل'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'refresh',
-                  child: Row(
-                    children: [
-                      Icon(Icons.refresh),
-                      SizedBox(width: 8),
-                      Text('تحديث'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
         body: TabBarView(
           controller: controller.tabController,
@@ -274,18 +242,13 @@ class _AudioTab extends GetView<DownloadManagerController> {
   }
 }
 
-// === REPLACE THIS WIDGET ===
 class _BooksTab extends GetView<DownloadManagerController> {
   const _BooksTab();
 
   @override
   Widget build(BuildContext context) {
-    // Wrap the logic in an Obx
     return Obx(() {
-      // Explicitly access a property like .isEmpty to ensure GetX subscribes to the list.
-      // This is the key fix.
       if (controller.bookItems.isEmpty) {
-        // Optionally, show a message when there are no books.
         return const Center(
           child: Padding(
             padding: EdgeInsets.all(16.0),
@@ -294,13 +257,26 @@ class _BooksTab extends GetView<DownloadManagerController> {
         );
       }
 
-      // If the list is not empty, build the scroll view and the section.
-      return SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: DownloadSection(
-          title: 'الكتب المتاحة',
-          items: controller.bookItems,
-        ),
+      // Display a direct, non-expandable list for the books.
+      return ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        children: [
+          // Static header for the books list
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'الكتب المتاحة',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+
+          // The list of book tiles
+          ...controller.bookItems
+              .map((item) => DownloadManagerTile(item: item)),
+        ],
       );
     });
   }

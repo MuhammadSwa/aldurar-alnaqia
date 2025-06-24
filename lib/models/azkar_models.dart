@@ -202,5 +202,16 @@ final azkarWithNarrations = <String, List<Zikr>>{
     day5Yousria,
     day6Yousria,
   ],
-  'ورد يوم السبت': [poemMohamadia]
+  'أحزاب': [...ahzabCollection, alfathAlsedeqy],
+  'القصائد': poemsCollection.sublist(0, poemsCollection.length - 1),
+  'أوراد الحضرة': alhadraCollection,
+  'صلوات مختارة': chosenSalawatCollection,
+  'أوراد سيدي ابن عطاء الله': ibnAtaAllahCollection,
+  'أوراد يومية': [
+    alwazifaZarouquia,
+    almusabaeat,
+    alasas,
+    alhylia,
+  ],
+  'ورد عصر يوم الجمعة': [asrGomaa],
 };
