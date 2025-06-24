@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/common/theme/dark_theme.dart';
 import 'package:aldurar_alnaqia/router/handle_router.dart';
@@ -22,8 +24,9 @@ void main() async {
   await SharedPreferencesService().init();
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
 
-  // // TODO: remove this?
-  // Get.put(DownloaderController());
+  // if (Platform.isAndroid) {
+  //   await PrayerNotificationService.initialize();
+  // }
 
   runApp(
     MyApp(theme: savedThemeMode),

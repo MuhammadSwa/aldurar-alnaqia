@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
+import 'package:aldurar_alnaqia/screens/notification_screen.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
@@ -63,6 +66,7 @@ class HomePage extends StatelessWidget {
 
             const BookmarksTilesHomeScreen(),
             //
+            // if (Platform.isAndroid) const NotificationSettings()
           ],
         ),
       ),

@@ -5,30 +5,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 class MyDrawer extends StatelessWidget {
   const MyDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Drawer(
         elevation: 0,
-        semanticLabel: 'القائمة الجانبية',
+        semanticLabel: 'القائمة الجانبية',
+        backgroundColor: colorScheme.surface,
         child: SafeArea(
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 20),
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'المظهر',
-                      // TODO: change using font theme
-                      style: TextStyle(fontSize: 20),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: colorScheme.onSurface,
+                      ),
                     ),
-                    ToggleThemeBtn()
+                    const ToggleThemeBtn()
                   ],
                 ),
               ),
@@ -39,9 +43,10 @@ class MyDrawer extends StatelessWidget {
               const FontSizeSettingsWidget(),
               const FontFamilySettingsWidget(),
               _buildDrawerItem(
-                  icon: const Icon(
+                  context: context,
+                  icon: Icon(
                     Icons.link,
-                    color: Colors.white,
+                    color: colorScheme.onSecondaryContainer,
                     size: 20,
                   ),
                   title: 'الصفحات الرسمية',
@@ -51,9 +56,10 @@ class MyDrawer extends StatelessWidget {
                   }),
 
               _buildDrawerItem(
-                  icon: const Icon(
+                  context: context,
+                  icon: Icon(
                     Icons.cloud_download_rounded,
-                    color: Colors.white,
+                    color: colorScheme.onSecondaryContainer,
                     size: 20,
                   ),
                   title: 'إدارة التحميلات',
@@ -62,6 +68,7 @@ class MyDrawer extends StatelessWidget {
                     context.push('/downloadManager/0');
                   }),
               _buildDrawerItem(
+                  context: context,
                   icon: SvgPicture.asset(
                     'assets/icons/youtube-icon-svgrepo-com.svg',
                     semanticsLabel: 'youtube_icon',
@@ -74,6 +81,7 @@ class MyDrawer extends StatelessWidget {
                   }),
 
               _buildDrawerItem(
+                  context: context,
                   icon: SvgPicture.asset(
                     'assets/icons/youtube-icon-svgrepo-com.svg',
                     semanticsLabel: 'youtube_icon',
@@ -85,34 +93,20 @@ class MyDrawer extends StatelessWidget {
                     launchUrl(Uri.parse(
                         'https://www.youtube.com/playlist?list=PLEkQk5xrP-tkGXuZ9atE3k_7it12rUPTs'));
                   }),
-              // _buildDrawerItem(
-              //   icon: Icons.notifications_rounded,
-              //   title: 'Notifications',
-              //   onTap: () => Navigator.pop(context),
-              // ),
-              // const SizedBox(height: 20),
-              // _buildDivider(),
-              // const SizedBox(height: 20),
-              // _buildDrawerItem(
-              //   icon: Icons.settings_rounded,
-              //   title: 'Settings',
-              //   onTap: () => Navigator.pop(context),
-              // ),
-              // _buildDrawerItem(
-              //   icon: Icons.help_rounded,
-              //   title: 'Help & Support',
-              //   onTap: () => Navigator.pop(context),
-              // ),
             ],
           ),
         ));
   }
 
   Widget _buildDrawerItem({
+    required BuildContext context,
     required Widget icon,
     required String title,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Material(
@@ -121,15 +115,15 @@ class MyDrawer extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          splashColor: Colors.white.withOpacity(0.1),
-          highlightColor: Colors.white.withOpacity(0.05),
+          splashColor: colorScheme.onSurface.withOpacity(0.1),
+          highlightColor: colorScheme.onSurface.withOpacity(0.05),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: Colors.white.withOpacity(0.1),
+              color: colorScheme.surfaceVariant.withOpacity(0.3),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: colorScheme.outline.withOpacity(0.2),
                 width: 0.5,
               ),
             ),
@@ -138,7 +132,7 @@ class MyDrawer extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: icon,
@@ -147,9 +141,8 @@ class MyDrawer extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurface,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
                     ),
@@ -157,7 +150,7 @@ class MyDrawer extends StatelessWidget {
                 ),
                 Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: Colors.white.withOpacity(0.6),
+                  color: colorScheme.onSurface.withOpacity(0.6),
                   size: 14,
                 ),
               ],

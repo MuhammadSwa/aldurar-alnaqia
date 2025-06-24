@@ -24,6 +24,10 @@ class NextPrayerCountdown extends StatelessWidget {
               );
             }
 
+            // Get current countdown values
+            final timeLeft = controller.timeLeftForNextPrayer.value.$1;
+            final prayerName = controller.timeLeftForNextPrayer.value.$2;
+
             // Check if prayer timings are available
             if (controller.prayerTimings == null) {
               return const Text(
@@ -32,9 +36,6 @@ class NextPrayerCountdown extends StatelessWidget {
               );
             }
 
-            // Get current countdown values
-            final timeLeft = controller.timeLeftForNextPrayer.value.$1;
-            final prayerName = controller.timeLeftForNextPrayer.value.$2;
 
             // Handle edge case where prayer name is empty
             if (prayerName.isEmpty) {

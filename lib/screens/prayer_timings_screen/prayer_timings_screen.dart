@@ -46,11 +46,11 @@ class PrayerTimingsScreen extends StatelessWidget {
         child: Column(
           children: [
             _ActionButtonsRow(),
-            SizedBox(height: 20),
+            SizedBox(height: 14),
             _DateDisplayRow(),
-            SizedBox(height: 20),
+            SizedBox(height: 8),
             NextPrayerCountdown(),
-            SizedBox(height: 20),
+            SizedBox(height: 8),
             PrayerTimingsCard(),
           ],
         ),

@@ -9,36 +9,21 @@ abstract class BaseTheme {
 
   static const double bodySmallFontSize = 14;
   static const double titleMediumfontSize = 24;
-
-  // static ThemeData get baseTheme => ThemeData(
-  // useMaterial3: true,
-  // fontFamily: 'NotoNaskh',
-  // appBarTheme: const AppBarTheme(
-  //   toolbarHeight: 60,
-  //   titleTextStyle: TextStyle(
-  //     fontFamily: 'NotoNaskh',
-  //     fontSize: 24,
-  //     height: 2,
-  //   ),
-  // ),
-  // );
 }
 
 final darkTheme = ThemeData(
   useMaterial3: true,
   fontFamily: 'NotoNaskh',
+  brightness: Brightness.dark,
   textTheme: TextTheme(
     // for main non-bolded text in ZikrPage.
     bodyMedium: TextStyle(
-      // TODO: size and height should be from provider from shared_prefs, change from settings
-      color: Colors.grey.shade100,
       fontSize: Get.put(FontController().fontSize.value),
       height: BaseTheme.bodyMediumHeight,
     ),
     // fot footer and [^3], notes
     bodySmall: TextStyle(
       color: Colors.grey.shade400,
-      // TODO: calc this from main fontSize
       fontSize: BaseTheme.bodySmallFontSize,
     ),
     // used for title in timingsScreen
@@ -50,10 +35,8 @@ final darkTheme = ThemeData(
       fontSize: 17,
     ),
     // for numbering e.g. (12.)
-    labelSmall: TextStyle(
+    labelSmall: const TextStyle(
       fontWeight: FontWeight.bold,
-      // TODO: change based on theme
-      color: Colors.grey.shade400,
       // TODO: calc this from main fontSize
       fontSize: 20,
     ),

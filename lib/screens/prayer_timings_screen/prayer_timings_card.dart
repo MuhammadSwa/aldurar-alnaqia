@@ -12,70 +12,67 @@ class PrayerTimingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GetBuilder<PrayerTimingsController>(
-          builder: (controller) {
-            // Use timezone-aware prayer times instead of raw prayerTimes
-            final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
+      child: GetBuilder<PrayerTimingsController>(
+        builder: (controller) {
+          // Use timezone-aware prayer times instead of raw prayerTimes
+          final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
 
-            if (timezonedPrayerTimes == null) {
-              return const Padding(
-                padding: EdgeInsets.all(20.0),
-                child: Text(
-                  'برجاء تحديد الموقع لعرض المواقيت',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-              );
-            }
-
-            // Calculate Sunnah times using timezone-aware times
-            final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
-
-            final prayers = [
-              _PrayerTime('المغرب', timezonedPrayerTimes['maghrib']!,
-                  isMainPrayer: true, englishName: 'maghrib'),
-              _PrayerTime('العشاء', timezonedPrayerTimes['isha']!,
-                  isMainPrayer: true, englishName: 'isha'),
-              _PrayerTime('منتصف الليل', sunnahTimes['middleOfNight']!,
-                  isMainPrayer: false),
-              _PrayerTime('الثلث الأخير', sunnahTimes['lastThirdOfNight']!,
-                  isMainPrayer: false),
-              _PrayerTime('الفجر', timezonedPrayerTimes['fajr']!,
-                  isMainPrayer: true, englishName: 'fajr'),
-              _PrayerTime('الشروق', timezonedPrayerTimes['sunrise']!,
-                  isMainPrayer: true, englishName: 'sunrise'),
-              _PrayerTime('الضحى', sunnahTimes['duha']!, isMainPrayer: false),
-              _PrayerTime('الظهر', timezonedPrayerTimes['dhuhr']!,
-                  isMainPrayer: true, englishName: 'dhuhr'),
-              _PrayerTime('العصر', timezonedPrayerTimes['asr']!,
-                  isMainPrayer: true, englishName: 'asr'),
-            ];
-
-            return Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Table(
-                columnWidths: const {
-                  0: FlexColumnWidth(2),
-                  1: FlexColumnWidth(1),
-                },
-                children: prayers
-                    .map((prayer) => _buildTableRow(
-                          context,
-                          prayer,
-                          controller, // Pass controller to access reactive values
-                        ))
-                    .toList(),
+          if (timezonedPrayerTimes == null) {
+            return const Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Text(
+                'برجاء تحديد الموقع لعرض المواقيت',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
               ),
             );
-          },
-        ),
+          }
+
+          // Calculate Sunnah times using timezone-aware times
+          final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
+
+          final prayers = [
+            _PrayerTime('المغرب', timezonedPrayerTimes['maghrib']!,
+                isMainPrayer: true, englishName: 'maghrib'),
+            _PrayerTime('العشاء', timezonedPrayerTimes['isha']!,
+                isMainPrayer: true, englishName: 'isha'),
+            _PrayerTime('منتصف الليل', sunnahTimes['middleOfNight']!,
+                isMainPrayer: false),
+            _PrayerTime('الثلث الأخير', sunnahTimes['lastThirdOfNight']!,
+                isMainPrayer: false),
+            _PrayerTime('الفجر', timezonedPrayerTimes['fajr']!,
+                isMainPrayer: true, englishName: 'fajr'),
+            _PrayerTime('الشروق', timezonedPrayerTimes['sunrise']!,
+                isMainPrayer: true, englishName: 'sunrise'),
+            _PrayerTime('الضحى', sunnahTimes['duha']!, isMainPrayer: false),
+            _PrayerTime('الظهر', timezonedPrayerTimes['dhuhr']!,
+                isMainPrayer: true, englishName: 'dhuhr'),
+            _PrayerTime('العصر', timezonedPrayerTimes['asr']!,
+                isMainPrayer: true, englishName: 'asr'),
+          ];
+
+          return Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Table(
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(1),
+              },
+              children: prayers
+                  .map((prayer) => _buildTableRow(
+                        context,
+                        prayer,
+                        controller, // Pass controller to access reactive values
+                      ))
+                  .toList(),
+            ),
+          );
+        },
       ),
     );
   }
@@ -111,7 +108,7 @@ class PrayerTimingsCard extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -155,7 +152,7 @@ class PrayerTimingsCard extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               child: InlineTextWidget(
                 _formatTime(prayer.time),
                 style: const TextStyle(
