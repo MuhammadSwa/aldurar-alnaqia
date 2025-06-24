@@ -33,7 +33,7 @@ class AppRouter {
         // Standalone routes (not in bottom nav)
         _createSocialRoute(),
         _createDownloadManagerRoute(),
-        _createSliderRoute(),
+        // _createSliderRoute(),
 
         // Bottom navigation shell with main tabs
         StatefulShellRoute.indexedStack(
@@ -72,15 +72,15 @@ class AppRouter {
     );
   }
 
-  static GoRoute _createSliderRoute() {
-    return GoRoute(
-      path: RoutePaths.slider,
-      builder: (context, state) {
-        final titles = state.extra as List<String>;
-        return ZikrsliderScreen(titles);
-      },
-    );
-  }
+  // static GoRoute _createSliderRoute() {
+  //   return GoRoute(
+  //     path: RoutePaths.slider,
+  //     builder: (context, state) {
+  //       final titles = state.extra as List<String>;
+  //       return ZikrsliderScreen(titles);
+  //     },
+  //   );
+  // }
 
   // Bottom navigation branches
   static StatefulShellBranch _createHomeBranch() {
@@ -220,14 +220,18 @@ class AppRouter {
       name: '${prefix}ZikrPage',
       pageBuilder: (context, state) {
         final zikr = state.pathParameters['zikr']!;
-// extra: {titles, index;
-        final extra = state.extra as Map<String, dynamic>; // <-- CHANGE
-        final titles = extra['titles'] as List<String>;
-        final index = extra['index'] as int;
 
-        print('-----------------');
-        print(index);
-        print(titles);
+        List<String>? titles;
+        int? index;
+// extra: {titles, index;
+        if (state.extra != null && state.extra is Map<String, dynamic>) {
+          final Map<String, dynamic> extra =
+              state.extra as Map<String, dynamic>;
+
+          titles = extra['titles'] as List<String>;
+
+          index = extra['index'] as int;
+        }
 
         // Handle special cases
         if (zikr == alhyliaAndNasab.title) {
