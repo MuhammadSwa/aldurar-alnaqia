@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:aldurar_alnaqia/screens/zikr_screen/playAudio_btn_zikr_page.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
@@ -13,6 +14,13 @@ class HeliaNasabScreen extends StatelessWidget {
     final title = alhyliaAndNasab.title;
     return Scaffold(
         appBar: AppBar(
+          actions: [
+            PlayAudioBtnZikrPage(
+              id: title,
+              title: title,
+              url: alhyliaAndNasab.url,
+            ),
+          ],
           title: Text(title),
         ),
         body: Center(

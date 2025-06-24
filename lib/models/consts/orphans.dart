@@ -115,6 +115,8 @@ const sanadAltareeqa = Zikr(
 const asrGomaa = Zikr(
     title: 'ورد عصر يوم الجمعة',
     notes: 'يقرأ ما بين عصر الجمعة إلى مغربها',
+    url:
+        "https://ia601308.us.archive.org/9/items/dorar_audio/%D9%88%D8%B1%D8%AF%20%D8%B9%D8%B5%D8%B1%20%D8%A7%D9%84%D8%AC%D9%85%D8%B9%D8%A9.mp3",
     content: '''
 اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ عَبْدِكَ وَنَبِيِّكَ وَرَسُولِكَ النَّبِي الأُمِّي) (80 مرة).
 ''');

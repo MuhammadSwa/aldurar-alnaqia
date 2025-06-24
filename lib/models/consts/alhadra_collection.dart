@@ -14,9 +14,17 @@ const alhadraCollection = <Zikr>[
   khitamFawatih,
 ];
 
-const alhyliaAndNasab = Zikr(title: 'الحلية والنسب النبوي الشريف', content: '');
+const alhyliaAndNasab = Zikr(
+    title: 'الحلية والنسب النبوي الشريف',
+    content: '',
+    url:
+        'https://ia801308.us.archive.org/9/items/dorar_audio/%D8%A7%D9%84%D8%AD%D9%84%D9%8A%D8%A9%20%D8%A7%D9%84%D9%86%D8%A8%D9%88%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B4%D8%B1%D9%8A%D9%81%D8%A9%20%D9%88%20%D9%86%D8%B3%D8%A8%20%D8%B3%D9%8A%D8%AF%D9%86%D8%A7%20%D9%85%D8%AD%D9%85%D8%AF.mp3');
 
-const hadraPrayerAfterAzkar = Zikr(title: 'ختام الصلاة', content: '''
+const hadraPrayerAfterAzkar = Zikr(
+    title: 'ختام الصلاة',
+    url:
+        "https://ia600908.us.archive.org/16/items/hadra_yousria/%D8%AE%D8%AA%D8%A7%D9%85_%D8%A7%D9%84%D8%B5%D9%84%D8%A7%D8%A9_%D8%A7%D9%84%D8%AD%D8%B6%D8%B1%D8%A9.mp3",
+    content: '''
 سبحان الله، الحمد لله، الله أكبر (ثلاث وثلاثون)
 
 الله أكبر كبيرا والحمد لله كثيرا، وسبحان الله بكرة وأصيلا، لا إله إلا الله وحده، لا شريك له، له الملك وله الحمد، وهو على كل شيء قدير.
@@ -50,6 +58,10 @@ Fكُلُّ مَنْ رَامَ ذُّلَّنّا __ مِنْ قَرِيبٍ و
 Fسَيْفُنَا فِيهِ قَوْلُنَا __ حَسْبُنَا اللهُ وِالنّبِيX
 ''');
 
-const yaRasoulAllah = Zikr(title: 'يا رسول الله انظر حالنا', content: '''
+const yaRasoulAllah = Zikr(
+    title: 'يا رسول الله انظر حالنا',
+    content: '''
 يا رسول الله، انظر حالنا، يا حبيب الله، اسمع قَالنَا، إنَّي في بحر هَمٍّ مُغْرِقٍ، خُذ بيدي، سَهِّل أَحوالنا.
-''');
+''',
+    url:
+        "https://ia601308.us.archive.org/9/items/dorar_audio/%D9%8A%D8%A7%20%D8%B1%D8%B3%D9%88%D9%84%20%D8%A7%D9%84%D9%84%D9%87%20%D8%A7%D9%86%D8%B8%D8%B1%20%D8%AD%D8%A7%D9%84%D9%86%D8%A7.mp3");

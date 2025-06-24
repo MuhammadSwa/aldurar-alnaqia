@@ -42,13 +42,6 @@ class LibraryScreen extends StatelessWidget {
           onPressed: controller.openDrawer,
           tooltip: 'فتح القائمة',
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download_outlined),
-            onPressed: () => context.push('/downloadManager/1'),
-            tooltip: 'إدارة التحميلات',
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: controller.refreshBookStatuses,
@@ -201,7 +194,7 @@ class StreamOrDownloadDialog extends StatelessWidget {
           _buildOptionButton(
             context,
             icon: Icons.cloud_outlined,
-            label: 'قراءة مباشرة',
+            label: 'فتح مباشر',
             subtitle: 'يتطلب اتصالاً بالإنترنت',
             onPressed: onStream,
             color: Colors.blue,
@@ -210,7 +203,7 @@ class StreamOrDownloadDialog extends StatelessWidget {
           _buildOptionButton(
             context,
             icon: Icons.download_for_offline_outlined,
-            label: 'تحميل للقراءة لاحقًا',
+            label: 'تحميل',
             subtitle: 'سيكون متاحًا بدون إنترنت',
             onPressed: onDownload,
             color: Colors.green,
@@ -228,33 +221,36 @@ class StreamOrDownloadDialog extends StatelessWidget {
     required VoidCallback onPressed,
     required Color color,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        icon: Icon(icon, size: 24),
-        label: Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14)),
-              Text(subtitle,
-                  style:
-                      TextStyle(fontSize: 12, color: color.withOpacity(0.9))),
-            ],
+    return Directionality(
+        textDirection: TextDirection.rtl,
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: Icon(icon, size: 24),
+            label: Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12, color: color.withOpacity(0.9))),
+                ],
+              ),
+            ),
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color.withOpacity(0.1),
+              foregroundColor: color,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              alignment: Alignment.centerRight,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
           ),
-        ),
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color.withOpacity(0.1),
-          foregroundColor: color,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          alignment: Alignment.centerRight,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          elevation: 0,
-        ),
-      ),
-    );
+        ));
   }
 }
