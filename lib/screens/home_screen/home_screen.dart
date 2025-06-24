@@ -80,7 +80,6 @@ class HomePage extends StatelessWidget {
                 route:
                     '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}'),
             const Divider(),
-
             const BookmarksTilesHomeScreen(),
             //
             // if (Platform.isAndroid) const NotificationSettings()
