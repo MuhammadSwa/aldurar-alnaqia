@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/screens/library_screen/pdf_viewer_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -20,36 +22,60 @@ class PdfviewerWidget extends StatefulWidget {
 }
 
 class _PdfviewerWidgetState extends State<PdfviewerWidget>
-    with WidgetsBindingObserver {
-  // Use 'late' because it's initialized in initState
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late final PdfViewerGetxController controller;
 
-  // A getter to check if the device has a small screen.
+  late final TabController _tabController;
+  final FocusNode _searchFocusNode = FocusNode();
+  StreamSubscription? _sidebarVisibilitySubscription;
+
   bool get _isMobileDevice => MediaQuery.of(context).size.shortestSide < 600;
 
   @override
   void initState() {
     super.initState();
-    // Put the controller into GetX dependency management.
-    // The 'tag' ensures that if you open multiple viewers, they each have a unique controller.
     controller = Get.put(PdfViewerGetxController(title: widget.title),
         tag: widget.title);
     WidgetsBinding.instance.addObserver(this);
+
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_updateSearchFocus);
+    _sidebarVisibilitySubscription =
+        controller.showSidePane.listen((_) => _updateSearchFocus());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // GetX will automatically remove the controller when the route is popped.
-    // If you need to manually remove it, you can use: Get.delete<PdfViewerGetxController>(tag: widget.title);
+
+    _sidebarVisibilitySubscription?.cancel();
+    _tabController.removeListener(_updateSearchFocus);
+    _tabController.dispose();
+    _searchFocusNode.dispose();
+
     super.dispose();
   }
 
-  /// Handles screen orientation changes.
+  void _updateSearchFocus() {
+    // Determine if the search input should have focus
+    final shouldBeFocused =
+        controller.showSidePane.value && _tabController.index == 0;
+
+    if (shouldBeFocused && !_searchFocusNode.hasFocus) {
+      // Use a post-frame callback to ensure the widget is built and visible before focusing
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _searchFocusNode.requestFocus();
+        }
+      });
+    } else if (!shouldBeFocused && _searchFocusNode.hasFocus) {
+      _searchFocusNode.unfocus();
+    }
+  }
+
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    // Rebuild UI on screen rotation to adjust layout.
     if (mounted) {
       setState(() {});
     }
@@ -154,7 +180,7 @@ class _PdfviewerWidgetState extends State<PdfviewerWidget>
                 length: 4,
                 child: Column(
                   children: [
-                    const TabBar(tabs: [
+                    TabBar(controller: _tabController, tabs: const [
                       Tab(icon: Icon(Icons.search), text: 'بحث'),
                       Tab(icon: Icon(Icons.menu_book), text: 'فهرس'),
                       Tab(icon: Icon(Icons.image), text: 'صفحات'),
@@ -171,10 +197,13 @@ class _PdfviewerWidgetState extends State<PdfviewerWidget>
 
   Widget _buildTabBarView() {
     return TabBarView(
+      controller: _tabController,
       children: [
         // Search View
         Obx(() => controller.textSearcher.value != null
-            ? TextSearchView(textSearcher: controller.textSearcher.value!)
+            ? TextSearchView(
+                focusNode: _searchFocusNode,
+                textSearcher: controller.textSearcher.value!)
             : const SizedBox()),
         // Outline/TOC View
         Obx(() => OutlineView(

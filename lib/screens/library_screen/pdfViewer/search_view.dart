@@ -9,17 +9,18 @@ import 'package:synchronized/extension.dart';
 class TextSearchView extends StatefulWidget {
   const TextSearchView({
     required this.textSearcher,
+    this.focusNode,
     super.key,
   });
 
   final PdfTextSearcher textSearcher;
+  final FocusNode? focusNode; // 2. DECLARE the field
 
   @override
   State<TextSearchView> createState() => _TextSearchViewState();
 }
 
 class _TextSearchViewState extends State<TextSearchView> {
-  // final focusNode = FocusNode();
   final searchTextController = TextEditingController();
   late final pageTextStore =
       PdfPageTextCache(textSearcher: widget.textSearcher);
@@ -38,7 +39,6 @@ class _TextSearchViewState extends State<TextSearchView> {
     widget.textSearcher.removeListener(_searchResultUpdated);
     searchTextController.removeListener(_searchTextUpdated);
     searchTextController.dispose();
-    // focusNode.dispose();
     super.dispose();
   }
 
@@ -93,7 +93,7 @@ class _TextSearchViewState extends State<TextSearchView> {
                 children: [
                   TextField(
                     // autofocus: true,
-                    // focusNode: focusNode,
+                    focusNode: widget.focusNode,
                     controller: searchTextController,
                     decoration: const InputDecoration(
                       contentPadding: EdgeInsets.only(right: 50),
