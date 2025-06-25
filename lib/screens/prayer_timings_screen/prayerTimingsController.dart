@@ -7,7 +7,11 @@ import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 class PrayerTimingsController extends GetxController {
-  PrayerTimes? prayerTimings;
+  // --- REFACTORED PART ---
+  // Make prayerTimings an Rx variable to be observable.
+  final Rx<PrayerTimes?> prayerTimings = Rx<PrayerTimes?>(null);
+  // --- END REFACTORED PART ---
+
   Rx<(Duration, String)> timeLeftForNextPrayer =
       (const Duration(seconds: 0), '').obs;
   RxBool isInitialized = false.obs;
@@ -15,7 +19,7 @@ class PrayerTimingsController extends GetxController {
   Timer? _timer;
 
   @override
-  void onInit() async {
+  void onInit() {
     super.onInit();
     _initializeController();
   }
@@ -52,28 +56,30 @@ class PrayerTimingsController extends GetxController {
       }
     }
 
-    prayerTimings = PrayerTimeings.getPrayersTimings();
+    // --- REFACTORED PART ---
+    // Assign to the .value of the Rx variable
+    prayerTimings.value = PrayerTimeings.getPrayersTimings();
+    // --- END REFACTORED PART ---
+
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
     isInitialized.value = true;
 
     _startTimer();
-    update();
+    // No need for update() here, Rx variables handle it.
   }
 
   void _startTimer() {
     _timer?.cancel();
-
-    // Update every second for accurate countdown
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final newTimeLeft = PrayerTimeings.timeLeftForNextPrayer();
+      final previousPrayerName = timeLeftForNextPrayer.value.$2;
 
-      // Always update to reflect current countdown
       timeLeftForNextPrayer.value = newTimeLeft;
 
       // If we've crossed into a new prayer time (prayer name changed),
-      // recalculate prayer timings for accuracy
-      if (timeLeftForNextPrayer.value.$2 != newTimeLeft.$2) {
-        prayerTimings = PrayerTimeings.getPrayersTimings();
+      // recalculate prayer timings for the new day if needed (e.g., after Isha).
+      if (previousPrayerName != newTimeLeft.$2) {
+        prayerTimings.value = PrayerTimeings.getPrayersTimings();
       }
     });
   }
@@ -89,16 +95,18 @@ class PrayerTimingsController extends GetxController {
     SharedPreferencesService.setLongitude(long);
     SharedPreferencesService.setMethod(method);
     SharedPreferencesService.setAsrCalculation(asrCalc);
-
     if (highLatitudeRule != null) {
       SharedPreferencesService.setHighLatitudeRule(highLatitudeRule);
     }
 
-    prayerTimings = PrayerTimeings.getPrayersTimings();
-    timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
+    // --- REFACTORED PART ---
+    // Assign to the .value of the Rx variable
+    prayerTimings.value = PrayerTimeings.getPrayersTimings();
+    // --- END REFACTORED PART ---
 
+    timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
     _startTimer();
-    update();
+    // No need for update() here.
   }
 
   void updateNextPrayer() {
@@ -108,7 +116,7 @@ class PrayerTimingsController extends GetxController {
 
 // Rest of the PrayerTimeings class remains the same...
 class PrayerTimeings {
-  static PrayerTimes? getPrayersTimings() {
+  static PrayerTimes? getPrayersTimings({DateTime? forDate}) {
     Coordinates coordinates = Coordinates(
       SharedPreferencesService.getLatitude(),
       SharedPreferencesService.getLongitude(),
@@ -126,7 +134,9 @@ class PrayerTimeings {
     try {
       // Use tz.local, which should have been configured in PrayerTimingsController.onInit
       // Create timezone-aware current date using the device's local timezone
-      final tz.TZDateTime dateForCalculation = tz.TZDateTime.now(tz.local);
+      final tz.TZDateTime dateForCalculation = forDate != null
+          ? tz.TZDateTime.from(forDate, tz.local)
+          : tz.TZDateTime.now(tz.local);
 
       final CalculationParameters params;
       switch (method) {

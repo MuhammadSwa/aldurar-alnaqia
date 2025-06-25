@@ -10,252 +10,198 @@ class PrayerTimingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get the controller once outside the reactive builder.
+    final PrayerTimingsController controller =
+        Get.find<PrayerTimingsController>();
+
     return Card(
       elevation: 4,
-      child: GetBuilder<PrayerTimingsController>(
-        builder: (controller) {
-          // Use timezone-aware prayer times instead of raw prayerTimes
-          final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
+      // --- REFACTORED: Use a single Obx wrapper for the whole card ---
+      child: Obx(() {
+        // 1. Read the observable variables needed for the UI.
+        //    Obx will now listen to changes in BOTH of these.
+        final prayerTimings = controller.prayerTimings.value;
+        final nextPrayerTuple = controller.timeLeftForNextPrayer.value;
+        final nextPrayerName = _getArabicPrayerName(nextPrayerTuple.$2);
 
-          // Define a placeholder time to use when real times are not available
-          final placeholderTime =
-              tz.TZDateTime.from(DateTime(1, 1, 1), tz.local);
+        // --- Use your preferred placeholder logic ---
+        if (prayerTimings == null) {
+          return _buildPlaceholderTable(context); // Build the placeholder table
+        }
 
-// Determine which map of prayer times to use.
-          // If real times are null, create a map of placeholders.
-          final Map<String, tz.TZDateTime> effectivePrayerTimes;
-          final Map<String, tz.TZDateTime> sunnahTimes;
+        // If we have prayer times, build the real table.
+        final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
+        if (timezonedPrayerTimes == null) {
+          // This is an edge case, but good to handle.
+          return _buildPlaceholderTable(context);
+        }
 
-          // if (timezonedPrayerTimes == null) {
-          //   return const Padding(
-          //     padding: EdgeInsets.all(20.0),
-          //     child: Text(
-          //       'برجاء تحديد الموقع لعرض المواقيت',
-          //       textAlign: TextAlign.center,
-          //       style: TextStyle(fontSize: 16),
-          //     ),
-          //   );
-          // }
+        final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
+        final placeholderTime = tz.TZDateTime.from(DateTime(1, 1, 1), tz.local);
 
-          if (timezonedPrayerTimes == null) {
-            // If no location is set, use placeholders for all times
-            effectivePrayerTimes = {
-              'maghrib': placeholderTime,
-              'isha': placeholderTime,
-              'fajr': placeholderTime,
-              'sunrise': placeholderTime,
-              'dhuhr': placeholderTime,
-              'asr': placeholderTime,
-            };
-            sunnahTimes = {
-              'middleOfNight': placeholderTime,
-              'lastThirdOfNight': placeholderTime,
-              'duha': placeholderTime,
-            };
-          } else {
-            // If location is set, use the real times and calculate Sunnah times
-            effectivePrayerTimes = timezonedPrayerTimes;
-            sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
-          }
+        final prayers = [
+          _PrayerTime('المغرب', timezonedPrayerTimes['maghrib']!),
+          _PrayerTime('العشاء', timezonedPrayerTimes['isha']!),
+          _PrayerTime(
+              'منتصف الليل', sunnahTimes?['middleOfNight'] ?? placeholderTime,
+              isSunnah: true),
+          _PrayerTime('الثلث الأخير',
+              sunnahTimes?['lastThirdOfNight'] ?? placeholderTime,
+              isSunnah: true),
+          _PrayerTime('الفجر', timezonedPrayerTimes['fajr']!),
+          _PrayerTime('الشروق', timezonedPrayerTimes['sunrise']!),
+          _PrayerTime('الضحى', sunnahTimes?['duha'] ?? placeholderTime,
+              isSunnah: true),
+          _PrayerTime('الظهر', timezonedPrayerTimes['dhuhr']!),
+          _PrayerTime('العصر', timezonedPrayerTimes['asr']!),
+        ];
 
-          // Calculate Sunnah times using timezone-aware times
-          // final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
-
-          final prayers = [
-            _PrayerTime('المغرب', effectivePrayerTimes['maghrib']!,
-                isMainPrayer: true, englishName: 'maghrib'),
-            _PrayerTime('العشاء', effectivePrayerTimes['isha']!,
-                isMainPrayer: true, englishName: 'isha'),
-            _PrayerTime('منتصف الليل', sunnahTimes['middleOfNight']!,
-                isMainPrayer: false),
-            _PrayerTime('الثلث الأخير', sunnahTimes['lastThirdOfNight']!,
-                isMainPrayer: false),
-            _PrayerTime('الفجر', effectivePrayerTimes['fajr']!,
-                isMainPrayer: true, englishName: 'fajr'),
-            _PrayerTime('الشروق', effectivePrayerTimes['sunrise']!,
-                isMainPrayer: true, englishName: 'sunrise'),
-            _PrayerTime('الضحى', sunnahTimes['duha']!, isMainPrayer: false),
-            _PrayerTime('الظهر', effectivePrayerTimes['dhuhr']!,
-                isMainPrayer: true, englishName: 'dhuhr'),
-            _PrayerTime('العصر', effectivePrayerTimes['asr']!,
-                isMainPrayer: true, englishName: 'asr'),
-          ];
-
-          return Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Table(
-              columnWidths: const {
-                0: FlexColumnWidth(2),
-                1: FlexColumnWidth(1),
-              },
-              children: prayers
-                  .map((prayer) => _buildTableRow(
-                        context,
-                        prayer,
-                        controller, // Pass controller to access reactive values
-                      ))
-                  .toList(),
-            ),
-          );
-        },
-      ),
+        return Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Table(
+            columnWidths: const {
+              0: FlexColumnWidth(2),
+              1: FlexColumnWidth(1),
+            },
+            // The map now passes the calculated `isNextPrayer` boolean.
+            children: prayers.map((prayer) {
+              final isNextPrayer = prayer.name == nextPrayerName;
+              return _buildTableRow(context, prayer, isNextPrayer);
+            }).toList(),
+          ),
+        );
+      }),
     );
   }
 
+  // --- REFACTORED: This is now a "dumb" builder method ---
+  // It receives all the data it needs and contains NO reactive code.
   TableRow _buildTableRow(
-    BuildContext context,
-    _PrayerTime prayer,
-    PrayerTimingsController controller, // Add controller parameter
-  ) {
-    // Use Obx to make this reactive to timeLeftForNextPrayer changes
+      BuildContext context, _PrayerTime prayer, bool isNextPrayer) {
+    final Color? rowColor = isNextPrayer
+        ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3)
+        : null;
+    final border = BorderSide(
+        color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+        width: 0.5);
+
     return TableRow(
       children: [
-        Obx(() {
-          // Get current next prayer to highlight it reactively
-          final nextPrayerResult = controller.timeLeftForNextPrayer.value;
-          final nextPrayerName = _getArabicPrayerName(nextPrayerResult.$2);
-          final bool isNextPrayer = prayer.name == nextPrayerName;
-
-          Color? rowColor;
-          if (isNextPrayer) {
-            rowColor =
-                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3);
-          }
-
-          return Container(
-            decoration: BoxDecoration(
-              color: rowColor,
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-                  width: 0.5,
-                ),
-              ),
+        // Prayer Name Cell
+        Container(
+          decoration:
+              BoxDecoration(color: rowColor, border: Border(bottom: border)),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          child: InlineTextWidget(
+            prayer.name,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: prayer.isSunnah ? FontWeight.w500 : FontWeight.w600,
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: InlineTextWidget(
-                      prayer.name,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: prayer.isMainPrayer
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
-        Obx(() {
-          // Get current next prayer to highlight it reactively
-          final nextPrayerResult = controller.timeLeftForNextPrayer.value;
-          final nextPrayerName = _getArabicPrayerName(nextPrayerResult.$2);
-          final bool isNextPrayer = prayer.name == nextPrayerName;
-
-          Color? rowColor;
-          if (isNextPrayer) {
-            rowColor =
-                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3);
-          }
-
-          return Container(
-            decoration: BoxDecoration(
-              color: rowColor,
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              child: InlineTextWidget(
-                _formatTime(prayer.time),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.normal,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        }),
+            textAlign: TextAlign.right,
+          ),
+        ),
+        // Prayer Time Cell
+        Container(
+          decoration:
+              BoxDecoration(color: rowColor, border: Border(bottom: border)),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          child: InlineTextWidget(
+            _formatTime(prayer.time),
+            style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.normal),
+            textAlign: TextAlign.center,
+          ),
+        ),
       ],
     );
   }
 
+  // Helper method to build the placeholder table to avoid code duplication
+  Widget _buildPlaceholderTable(BuildContext context) {
+    final placeholderTime = tz.TZDateTime.from(DateTime(1, 1, 1), tz.local);
+    final prayers = [
+      _PrayerTime('المغرب', placeholderTime),
+      _PrayerTime('العشاء', placeholderTime),
+      _PrayerTime('منتصف الليل', placeholderTime, isSunnah: true),
+      _PrayerTime('الثلث الأخير', placeholderTime, isSunnah: true),
+      _PrayerTime('الفجر', placeholderTime),
+      _PrayerTime('الشروق', placeholderTime),
+      _PrayerTime('الضحى', placeholderTime, isSunnah: true),
+      _PrayerTime('الظهر', placeholderTime),
+      _PrayerTime('العصر', placeholderTime),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Table(
+        columnWidths: const {0: FlexColumnWidth(2), 1: FlexColumnWidth(1)},
+        children: prayers
+            .map((prayer) => _buildTableRow(context, prayer, false))
+            .toList(),
+      ),
+    );
+  }
+
   String _formatTime(tz.TZDateTime time) {
-// Check if the time is our placeholder (using the unique date we set)
-    if (time.year == 1 && time.month == 1 && time.day == 1) {
+    if (time.year == 1) {
       return '--:--';
     }
-
     final period = (time.hour >= 12) ? 'م' : 'ص';
     final format = intl.DateFormat('hh:mm', 'en_US');
     return '${format.format(time)} $period';
   }
 
-  // Calculate Sunnah times using timezone-aware prayer times
-  Map<String, tz.TZDateTime> _calculateSunnahTimes(
-      Map<String, tz.TZDateTime> prayerTimes) {
-    final maghrib = prayerTimes['maghrib']!;
-    final fajr = prayerTimes['fajr']!;
-    final sunrise = prayerTimes['sunrise']!;
+  Map<String, tz.TZDateTime>? _calculateSunnahTimes(
+      Map<String, tz.TZDateTime> todaysPrayerTimes) {
+    final maghrib = todaysPrayerTimes['maghrib'];
+    final sunrise = todaysPrayerTimes['sunrise'];
+    if (maghrib == null || sunrise == null) return null;
 
-    // Calculate middle of the night (between Maghrib and Fajr)
-    final nightDuration = fajr.add(const Duration(days: 1)).difference(maghrib);
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final tomorrowsPrayers =
+        PrayerTimeings.getPrayersTimings(forDate: tomorrow);
+    final fajrTomorrow = tomorrowsPrayers?.fajr;
+    if (fajrTomorrow == null) return null;
+
+    final nightDuration =
+        tz.TZDateTime.from(fajrTomorrow, tz.local).difference(maghrib);
     final middleOfNight =
         maghrib.add(Duration(milliseconds: nightDuration.inMilliseconds ~/ 2));
-
-    // Calculate last third of the night
-    final lastThirdOfNight = fajr
+    final lastThirdOfNight = tz.TZDateTime.from(fajrTomorrow, tz.local)
         .subtract(Duration(milliseconds: nightDuration.inMilliseconds ~/ 3));
-
-    // Calculate Duha time (20 minutes after sunrise)
     final duhaTime = sunrise.add(const Duration(minutes: 20));
 
     return {
       'middleOfNight': middleOfNight,
       'lastThirdOfNight': lastThirdOfNight,
-      'duha': duhaTime,
+      'duha': duhaTime
     };
   }
 
-  // Convert English prayer names to Arabic
   String _getArabicPrayerName(String englishName) {
     switch (englishName.toLowerCase()) {
       case 'fajr':
-      case 'الفجر':
         return 'الفجر';
       case 'sunrise':
-      case 'الشروق':
         return 'الشروق';
       case 'dhuhr':
-      case 'الظهر':
         return 'الظهر';
       case 'asr':
-      case 'العصر':
         return 'العصر';
       case 'maghrib':
-      case 'المغرب':
         return 'المغرب';
       case 'isha':
-      case 'العشاء':
         return 'العشاء';
       default:
         return englishName;
@@ -266,13 +212,7 @@ class PrayerTimingsCard extends StatelessWidget {
 class _PrayerTime {
   final String name;
   final tz.TZDateTime time;
-  final bool isMainPrayer;
-  final String? englishName;
+  final bool isSunnah;
 
-  const _PrayerTime(
-    this.name,
-    this.time, {
-    this.isMainPrayer = false,
-    this.englishName,
-  });
+  const _PrayerTime(this.name, this.time, {this.isSunnah = false});
 }

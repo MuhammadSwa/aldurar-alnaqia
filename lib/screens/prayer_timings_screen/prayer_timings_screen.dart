@@ -12,22 +12,36 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:text_responsive/text_responsive.dart';
 
-class PrayerTimingsScreen extends StatelessWidget {
+// --- REFACTORED: Converted to StatefulWidget ---
+class PrayerTimingsScreen extends StatefulWidget {
   const PrayerTimingsScreen({super.key});
 
-  static final GlobalKey<ScaffoldState> _scaffoldKey =
-      GlobalKey<ScaffoldState>();
+  @override
+  State<PrayerTimingsScreen> createState() => _PrayerTimingsScreenState();
+}
+
+class _PrayerTimingsScreenState extends State<PrayerTimingsScreen> {
+  // The ScaffoldKey should be part of the State, not static.
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
-  Widget build(BuildContext context) {
-    // Initialize controllers here - only once when screen is built
+  void initState() {
+    super.initState();
+
+    // --- REFACTORED: Initialize controllers here, safely and only once. ---
+    // fenix: true ensures they persist even if this screen is removed from the widget tree.
     Get.lazyPut(() => PrayerTimingsController(), fenix: true);
     Get.lazyPut(() => HijriOffsetController(), fenix: true);
 
-    Get.lazyPut(() => GlobalDrawerController());
-// Get the global drawer controller
-    final drawerController = Get.find<GlobalDrawerController>();
+    // You can also initialize your drawer controller here if it's specific to this screen
+    // or keep it in main() if it's truly global.
+    Get.lazyPut(() => GlobalDrawerController(), fenix: true);
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    // Get the global drawer controller
+    final drawerController = Get.find<GlobalDrawerController>();
     // Register this scaffold key
     drawerController.registerScaffoldKey(_scaffoldKey);
 
@@ -36,9 +50,10 @@ class PrayerTimingsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('مواقيت الصلاة'),
         leading: IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            tooltip: 'فتح القائمة'),
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          tooltip: 'فتح القائمة',
+        ),
       ),
       drawer: const MyDrawer(),
       body: const SingleChildScrollView(
@@ -139,32 +154,42 @@ class _DateDisplayRow extends StatelessWidget {
         Expanded(
           child: Card(
             child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Center(
-                  child: GetBuilder<HijriOffsetController>(
-                    builder: (controller) {
-                      final date = controller.getHijriDayByoffest();
-                      return HijriDateWidget(date: date);
-                    },
-                  ),
-                )),
+              padding: const EdgeInsets.all(8.0),
+              child: Center(
+                // The redundant GetBuilder has been removed.
+                // HijriDateWidget handles its own updates perfectly.
+                child: const HijriDateWidget(),
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 6),
         const Expanded(
           child: Card(
-              child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Center(child: _GeorgianDateWidget()),
-          )),
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Center(
+                // Use our new, efficient Georgian Date widget.
+                child: _GeorgianDateWidget(),
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _GeorgianDateWidget extends StatelessWidget {
+class _GeorgianDateWidget extends StatefulWidget {
   const _GeorgianDateWidget();
+
+  @override
+  State<_GeorgianDateWidget> createState() => _GeorgianDateWidgetState();
+}
+
+class _GeorgianDateWidgetState extends State<_GeorgianDateWidget> {
+  late DateTime _currentDate;
+  Timer? _timer;
 
   static const Map<int, String> _arabicMonths = {
     1: 'يناير',
@@ -181,25 +206,47 @@ class _GeorgianDateWidget extends StatelessWidget {
     12: 'ديسمبر',
   };
 
+  @override
+  void initState() {
+    super.initState();
+    _currentDate = DateTime.now();
+    _scheduleNextUpdate();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Important: prevent memory leaks
+    super.dispose();
+  }
+
+  void _scheduleNextUpdate() {
+    final now = DateTime.now();
+    // Calculate the exact moment of the next midnight.
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final durationUntilMidnight = nextMidnight.difference(now);
+
+    // Set a timer that will fire only once, precisely at midnight.
+    _timer = Timer(durationUntilMidnight, () {
+      if (mounted) {
+        setState(() {
+          _currentDate = DateTime.now();
+        });
+        // After updating, schedule the *next* update for the following midnight.
+        _scheduleNextUpdate();
+      }
+    });
+  }
+
   String _formatDate(DateTime date) {
     return '${date.day} ${_arabicMonths[date.month]} ${date.year}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DateTime>(
-      stream: Stream.periodic(
-        const Duration(minutes: 1),
-        (_) => DateTime.now(),
-      ),
-      initialData: DateTime.now(),
-      builder: (context, snapshot) {
-        return InlineTextWidget(
-          style: Theme.of(context).textTheme.titleMedium,
-          _formatDate(snapshot.data!),
-          textDirection: TextDirection.rtl,
-        );
-      },
+    return InlineTextWidget(
+      style: Theme.of(context).textTheme.titleMedium,
+      _formatDate(_currentDate),
+      textDirection: TextDirection.rtl,
     );
   }
 }
