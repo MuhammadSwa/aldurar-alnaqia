@@ -1,5 +1,7 @@
 // router/app_router.dart
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
@@ -14,7 +16,6 @@ import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
 import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
-import 'package:aldurar_alnaqia/widgets/zikrSlider_screen.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
@@ -148,13 +149,14 @@ class AppRouter {
 
   // Nested routes
   static GoRoute _createTodayZikrRoute() {
+    final controller = Get.put(PrayerTimingsController());
     return GoRoute(
       path: 'todaysZikr',
       name: RouteNames.todayZikr,
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
           DayAzkarList(
-            dayNum: todaysNum(),
+            dayNum: controller.islamicWeekday.value,
             route: '${_getCurrentPath(state)}/zikr',
           ),
         );

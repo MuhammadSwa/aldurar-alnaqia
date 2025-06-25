@@ -7,77 +7,72 @@ class NextPrayerCountdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-        child: GetX<PrayerTimingsController>(
-          builder: (controller) {
-            // Show loading state while initializing
-            if (!controller.isInitialized.value) {
-              return const Column(
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 8),
-                  Text('جاري تحميل أوقات الصلاة...'),
-                ],
-              );
-            }
+    return SizedBox(
+      height: 120, // Fixed height
+      child: Card(
+        elevation: 4,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            child: GetX<PrayerTimingsController>(
+              builder: (controller) {
+                if (!controller.isInitialized.value) {
+                  return const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 8),
+                      Text('جاري تحميل أوقات الصلاة...'),
+                    ],
+                  );
+                }
 
-            // Get current countdown values
-            final timeLeft = controller.timeLeftForNextPrayer.value.$1;
-            final prayerName = controller.timeLeftForNextPrayer.value.$2;
+                final timeLeft = controller.timeLeftForNextPrayer.value.$1;
+                final prayerName = controller.timeLeftForNextPrayer.value.$2;
 
-            // Check if prayer timings are available
-            if (controller.prayerTimings == null) {
-              return const Text(
-                'برجاء تحديد الموقع أولاً',
-                style: TextStyle(fontSize: 16),
-              );
-            }
+                if (prayerName.isEmpty) {
+                  return const Text(
+                    'خطأ في حساب أوقات الصلاة',
+                    style: TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  );
+                }
 
-            // Handle edge case where prayer name is empty
-            if (prayerName.isEmpty) {
-              return const Text(
-                'خطأ في حساب أوقات الصلاة',
-                style: TextStyle(fontSize: 16),
-              );
-            }
-
-            return Column(
-              children: [
-                Text(
-                  prayerName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'بعد ${_formatDuration(timeLeft)}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            );
-          },
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      prayerName,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'بعد ${_formatDuration(timeLeft)}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
   }
 
   String _formatDuration(Duration duration) {
-    // Handle negative durations (shouldn't happen, but safety first)
     if (duration.isNegative) {
       return "00:00:00";
     }
-
     String twoDigits(int n) => n.toString().padLeft(2, "0");
-
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
-
     return "${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}";
   }
 }

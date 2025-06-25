@@ -7,16 +7,19 @@ import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 class PrayerTimingsController extends GetxController {
-  // --- REFACTORED PART ---
   // Make prayerTimings an Rx variable to be observable.
   final Rx<PrayerTimes?> prayerTimings = Rx<PrayerTimes?>(null);
-  // --- END REFACTORED PART ---
+
+  /// The current Islamic day of the week (Monday=1, Sunday=7).
+  /// This automatically updates after Maghrib.
+  final RxInt islamicWeekday = DateTime.now().weekday.obs;
 
   Rx<(Duration, String)> timeLeftForNextPrayer =
       (const Duration(seconds: 0), '').obs;
   RxBool isInitialized = false.obs;
 
   Timer? _timer;
+  Timer? _dayChangeTimer;
 
   @override
   void onInit() {
@@ -27,6 +30,7 @@ class PrayerTimingsController extends GetxController {
   @override
   void onClose() {
     _timer?.cancel();
+    _dayChangeTimer?.cancel();
     super.onClose();
   }
 
@@ -56,16 +60,13 @@ class PrayerTimingsController extends GetxController {
       }
     }
 
-    // --- REFACTORED PART ---
-    // Assign to the .value of the Rx variable
     prayerTimings.value = PrayerTimeings.getPrayersTimings();
-    // --- END REFACTORED PART ---
 
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
     isInitialized.value = true;
 
+    _updateAndScheduleDayChange();
     _startTimer();
-    // No need for update() here, Rx variables handle it.
   }
 
   void _startTimer() {
@@ -99,14 +100,69 @@ class PrayerTimingsController extends GetxController {
       SharedPreferencesService.setHighLatitudeRule(highLatitudeRule);
     }
 
-    // --- REFACTORED PART ---
-    // Assign to the .value of the Rx variable
     prayerTimings.value = PrayerTimeings.getPrayersTimings();
-    // --- END REFACTORED PART ---
 
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
+
+    // Re-calculate and re-schedule the day change when settings change ---
+    _updateAndScheduleDayChange();
     _startTimer();
-    // No need for update() here.
+  }
+
+  void _updateIslamicWeekday() {
+    final now = tz.TZDateTime.now(tz.local);
+    final prayers = prayerTimings.value;
+
+    if (prayers?.maghrib == null) {
+      // Fallback to standard weekday if prayer times aren't available
+      islamicWeekday.value = now.weekday;
+      return;
+    }
+
+    DateTime effectiveDate = now;
+    final maghribTime = tz.TZDateTime.from(prayers!.maghrib!, tz.local);
+
+    // If it's already past today's Maghrib, the Islamic day is for tomorrow
+    if (now.isAfter(maghribTime)) {
+      effectiveDate = now.add(const Duration(days: 1));
+    }
+
+    islamicWeekday.value = effectiveDate.weekday;
+  }
+
+  // --- NEW METHOD to schedule the next update timer ---
+  void _updateAndScheduleDayChange() {
+    // 1. Update the day immediately
+    _updateIslamicWeekday();
+
+    // 2. Cancel any old timer
+    _dayChangeTimer?.cancel();
+
+    // 3. Schedule the next update
+    final prayers = prayerTimings.value;
+    if (prayers?.maghrib == null) return; // Can't schedule without Maghrib time
+
+    final now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime nextMaghrib = tz.TZDateTime.from(prayers!.maghrib!, tz.local);
+
+    // If we've already passed today's Maghrib, find tomorrow's
+    if (now.isAfter(nextMaghrib)) {
+      final tomorrowsPrayers = PrayerTimeings.getPrayersTimings(
+          forDate: now.add(const Duration(days: 1)));
+      if (tomorrowsPrayers?.maghrib != null) {
+        nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers!.maghrib!, tz.local);
+      } else {
+        return; // Can't schedule if tomorrow's time is unavailable
+      }
+    }
+
+    final timeUntilNextMaghrib = nextMaghrib.difference(now);
+
+    // Set a timer to fire at the next Maghrib
+    _dayChangeTimer = Timer(timeUntilNextMaghrib, () {
+      // When it fires, run this whole process again
+      _updateAndScheduleDayChange();
+    });
   }
 
   void updateNextPrayer() {

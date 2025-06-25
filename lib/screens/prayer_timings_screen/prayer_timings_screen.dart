@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/day_name.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
@@ -12,7 +13,6 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:text_responsive/text_responsive.dart';
 
-// --- REFACTORED: Converted to StatefulWidget ---
 class PrayerTimingsScreen extends StatefulWidget {
   const PrayerTimingsScreen({super.key});
 
@@ -64,7 +64,18 @@ class _PrayerTimingsScreenState extends State<PrayerTimingsScreen> {
             SizedBox(height: 14),
             _DateDisplayRow(),
             SizedBox(height: 8),
-            NextPrayerCountdown(),
+            // NextPrayerCountdown(),
+            Row(
+              children: [
+                Expanded(
+                  child: ArabicDayNameWidget(),
+                ),
+                SizedBox(width: 16), // Space between widgets
+                Expanded(
+                  child: NextPrayerCountdown(),
+                ),
+              ],
+            ),
             SizedBox(height: 8),
             PrayerTimingsCard(),
           ],
@@ -148,7 +159,7 @@ class _DateDisplayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Expanded(
@@ -163,8 +174,8 @@ class _DateDisplayRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 6),
-        const Expanded(
+        SizedBox(width: 6),
+        Expanded(
           child: Card(
             child: Padding(
               padding: EdgeInsets.all(8.0),

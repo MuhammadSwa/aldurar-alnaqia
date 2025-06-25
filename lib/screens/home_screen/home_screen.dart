@@ -1,5 +1,6 @@
 import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,8 @@ class HomePage extends StatelessWidget {
     final drawerController = Get.find<GlobalDrawerController>();
 
     drawerController.registerScaffoldKey(_scaffoldKey);
+
+    final controller = Get.put(PrayerTimingsController());
 
     return Scaffold(
       key: _scaffoldKey,
@@ -67,28 +70,37 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
+            Obx(() {
+              final dayNum = controller.islamicWeekday.value;
+              final dayIndex = dayNum - 1;
 
-            ListTile(
-              title: Text(
-                'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-              ),
-              leading: const Icon(Icons.arrow_right),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                context.go('/home/todaysZikr');
-              },
-            ),
-            ListTile(
-              title: Text(
-                'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-              ),
-              leading: const Icon(Icons.arrow_right),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                context.go(
-                    '/home/zikr/${dalayilAlkhayratCollection[todaysNum() - 1].title}');
-              },
-            ),
+              return Column(
+                children: [
+                  ListTile(
+                    title: Text(
+                      'ورد يوم ${arabicWeekdays[dayIndex]}',
+                    ),
+                    leading: const Icon(Icons.arrow_right),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      context.go('/home/todaysZikr');
+                    },
+                  ),
+                  ListTile(
+                    title: Text(
+                      'دلائل الخيرات ورد يوم ${arabicWeekdays[dayIndex]}',
+                    ),
+                    leading: const Icon(Icons.arrow_right),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      context.go(
+                          '/home/zikr/${dalayilAlkhayratCollection[dayIndex].title}');
+                    },
+                  ),
+                ],
+              );
+            }),
+
             // ZikrOfTheDayTile(
             //     title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
             //     route: '/home/todaysZikr'),

@@ -7,7 +7,6 @@ enum Day { sat, sun, mon, tue, wed, thu, fri }
 
 // num,ara - 7: الأحد
 int todaysNum() {
-  print(DateTime.now().weekday);
   return DateTime.now().weekday;
 }
 
