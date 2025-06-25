@@ -8,7 +8,7 @@ class NextPrayerCountdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 120, // Fixed height
+      height: 100, // Fixed height
       child: Card(
         elevation: 4,
         child: Center(

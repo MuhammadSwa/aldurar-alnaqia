@@ -71,6 +71,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
             Obx(() {
+              // TODO: make it truely reactive(change after maghrib)
               final dayNum = controller.islamicWeekday.value;
               final dayIndex = dayNum - 1;
 

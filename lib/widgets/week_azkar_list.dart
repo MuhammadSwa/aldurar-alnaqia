@@ -10,7 +10,6 @@ import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
 import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
-import 'package:aldurar_alnaqia/widgets/zikrSlider_screen.dart';
 // TODO: instad of engDay make it numbers for previty and List
 
 class DayAzkarList extends StatelessWidget {

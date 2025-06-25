@@ -14,11 +14,11 @@ class ArabicDayNameWidget extends StatefulWidget {
 
 class _ArabicDayNameWidgetState extends State<ArabicDayNameWidget> {
   static const Map<int, String> _arabicDayNames = {
-    7: 'الأحد', 
-    1: 'الإثنين', 
-    2: 'الثلاثاء', 
-    3: 'الأربعاء', 
-    4: 'الخميس', 
+    7: 'الأحد',
+    1: 'الإثنين',
+    2: 'الثلاثاء',
+    3: 'الأربعاء',
+    4: 'الخميس',
     5: 'الجمعة',
     6: 'السبت',
   };
@@ -103,9 +103,9 @@ class _ArabicDayNameWidgetState extends State<ArabicDayNameWidget> {
         ),
       );
     }
-    
+
     return SizedBox(
-      height: 120, // Fixed height to match NextPrayerCountdown
+      height: 100, // Fixed height to match NextPrayerCountdown
       child: Card(
         elevation: 4,
         child: Center(
@@ -114,8 +114,8 @@ class _ArabicDayNameWidgetState extends State<ArabicDayNameWidget> {
             child: Text(
               _currentDayName!,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontSize: 30,
+                  ),
               textAlign: TextAlign.center,
             ),
           ),

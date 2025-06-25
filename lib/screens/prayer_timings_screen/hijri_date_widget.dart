@@ -9,6 +9,7 @@ import 'package:hijri/hijri_calendar.dart';
 // Make sure to import your other controllers and utility classes
 import 'package:timezone/timezone.dart' as tz;
 
+// TODO: make it truely reactive(change after maghrib)
 class HijriDateWidget extends StatefulWidget {
   const HijriDateWidget({super.key});
 
