@@ -72,6 +72,11 @@ class AwradListScreen extends StatelessWidget {
               scrollable: false,
             ),
 
+            // for (var zikr in azkarTitles) {
+            //   return ListTile(
+            //
+            //   )
+            //   }
             // TODO: hack
             const AzkarListViewWidget(
               // titles: [...tareeqaBiosCollection.map((e) => e.title)],

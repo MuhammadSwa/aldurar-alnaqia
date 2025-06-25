@@ -17,37 +17,67 @@ class PrayerTimingsCard extends StatelessWidget {
           // Use timezone-aware prayer times instead of raw prayerTimes
           final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
 
+          // Define a placeholder time to use when real times are not available
+          final placeholderTime =
+              tz.TZDateTime.from(DateTime(1, 1, 1), tz.local);
+
+// Determine which map of prayer times to use.
+          // If real times are null, create a map of placeholders.
+          final Map<String, tz.TZDateTime> effectivePrayerTimes;
+          final Map<String, tz.TZDateTime> sunnahTimes;
+
+          // if (timezonedPrayerTimes == null) {
+          //   return const Padding(
+          //     padding: EdgeInsets.all(20.0),
+          //     child: Text(
+          //       'برجاء تحديد الموقع لعرض المواقيت',
+          //       textAlign: TextAlign.center,
+          //       style: TextStyle(fontSize: 16),
+          //     ),
+          //   );
+          // }
+
           if (timezonedPrayerTimes == null) {
-            return const Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Text(
-                'برجاء تحديد الموقع لعرض المواقيت',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
-              ),
-            );
+            // If no location is set, use placeholders for all times
+            effectivePrayerTimes = {
+              'maghrib': placeholderTime,
+              'isha': placeholderTime,
+              'fajr': placeholderTime,
+              'sunrise': placeholderTime,
+              'dhuhr': placeholderTime,
+              'asr': placeholderTime,
+            };
+            sunnahTimes = {
+              'middleOfNight': placeholderTime,
+              'lastThirdOfNight': placeholderTime,
+              'duha': placeholderTime,
+            };
+          } else {
+            // If location is set, use the real times and calculate Sunnah times
+            effectivePrayerTimes = timezonedPrayerTimes;
+            sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
           }
 
           // Calculate Sunnah times using timezone-aware times
-          final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
+          // final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
 
           final prayers = [
-            _PrayerTime('المغرب', timezonedPrayerTimes['maghrib']!,
+            _PrayerTime('المغرب', effectivePrayerTimes['maghrib']!,
                 isMainPrayer: true, englishName: 'maghrib'),
-            _PrayerTime('العشاء', timezonedPrayerTimes['isha']!,
+            _PrayerTime('العشاء', effectivePrayerTimes['isha']!,
                 isMainPrayer: true, englishName: 'isha'),
             _PrayerTime('منتصف الليل', sunnahTimes['middleOfNight']!,
                 isMainPrayer: false),
             _PrayerTime('الثلث الأخير', sunnahTimes['lastThirdOfNight']!,
                 isMainPrayer: false),
-            _PrayerTime('الفجر', timezonedPrayerTimes['fajr']!,
+            _PrayerTime('الفجر', effectivePrayerTimes['fajr']!,
                 isMainPrayer: true, englishName: 'fajr'),
-            _PrayerTime('الشروق', timezonedPrayerTimes['sunrise']!,
+            _PrayerTime('الشروق', effectivePrayerTimes['sunrise']!,
                 isMainPrayer: true, englishName: 'sunrise'),
             _PrayerTime('الضحى', sunnahTimes['duha']!, isMainPrayer: false),
-            _PrayerTime('الظهر', timezonedPrayerTimes['dhuhr']!,
+            _PrayerTime('الظهر', effectivePrayerTimes['dhuhr']!,
                 isMainPrayer: true, englishName: 'dhuhr'),
-            _PrayerTime('العصر', timezonedPrayerTimes['asr']!,
+            _PrayerTime('العصر', effectivePrayerTimes['asr']!,
                 isMainPrayer: true, englishName: 'asr'),
           ];
 
@@ -170,6 +200,11 @@ class PrayerTimingsCard extends StatelessWidget {
   }
 
   String _formatTime(tz.TZDateTime time) {
+// Check if the time is our placeholder (using the unique date we set)
+    if (time.year == 1 && time.month == 1 && time.day == 1) {
+      return '--:--';
+    }
+
     final period = (time.hour >= 12) ? 'م' : 'ص';
     final format = intl.DateFormat('hh:mm', 'en_US');
     return '${format.format(time)} $period';

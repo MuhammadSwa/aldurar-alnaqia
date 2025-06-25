@@ -29,8 +29,6 @@ class HeliaNasabScreen extends StatelessWidget {
   }
 }
 
-// TareeqaSanadScreen
-//
 class TareeqaSanadScreen extends StatelessWidget {
   const TareeqaSanadScreen({super.key});
 
@@ -39,49 +37,82 @@ class TareeqaSanadScreen extends StatelessWidget {
     final title = sanadAltareeqa.title;
 
     return Scaffold(
-        appBar: AppBar(
-          title: Text(title),
+      appBar: AppBar(title: Text(title)),
+      body: _buildBody(title),
+    );
+  }
+
+  Widget _buildBody(String title) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildPdfContainer(title, constraints),
+              ZikrContentWidget(title: title),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPdfContainer(String title, BoxConstraints constraints) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: constraints.maxHeight * 0.9,
+      ),
+      child: PdfViewer.asset(
+        'assets/pdfs/$title.pdf',
+        params: _createRtlPdfParams(),
+      ),
+    );
+  }
+
+  PdfViewerParams _createRtlPdfParams() {
+    return PdfViewerParams(
+      layoutPages: (pages, params) {
+        return _createRtlPageLayout(pages, params);
+      },
+    );
+  }
+
+  PdfPageLayout _createRtlPageLayout(
+      List<PdfPage> pages, PdfViewerParams params) {
+    final height = _calculateMaxHeight(pages);
+    final pageLayouts = <Rect>[];
+
+    // Calculate total width needed for all pages
+    double totalWidth = _calculateTotalWidth(pages, params);
+    double x = totalWidth - params.margin;
+
+    // Layout pages from right to left
+    for (final page in pages) {
+      x -= page.width;
+      pageLayouts.add(
+        Rect.fromLTWH(
+          x,
+          (height - page.height) / 2, // Center vertically
+          page.width,
+          page.height,
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: Column(children: [
-                ConstrainedBox(
-                  constraints:
-                      BoxConstraints(maxHeight: constraints.maxHeight * .9),
-                  child: PdfViewer.asset(
-                    'assets/pdfs/$title.pdf',
-                    params: PdfViewerParams(layoutPages: (pages, params) {
-                      final height = pages.fold(
-                        0.0,
-                        (prev, page) {
-                          return max(prev, page.height);
-                          // return max(prev, page.height) + params.margin * 2;
-                        },
-                      );
-                      final pageLayouts = <Rect>[];
-                      double x = params.margin;
-                      // TODO: replace for to for in else where
-                      for (final page in pages) {
-                        // page. = PdfPageRotation.clockwise180;
-                        pageLayouts.add(
-                          Rect.fromLTWH(x, (height - page.height), page.width,
-                              page.height),
-                        );
-                        x += page.width + params.margin;
-                      }
-                      return PdfPageLayout(
-                          pageLayouts: pageLayouts,
-                          documentSize: Size(x, height));
-                    }),
-                  ),
-                ),
-                ZikrContentWidget(
-                  title: title,
-                ),
-              ]),
-            );
-          },
-        ));
+      );
+      x -= params.margin;
+    }
+
+    return PdfPageLayout(
+      pageLayouts: pageLayouts,
+      documentSize: Size(totalWidth, height + params.margin * 2),
+    );
+  }
+
+  double _calculateMaxHeight(List<PdfPage> pages) {
+    return pages.fold(0.0, (maxHeight, page) => max(maxHeight, page.height));
+  }
+
+  double _calculateTotalWidth(List<PdfPage> pages, PdfViewerParams params) {
+    final pagesWidth =
+        pages.fold(0.0, (totalWidth, page) => totalWidth + page.width);
+    return pagesWidth + (params.margin * (pages.length + 1));
   }
 }
