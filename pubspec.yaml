@@ -82,21 +82,21 @@ flutter_launcher_icons:
   # android: "launcher_icon"
   android: true
   ios: true
-  image_path: "app_logo.png"
-  image_path_android: "app_logo.png"
+  image_path: "app_logo_cropped.png"
+  image_path_android: "app_logo_cropped.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true
-    image_path: "app_logo.png"
+    image_path: "app_logo_cropped.png"
     background_color: "#hexcode"
     theme_color: "#hexcode"
   windows:
     generate: true
-    image_path: "app_logo.png"
+    image_path: "app_logo_cropped.png"
     icon_size: 48 # min:48, max:256, default: 48
   macos:
     generate: true
-    image_path: "app_logo.png"
+    image_path: "app_logo_cropped.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

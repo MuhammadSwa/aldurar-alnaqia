@@ -40,15 +40,24 @@ class YousriaBeginningDayDropDown extends StatelessWidget {
               DropdownMenuItem(
                 alignment: Alignment.centerRight,
                 value: 0,
-                child: Text('اليوم (${araDayName(0)})'),
+                child: Text(
+                  'اليوم (${araDayName(0)})',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
             } else ...{
               DropdownMenuItem(
                 alignment: Alignment.centerRight,
                 value: i,
                 child: araDayName(i) == 'الجمعة'
-                    ? Text('${araDayName(i)} السابقة')
-                    : Text('${araDayName(i)} السابق'),
+                    ? Text(
+                        '${araDayName(i)} السابقة',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      )
+                    : Text(
+                        '${araDayName(i)} السابق',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
               )
             }
         ],
