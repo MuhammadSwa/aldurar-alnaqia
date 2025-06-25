@@ -136,18 +136,10 @@ class _DateDisplayRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        const Expanded(
-          child: Card(
-              child: Padding(
-            padding: EdgeInsets.all(12.0),
-            child: Center(child: _GeorgianDateWidget()),
-          )),
-        ),
-        const SizedBox(width: 12),
         Expanded(
           child: Card(
             child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(8.0),
                 child: Center(
                   child: GetBuilder<HijriOffsetController>(
                     builder: (controller) {
@@ -157,6 +149,14 @@ class _DateDisplayRow extends StatelessWidget {
                   ),
                 )),
           ),
+        ),
+        const SizedBox(width: 6),
+        const Expanded(
+          child: Card(
+              child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Center(child: _GeorgianDateWidget()),
+          )),
         ),
       ],
     );

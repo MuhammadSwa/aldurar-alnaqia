@@ -8,7 +8,7 @@ abstract class BaseTheme {
   static const double bodyMediumHeight = 1.8;
 
   static const double bodySmallFontSize = 14;
-  static const double titleMediumfontSize = 24;
+  static const double titleMediumfontSize = 20;
 }
 
 final darkTheme = ThemeData(
@@ -151,6 +151,9 @@ final lightTheme = ThemeData(
       bodySmall: TextStyle(
         color: Colors.grey.shade600,
         fontSize: 14,
+      ),
+      titleMedium: const TextStyle(
+        fontSize: BaseTheme.titleMediumfontSize,
       ),
       // for numbering e.g. (12.)
       labelSmall: TextStyle(

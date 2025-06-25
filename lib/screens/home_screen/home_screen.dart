@@ -72,7 +72,7 @@ class HomePage extends StatelessWidget {
               title: Text(
                 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
               ),
-              // leading: const Icon(Icons.today_rounded),
+              leading: const Icon(Icons.arrow_right),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 context.go('/home/todaysZikr');
@@ -82,7 +82,7 @@ class HomePage extends StatelessWidget {
               title: Text(
                 'دلائل الخيرات ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
               ),
-              // leading: const Icon(Icons.today_rounded),
+              leading: const Icon(Icons.arrow_right),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 context.go(

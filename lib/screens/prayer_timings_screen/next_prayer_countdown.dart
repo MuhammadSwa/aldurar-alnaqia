@@ -10,7 +10,7 @@ class NextPrayerCountdown extends StatelessWidget {
     return Card(
       elevation: 4,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         child: GetX<PrayerTimingsController>(
           builder: (controller) {
             // Show loading state while initializing
@@ -35,7 +35,6 @@ class NextPrayerCountdown extends StatelessWidget {
                 style: TextStyle(fontSize: 16),
               );
             }
-
 
             // Handle edge case where prayer name is empty
             if (prayerName.isEmpty) {
