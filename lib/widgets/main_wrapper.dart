@@ -1,3 +1,4 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +19,7 @@ class GlobalDrawerController extends GetxController {
     _scaffoldKeys.remove(key);
   }
 
-bool hasOpenDrawer() {
+  bool hasOpenDrawer() {
     for (final key in _scaffoldKeys) {
       if (key.currentState?.isDrawerOpen == true) {
         return true;
@@ -106,10 +107,12 @@ class _MainWrapperState extends State<MainWrapper> {
                       child: widget.navigationShell,
                     ),
                     Obx(() {
-                      if (c.url.value.isNotEmpty) {
+                      // Show the widget if the audio service is in any state
+                      // EXCEPT for 'idle' (which means it's fully stopped).
+                      if (c.processState.value != AudioProcessingState.idle) {
                         return const AudioControllerWidget();
                       } else {
-                        return Container();
+                        return Container(); // Return an empty container when idle
                       }
                     }),
                   ],

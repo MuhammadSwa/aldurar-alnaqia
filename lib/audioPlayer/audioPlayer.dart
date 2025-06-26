@@ -1,173 +1,143 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/get_state_manager.dart';
-import 'package:get/instance_manager.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_media_kit/just_audio_media_kit.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:get/get.dart';
 
-// call initPlayer then stop => works fine
-// call initplayer after initPlayer => works fine
-// classing intPlayer twice then stop => problem
-// done with the help of this great article :( but with get_rx.
-// https://suragch.medium.com/steaming-audio-in-flutter-with-just-audio-7435fcf672bf
+enum ButtonState { paused, playing, loading }
+
 class Controller extends GetxController {
-  var url = ''.obs;
-  var speed = RxDouble(1);
+  final _audioHandler = Get.find<AudioHandler>();
+
+  // Observable properties
+  var currentMediaId = ''.obs;
+  var speed = 1.0.obs;
   var title = ''.obs;
+  var processState = AudioProcessingState.idle.obs;
+  var buttonState = ButtonState.loading.obs;
 
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  // Progress bar properties
+  var currentPosition = Duration.zero.obs;
+  var bufferedPosition = Duration.zero.obs;
+  var totalDuration = Duration.zero.obs;
 
-  final progressBarState = ProgressBarState(
-    current: Duration.zero,
-    buffered: Duration.zero,
-    total: Duration.zero,
-  ).obs;
+  @override
+  void onInit() {
+    super.onInit();
+    _listenToPlaybackState();
+    _listenToCurrentMediaItem();
+  }
 
-  var buttonState = _ButtonState.loading.obs;
+  void initPlayer(
+      String id, String newUrl, String newTitle, bool fileExists) async {
+    await _audioHandler.customAction('init', {
+      'id': id,
+      'url': newUrl,
+      'title': newTitle,
+      'fileExists': fileExists,
+    });
+  }
 
-  initPlayer(String newUrl, String newTitle, bool fileExists) async {
-    url.value = newUrl;
-    title.value = newTitle;
+  void _listenToPlaybackState() {
+    _audioHandler.playbackState.listen((PlaybackState state) {
+      // Update progress values
+      currentPosition.value = state.updatePosition;
+      bufferedPosition.value = state.bufferedPosition;
 
-    JustAudioMediaKit.ensureInitialized();
+      // Update button state
+      final isPlaying = state.playing;
+      final processingState = state.processingState;
 
-    if (fileExists) {
-      final String supportDir = await () async {
-        final dir = await getApplicationSupportDirectory();
-        return dir.path;
-      }();
-      _audioPlayer.setFilePath('$supportDir/narrations/$newTitle.mp3');
-    } else {
-      _audioPlayer.setUrl(url.value);
-    }
-
-    _audioPlayer.play();
-
-    _audioPlayer.playerStateStream.listen((playerState) {
-      final isPlaying = playerState.playing;
-      final processingState = playerState.processingState;
-      if (processingState == ProcessingState.loading ||
-          processingState == ProcessingState.buffering) {
-        buttonState.value = _ButtonState.loading;
+      if (processingState == AudioProcessingState.loading ||
+          processingState == AudioProcessingState.buffering) {
+        buttonState.value = ButtonState.loading;
       } else if (!isPlaying) {
-        buttonState.value = _ButtonState.paused;
-      } else if (processingState != ProcessingState.completed) {
-        buttonState.value = _ButtonState.playing;
+        buttonState.value = ButtonState.paused;
+      } else if (processingState != AudioProcessingState.completed) {
+        buttonState.value = ButtonState.playing;
       } else {
-        // TODO: make it go back to 0 with pausing
-        // completed
-        // _audioPlayer.seek(Duration.zero);
-        // _audioPlayer.pause();
+        // When completed, reset
+        _audioHandler.seek(Duration.zero);
+        _audioHandler.pause();
+      }
+
+      // Update speed and processing state
+      speed.value = state.speed;
+      processState.value = state.processingState;
+    });
+  }
+
+  void _listenToCurrentMediaItem() {
+    _audioHandler.mediaItem.listen((MediaItem? mediaItem) {
+      if (mediaItem != null) {
+        title.value = mediaItem.title;
+        totalDuration.value = mediaItem.duration ?? Duration.zero;
+        currentMediaId.value = mediaItem.id;
+      } else {
+        title.value = '';
+        totalDuration.value = Duration.zero;
+        currentMediaId.value = '';
       }
     });
+  }
 
-    _audioPlayer.positionStream.listen((position) {
-      final oldState = progressBarState.value;
-      progressBarState.value = ProgressBarState(
-        current: position,
-        buffered: oldState.buffered,
-        total: oldState.total,
-      );
-    });
+  // Playback controls
+  void play() => _audioHandler.play();
+  void pause() => _audioHandler.pause();
+  void seek(Duration position) => _audioHandler.seek(position);
 
-    _audioPlayer.bufferedPositionStream.listen((bufferedPosition) {
-      final oldState = progressBarState.value;
-      progressBarState.value = ProgressBarState(
-        current: oldState.current,
-        buffered: bufferedPosition,
-        total: oldState.total,
-      );
-    });
-
-    _audioPlayer.durationStream.listen((totalDuration) {
-      final oldState = progressBarState.value;
-      progressBarState.value = ProgressBarState(
-        current: oldState.current,
-        buffered: oldState.buffered,
-        total: totalDuration ?? Duration.zero,
-      );
-    });
+  void setSpeed(double s) {
+    _audioHandler.customAction('setSpeed', {'speed': s});
   }
 
   void stopPlayer() {
-    url.value = '';
-    // TODO: read docs and use dispose or stop withthout causing an error;
-    _audioPlayer.pause();
-  }
-
-  void play() {
-    _audioPlayer.play();
-  }
-
-  void pause() {
-    _audioPlayer.pause();
-  }
-
-  void seek(Duration position) {
-    _audioPlayer.seek(position);
-  }
-
-  void setSpeed(double s) {
-    speed.value = s;
-    _audioPlayer.setSpeed(s);
+    // title.value = '';
+    // currentPosition.value = Duration.zero;
+    // bufferedPosition.value = Duration.zero;
+    // totalDuration.value = Duration.zero;
+    _audioHandler.stop();
   }
 }
-
-class ProgressBarState {
-  ProgressBarState({
-    required this.current,
-    required this.buffered,
-    required this.total,
-  });
-  final Duration current;
-  final Duration buffered;
-  final Duration total;
-}
-
-//
-enum _ButtonState { paused, playing, loading }
 
 class AudioControllerWidget extends StatelessWidget {
   const AudioControllerWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(Controller());
+    final c = Get.find<Controller>();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Column(
         children: [
+          // Title and close button
           Stack(
             alignment: Alignment.center,
             children: [
               Align(
                 alignment: Alignment.centerRight,
                 child: IconButton(
-                  onPressed: () {
-                    c.stopPlayer();
-                  },
+                  onPressed: c.stopPlayer,
                   icon: const Icon(Icons.close),
                 ),
               ),
               Align(
                 alignment: Alignment.center,
-                child: Obx(() {
-                  return Text(c.title.value);
-                }),
+                child: Obx(() => Text(c.title.value)),
               )
             ],
           ),
+
+          // Progress bar
           Obx(() {
             return ProgressBar(
-              progress: c.progressBarState.value.current,
-              buffered: c.progressBarState.value.buffered,
-              total: c.progressBarState.value.total,
+              progress: c.currentPosition.value,
+              buffered: c.bufferedPosition.value,
+              total: c.totalDuration.value,
               onSeek: c.seek,
             );
           }),
+
+          // Controls
           Stack(
             alignment: Alignment.center,
             children: [
@@ -175,31 +145,26 @@ class AudioControllerWidget extends StatelessWidget {
                   alignment: Alignment.topRight, child: SpeedSliderWidget()),
               Align(
                 alignment: Alignment.topCenter,
-                child: Obx(
-                  () {
-                    if (c.buttonState.value == _ButtonState.paused) {
+                child: Obx(() {
+                  switch (c.buttonState.value) {
+                    case ButtonState.paused:
                       return IconButton(
-                        onPressed: () {
-                          c.play();
-                        },
+                        onPressed: c.play,
                         icon: const Icon(Icons.play_arrow),
                       );
-                    } else if (c.buttonState.value == _ButtonState.playing) {
+                    case ButtonState.playing:
                       return IconButton(
-                        onPressed: () {
-                          c.pause();
-                        },
+                        onPressed: c.pause,
                         icon: const Icon(Icons.pause),
                       );
-                    } else {
+                    case ButtonState.loading:
                       return const SizedBox(
                         width: 20.0,
                         height: 20.0,
                         child: CircularProgressIndicator(),
                       );
-                    }
-                  },
-                ),
+                  }
+                }),
               )
             ],
           )
@@ -209,70 +174,41 @@ class AudioControllerWidget extends StatelessWidget {
   }
 }
 
-void showSliderDialog({
-  required BuildContext context,
-  required String title,
-  required int divisions,
-  required double min,
-  required double max,
-  String valueSuffix = '',
-  // TODO: Replace these two by ValueStream.
-  required double value,
-  required Stream<double> stream,
-  required ValueChanged<double> onChanged,
-}) {
-  showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title, textAlign: TextAlign.center),
-      content: StreamBuilder<double>(
-        stream: stream,
-        builder: (context, snapshot) => SizedBox(
-          height: 100.0,
-          child: Column(
-            children: [
-              Text('${snapshot.data?.toStringAsFixed(1)}$valueSuffix',
-                  style: const TextStyle(
-                      fontFamily: 'Fixed',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24.0)),
-              Slider(
-                divisions: divisions,
-                min: min,
-                max: max,
-                value: snapshot.data ?? value,
-                onChanged: onChanged,
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
 class SpeedSliderWidget extends StatelessWidget {
   const SpeedSliderWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(Controller());
+    final c = Get.find<Controller>();
 
     return IconButton(
       icon: Obx(() {
-        return Text("${c.speed.value}x",
+        return Text("${c.speed.value.toStringAsFixed(1)}x",
             style: const TextStyle(fontWeight: FontWeight.bold));
       }),
       onPressed: () {
-        showSliderDialog(
+        showDialog<void>(
           context: context,
-          title: "تعديل السرعة",
-          divisions: 10,
-          min: 0.5,
-          max: 1.5,
-          value: c._audioPlayer.speed,
-          stream: c._audioPlayer.speedStream,
-          onChanged: c.setSpeed,
+          builder: (context) => AlertDialog(
+            title: const Text("تعديل السرعة", textAlign: TextAlign.center),
+            content: Obx(() => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${c.speed.value.toStringAsFixed(1)}x',
+                        style: const TextStyle(
+                            fontFamily: 'Fixed',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24.0)),
+                    Slider(
+                      divisions: 10,
+                      min: 0.5,
+                      max: 1.5,
+                      value: c.speed.value,
+                      onChanged: c.setSpeed,
+                    ),
+                  ],
+                )),
+          ),
         );
       },
     );

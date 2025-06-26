@@ -1,11 +1,13 @@
-import 'dart:io';
 import 'dart:ui';
 import 'package:adaptive_theme/adaptive_theme.dart';
-import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
+import 'package:aldurar_alnaqia/audioPlayer/audioPlayer.dart';
+import 'package:aldurar_alnaqia/audioPlayer/audio_handler.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/common/theme/dark_theme.dart';
 import 'package:aldurar_alnaqia/router/handle_router.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:get/get.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:desktop_window/desktop_window.dart';
 
@@ -20,6 +22,14 @@ void main() async {
   if (UniversalPlatform.isDesktop) {
     setDesktopWindow();
   }
+
+  // We need to initialize the audio handler before running the app.
+  // We also register it with GetX so we can find it later.
+
+  final audioHandler = await initAudioService();
+  Get.put<AudioHandler>(audioHandler);
+  Get.put<Controller>(Controller(), permanent: true);
+  // }
 
   await SharedPreferencesService().init();
   final savedThemeMode = await AdaptiveTheme.getThemeMode();

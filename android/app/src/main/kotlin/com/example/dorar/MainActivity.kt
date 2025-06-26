@@ -1,5 +1,7 @@
 package com.example.aldurar_alnaqia
 
-import io.flutter.embedding.android.FlutterActivity
+// Import the plugin's activity
+import com.ryanheise.audioservice.AudioServiceActivity
 
-class MainActivity : FlutterActivity()
+// Extend the plugin's activity instead of FlutterActivity
+class MainActivity: AudioServiceActivity()
