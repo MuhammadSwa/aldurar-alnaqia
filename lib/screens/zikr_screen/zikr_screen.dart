@@ -1,6 +1,4 @@
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
-import 'package:aldurar_alnaqia/widgets/zikrSlider_screen.dart';
 import 'package:easy_rich_text/easy_rich_text.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
@@ -10,6 +8,7 @@ import 'package:aldurar_alnaqia/screens/download_manager_screen/download_control
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/playAudio_btn_zikr_page.dart';
 import 'package:pdfrx/pdfrx.dart';
+
 class SlidableZikrScreen extends StatefulWidget {
   final List<String> allTitles;
   final int initialIndex;
@@ -75,9 +74,9 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
         },
         // The builder creates the content widget for each Zikr
         itemBuilder: (context, index) {
-
           if (widget.allTitles[index] == alhyliaAndNasab.title) {
-return PdfViewer.asset('assets/pdfs/${widget.allTitles[index]}.pdf');
+            return PdfViewer.asset(
+                'assets/pdfs/${widget.allTitles[index]}.pdf');
           }
           return ZikrContentWidget(
             title: widget.allTitles[index],
@@ -87,111 +86,6 @@ return PdfViewer.asset('assets/pdfs/${widget.allTitles[index]}.pdf');
     );
   }
 }
-
-// class SlidableZikrScreen extends StatefulWidget {
-//   const SlidableZikrScreen(
-//       {super.key, required this.titles, required this.index});
-//   final List<String> titles;
-//   final int index;
-//
-//   @override
-//   State<SlidableZikrScreen> createState() => _SlidableZikrScreenState();
-// }
-//
-// class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
-//   late PageController _pageController;
-//   late String _currentTitle;
-//   late Zikr _currentZikr;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _pageController = PageController(initialPage: widget.index);
-//     _updateCurrentZikr(widget.index);
-//   }
-//
-//   void _updateCurrentZikr(int index) {
-//     _currentTitle = widget.titles[index];
-//     _currentZikr = allAzkar.azkarCategMap[_currentTitle]!;
-//   }
-//
-//   @override
-//   void dispose() {
-//     _pageController.dispose();
-//     super.dispose();
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     Get.put(DownloaderController());
-//
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text(_currentTitle),
-//         actions: [
-//           // The action button updates reactively based on the current Zikr
-//           PlayAudioBtnZikrPage(
-//             id: _currentZikr.title,
-//             title: _currentZikr.title,
-//             url: _currentZikr.url,
-//           ),
-//         ],
-//       ),
-//       body: PageView.builder(
-//         controller: _pageController,
-//         itemCount: widget.titles.length,
-//         // This callback updates the AppBar title when you swipe to a new page
-//         onPageChanged: (index) {
-//           setState(() {
-//             _updateCurrentZikr(index);
-//           });
-//         },
-//         // The builder creates the content widget for each Zikr
-//         itemBuilder: (context, index) {
-//           if (widget.titles[index] == alhyliaAndNasab.title) {
-//             return const HeliaNasabScreen();
-//           }
-//           return ZikrContentWidget(
-//             title: widget.titles[index],
-//           );
-//         },
-//       ),
-//     );
-//
-//     // return Directionality(
-//     //   textDirection: TextDirection.rtl,
-//     //   child: PageView.builder(
-//     //     itemCount: widget.titles.length,
-//     //     itemBuilder: (BuildContext context, int i) {
-//     //       if (widget.titles[i] == alhyliaAndNasab.title) {
-//     //         return const HeliaNasabScreen();
-//     //       }
-//     //       // return ZikrScreen(title: titles![i]);
-//     //       return Scaffold(
-//     //         appBar: AppBar(
-//     //           actions: [
-//     //             // Refactored to use the new API for PlayAudioBtnZikrPage.
-//     //             // It now requires a unique `id` to manage its own state internally,
-//     //             // removing the need for an external Obx wrapper.
-//     //             PlayAudioBtnZikrPage(
-//     //               id: widget.titles[i],
-//     //               title: widget.titles[i],
-//     //               url: allAzkar.azkarCategMap[widget.titles[i]]!.url,
-//     //             ),
-//     //           ],
-//     //           title: Text(
-//     //             widget.titles[i],
-//     //           ),
-//     //         ),
-//     //         body: ZikrContentWidget(
-//     //           title: widget.titles[i],
-//     //         ),
-//     //       );
-//     //     },
-//     //   ),
-//     // );
-//   }
-// }
 
 class ZikrScreen extends StatelessWidget {
   const ZikrScreen({
