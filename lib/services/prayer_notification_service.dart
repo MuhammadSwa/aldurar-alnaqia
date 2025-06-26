@@ -1,7 +1,9 @@
 // lib/services/prayer_notification_service.dart
+
 import 'dart:async';
 import 'dart:ui';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -9,7 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:get/get.dart';
-import 'package:timezone/timezone.dart' as tz; // For timezone
+import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
 class PrayerNotificationService {
@@ -19,41 +21,60 @@ class PrayerNotificationService {
   static const String _channelId = 'prayer_countdown_channel';
   static const String _channelName = 'Prayer Countdown';
   static const String _channelDescription = 'Shows countdown to next prayer';
-  static const int _notificationId =
-      1001; // Used for both local_notif and foreground service
+  static const int _notificationId = 1001;
 
-  // SharedPreferences keys (must match BootReceiver.kt)
   static const String _prefsName = "PrayerAppPrefs";
   static const String notificationEnabledKey = "prayer_notification_enabled";
 
   static Timer? _timer;
-  static bool _isDartServiceLogicRunning =
-      false; // Tracks if our Dart logic for service is active
+  static bool _isDartServiceLogicRunning = false;
+  static bool _isTimezoneInitialized = false;
+  static ServiceInstance? _currentServiceInstance; // Store service instance
 
-  /// Initialize timezone data and set local timezone
+  /// Initialize timezone data with better error handling and caching
   static Future<void> _initializeTimezone() async {
+    if (_isTimezoneInitialized) {
+      print('PrayerNotificationService: Timezone already initialized');
+      return;
+    }
+
     try {
       tz_data.initializeTimeZones();
-      final String currentTimeZone = await FlutterTimezone.getLocalTimezone();
+
+      final String currentTimeZone =
+          await FlutterTimezone.getLocalTimezone().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print(
+              'PrayerNotificationService: Timezone detection timeout, using system default');
+          return 'UTC';
+        },
+      );
+
       tz.setLocalLocation(tz.getLocation(currentTimeZone));
+      _isTimezoneInitialized = true;
       print(
-          'PrayerNotificationService: Timezone initialized to ${tz.local.name} in current isolate.');
+          'PrayerNotificationService: Timezone initialized to ${tz.local.name}');
     } catch (e) {
-      print(
-          'PrayerNotificationService: Failed to initialize timezone: $e. Prayer times might be inaccurate.');
-      // Fallback: Attempt to use a stored timezone if available, or default to UTC.
-      // This part depends on how you manage timezone settings globally.
-      // For now, adhan_dart might use system default or UTC if tz.local is not set.
+      print('PrayerNotificationService: Failed to initialize timezone: $e');
+      try {
+        tz.setLocalLocation(tz.getLocation('UTC'));
+        _isTimezoneInitialized = true;
+        print('PrayerNotificationService: Fallback to UTC timezone');
+      } catch (fallbackError) {
+        print(
+            'PrayerNotificationService: Even UTC fallback failed: $fallbackError');
+      }
     }
   }
 
   /// Initialize the notification service
   static Future<void> initialize() async {
-    await _initializeTimezone(); // Initialize for the main isolate context
+    print('PrayerNotificationService: Starting initialization...');
+    await _initializeTimezone();
     await _initializeNotifications();
     await _initializeBackgroundService();
-// Request permissions after basic setup, often better to ask contextually.
-    // await _requestPermissions(); // Consider moving this to when user enables notifications
+    print('PrayerNotificationService: Initialization completed');
   }
 
   /// Initialize local notifications
@@ -79,12 +100,11 @@ class PrayerNotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // Create notification channel for Android
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       _channelId,
       _channelName,
       description: _channelDescription,
-      importance: Importance.low, // Low importance for ongoing, less intrusive
+      importance: Importance.low,
       playSound: false,
       enableVibration: false,
       showBadge: false,
@@ -96,64 +116,65 @@ class PrayerNotificationService {
         ?.createNotificationChannel(channel);
   }
 
-  /// Initialize background service
+  /// Initialize background service with immediate prayer time
   static Future<void> _initializeBackgroundService() async {
     final service = FlutterBackgroundService();
+
+    String initialTitle = 'أوقات الصلاة';
+    String initialContent = 'جاري حساب الأوقات...';
+
+    try {
+      final timeLeftData = PrayerTimeings.timeLeftForNextPrayer();
+      final duration = timeLeftData.$1;
+      final prayerName = timeLeftData.$2;
+
+      if (prayerName.isNotEmpty &&
+          !duration.isNegative &&
+          duration.inSeconds > 0) {
+        initialTitle = 'الوقت المتبقي لصلاة $prayerName';
+        initialContent = _formatDuration(duration);
+      }
+    } catch (e) {
+      print('PrayerNotificationService: Could not get initial prayer time: $e');
+    }
 
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: onStart,
-        autoStart: false, // We manage start/stop, and BootReceiver handles boot
+        autoStart: false,
         isForegroundMode: true,
-        notificationChannelId: _channelId, // Use the same channel
-        initialNotificationTitle: 'أوقات الصلاة', // Initial title
-        initialNotificationContent: 'جاري التهيئة...', // Initial content
-        foregroundServiceNotificationId:
-            _notificationId, // Crucial: links this to your local notification
+        notificationChannelId: _channelId,
+        initialNotificationTitle: initialTitle,
+        initialNotificationContent: initialContent,
+        foregroundServiceNotificationId: _notificationId,
       ),
       iosConfiguration: IosConfiguration(
         autoStart: false,
         onForeground: onStart,
-        // onBackground: onIosBackground, // only if you have specific iOS background logic
       ),
     );
   }
 
   /// Request necessary permissions
   static Future<void> _requestPermissions() async {
-    // Request notification permission
     await Permission.notification.request();
 
-    // Request background app refresh for iOS
-    // iOS permissions are typically handled by flutter_local_notifications init
-    // if (GetPlatform.isIOS) {
-    //   await Permission.backgroundRefresh.request();
-    // }
-
-    // Request exact alarm permission for Android 12+
     if (GetPlatform.isAndroid) {
-      await Permission.scheduleExactAlarm
-          .request(); // For precise scheduling if needed
-      await Permission.ignoreBatteryOptimizations
-          .request(); // Explain why this is needed
+      await Permission.scheduleExactAlarm.request();
+      await Permission.ignoreBatteryOptimizations.request();
     }
   }
 
   /// Start the persistent notification service
   static Future<void> startService() async {
-    // Request permissions before starting, if not already granted
+    print('PrayerNotificationService: Starting service...');
+
     if (!(await Permission.notification.isGranted)) {
       await _requestPermissions();
       if (!(await Permission.notification.isGranted)) {
         print("Notification permission not granted. Cannot start service.");
-        // Optionally, inform the user via UI.
         return;
       }
-    }
-    if (GetPlatform.isAndroid &&
-        !(await Permission.ignoreBatteryOptimizations.isGranted)) {
-      // Guide user to allow battery optimization exemption if it's critical
-      print("Battery optimization not ignored. Service might be killed.");
     }
 
     final service = FlutterBackgroundService();
@@ -164,21 +185,28 @@ class PrayerNotificationService {
       return;
     }
 
-    // Start background service
-    await service.startService(); // Starts the platform service
-    _isDartServiceLogicRunning = true; // Mark our Dart logic as active
+    // Show immediate notification before starting service
+    await _updatePrayerTimeNotificationLogic(null);
+
+    await service.startService();
+    _isDartServiceLogicRunning = true;
+
+    // **FIX: Wait a moment for service to fully start, then start our timer**
+    Timer(const Duration(milliseconds: 500), () {
+      _startPrayerCountdownTimer(null);
+    });
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(notificationEnabledKey, true);
-    print("PrayerNotificationService: Service started, preference set.");
+    print("PrayerNotificationService: Service started successfully");
 
-    // Also start workmanager for backup
+    // Start workmanager backup
     await Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
     await Workmanager().registerPeriodicTask(
-      "prayer-countdown-backup-task", // Unique name
+      "prayer-countdown-backup-task",
       "prayerCountdownBackupTask",
       frequency: const Duration(minutes: 15),
-      existingWorkPolicy: ExistingWorkPolicy.keep, // Or replace
+      existingWorkPolicy: ExistingWorkPolicy.replace,
       constraints: Constraints(
         networkType: NetworkType.not_required,
         requiresBatteryNotLow: false,
@@ -190,31 +218,61 @@ class PrayerNotificationService {
   }
 
   /// Stop the notification service
+  /// Stop the notification service
   static Future<void> stopService() async {
+    print('PrayerNotificationService: Stopping service...');
+
     final service = FlutterBackgroundService();
-    service.invoke(
-        "stopService"); // Tell the Dart isolate to stop its timer and clean up
+    bool wasRunning = await service.isRunning();
 
+    if (wasRunning) {
+      // First stop the service which should clear the foreground notification
+      service.invoke("stopService");
+
+      // Wait a moment for the service to properly stop
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    // Cancel workmanager tasks
     await Workmanager().cancelByUniqueName("prayer-countdown-backup-task");
-    await _notificationsPlugin
-        .cancel(_notificationId); // Cancel our specific notification
 
+    // Cancel any lingering notifications - try multiple approaches
+    try {
+      await _notificationsPlugin.cancel(_notificationId);
+      await _notificationsPlugin
+          .cancelAll(); // Clear all notifications as backup
+    } catch (e) {
+      print('PrayerNotificationService: Error canceling notifications: $e');
+    }
+
+    // Clean up timers and state
     _timer?.cancel();
     _timer = null;
     _isDartServiceLogicRunning = false;
+    _currentServiceInstance = null;
 
+    // Update preferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(notificationEnabledKey, false);
-    print("PrayerNotificationService: Service stopped, preference cleared.");
+
+    print("PrayerNotificationService: Service stopped successfully");
   }
 
   /// Background service entry point
   @pragma('vm:entry-point')
   static void onStart(ServiceInstance service) async {
-    DartPluginRegistrant.ensureInitialized(); // Crucial for plugins
-    await _initializeTimezone(); // Initialize timezone for this background isolate
-    _isDartServiceLogicRunning =
-        true; // Mark Dart logic as active within this isolate
+    print('PrayerNotificationService: Background service starting...');
+
+    DartPluginRegistrant.ensureInitialized();
+    await SharedPreferencesService().init();
+
+    _initializeTimezone().catchError((e) {
+      print(
+          'PrayerNotificationService: Background timezone initialization failed: $e');
+    });
+
+    _isDartServiceLogicRunning = true;
+    _currentServiceInstance = service; // Store service instance
 
     if (service is AndroidServiceInstance) {
       service.on('setAsForeground').listen((event) {
@@ -226,53 +284,63 @@ class PrayerNotificationService {
       });
     }
 
+// In your onStart method, improve the stopService event handler:
     service.on('stopService').listen((event) async {
+      print('PrayerNotificationService: Received stop service event');
+
+      // Cancel the timer first
       _timer?.cancel();
       _timer = null;
       _isDartServiceLogicRunning = false;
-      // The SharedPreferences flag is set by the main stopService call.
-      // No need to cancel _notificationId here, as flutter_background_service manages its lifecycle
-      // when stopSelf() is called, or it's handled by the main stopService.
-      service.stopSelf(); // Stops the platform service
+      _currentServiceInstance = null;
+
+      // For Android, ensure foreground service notification is cleared
+      if (service is AndroidServiceInstance) {
+        try {
+          // Try to set the service as background first to clear foreground notification
+          service.setAsBackgroundService();
+          await Future.delayed(const Duration(milliseconds: 100));
+        } catch (e) {
+          print('PrayerNotificationService: Error setting as background: $e');
+        }
+      }
+
+      // Stop the service
+      await service.stopSelf();
+      print('PrayerNotificationService: Service stopped via event handler');
     });
 
-    print(
-        "PrayerNotificationService (onStart): Starting countdown timer logic.");
+    print("PrayerNotificationService: Starting countdown timer...");
     _startPrayerCountdownTimer(service);
   }
 
-  /// iOS background handler
-  @pragma('vm:entry-point')
-  static Future<bool> onIosBackground(ServiceInstance service) async {
-    // iOS background execution is limited.
-    // DartPluginRegistrant.ensureInitialized();
-    // await _initializeTimezone();
-    // Perform a single update or short task.
-    print("PrayerNotificationService: onIosBackground invoked.");
-    // await _updatePrayerTimeNotificationLogic(service); // Example for a single update
-    return true;
-  }
-
-  /// Start the prayer countdown timer
+  /// Start the prayer countdown timer - **IMPROVED VERSION**
   static void _startPrayerCountdownTimer(ServiceInstance? service) {
     _timer?.cancel();
-    print("PrayerNotificationService: Countdown timer initiated.");
 
-    // Perform an immediate update
-    _updatePrayerTimeNotificationLogic(service);
+    // Update immediately first
+    _updatePrayerTimeNotificationLogic(service ?? _currentServiceInstance);
+
+    // Then start the recurring timer
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _updatePrayerTimeNotificationLogic(service);
+      _updatePrayerTimeNotificationLogic(service ?? _currentServiceInstance);
     });
+    print("PrayerNotificationService: Countdown timer started successfully");
   }
 
-  /// Contains the logic to calculate time and update notification
+  /// Updates the notification using the efficient service instance method.
   static Future<void> _updatePrayerTimeNotificationLogic(
       ServiceInstance? service) async {
     try {
-      // Directly use the static method from PrayerTimeings
-      // This avoids GetX dependency in the background isolate directly.
-      // Ensure PrayerTimeings.timeLeftForNextPrayer() can access SharedPreferences.
-      final timeLeftData = PrayerTimeings.timeLeftForNextPrayer();
+      final timeLeftData =
+          await Future(() => PrayerTimeings.timeLeftForNextPrayer()).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          print('PrayerNotificationService: Prayer time calculation timeout');
+          return (Duration.zero, '');
+        },
+      );
+
       final duration = timeLeftData.$1;
       final prayerName = timeLeftData.$2;
 
@@ -282,177 +350,167 @@ class PrayerNotificationService {
       if (prayerName.isEmpty ||
           duration.isNegative ||
           duration.inSeconds <= 0) {
-        // This can happen if it's past Isha and next Fajr calculation needs a new day's data.
-        // PrayerTimeings.timeLeftForNextPrayer() should ideally handle this rollover.
         title = 'أوقات الصلاة';
-        body = 'جاري حساب الوقت...';
-        // The PrayerTimeings class should be robust enough to provide the next prayer
-        // even if it's for the next day.
+        body = 'جاري حساب الوقت للصلاة القادمة...';
       } else {
-        final hours = duration.inHours;
-        final minutes = duration.inMinutes.remainder(60);
-        final seconds = duration.inSeconds.remainder(60);
-
-        String timeText;
-        if (hours > 0) {
-          timeText =
-              '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-        } else if (minutes > 0) {
-          timeText =
-              '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-        } else {
-          timeText = '${seconds.toString().padLeft(2, '0')} ثانية';
-        }
         title = 'الوقت المتبقي لصلاة $prayerName';
-        body = timeText;
+        body = _formatDuration(duration);
       }
 
-      // This updates the notification that flutter_background_service uses for foreground status
-      // AND it's our custom local notification because we used the same _notificationId.
-      await _showNotification(title, body, ongoing: true);
+      // **IMPROVED: Try service instance first, with better error handling**
+      bool notificationUpdated = false;
+
+      if (service is AndroidServiceInstance) {
+        try {
+          if (await service.isForegroundService()) {
+            service.setForegroundNotificationInfo(
+              title: title,
+              content: body,
+            );
+            notificationUpdated = true;
+          }
+        } catch (e) {
+          print(
+              'PrayerNotificationService: Service notification update failed: $e');
+        }
+      }
+
+      // **IMPROVED: Always update via FlutterLocalNotifications as backup**
+      if (!notificationUpdated) {
+        await _showNotification(title, body, ongoing: true);
+      }
     } catch (e, s) {
       print('Error in _updatePrayerTimeNotificationLogic: $e\n$s');
-      await _showNotification(
-        'خطأ في حساب الصلاة',
-        'يرجى فتح التطبيق للتحقق.',
-        ongoing: true,
-      );
+      const errorTitle = 'خطأ في حساب الصلاة';
+      const errorBody = 'يرجى فتح التطبيق للتحقق من الإعدادات.';
+
+      // Try to update the notification to show an error state
+      if (service is AndroidServiceInstance) {
+        try {
+          service.setForegroundNotificationInfo(
+              title: errorTitle, content: errorBody);
+        } catch (e) {
+          await _showNotification(errorTitle, errorBody, ongoing: true);
+        }
+      } else {
+        await _showNotification(errorTitle, errorBody, ongoing: true);
+      }
     }
   }
 
-  /// Show notification
-  static Future<void> _showNotification(
-    String title,
-    String body, {
-    bool ongoing = false,
-  }) async {
-    final AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDescription,
-      importance: Importance.low,
-      priority: Priority.low,
-      ongoing: ongoing,
-      autoCancel: false, // Not cancellable by swipe if ongoing
-      showWhen:
-          false, // Don't show timestamp in notification tray if not needed
-      playSound: false,
-      enableVibration: false,
-      icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-      styleInformation:
-          BigTextStyleInformation(body), // If you want expandable text
-    );
+  /// Clear all prayer notifications
+  static Future<void> clearAllNotifications() async {
+    try {
+      await _notificationsPlugin.cancel(_notificationId);
+      await _notificationsPlugin.cancelAll();
+      print('PrayerNotificationService: All notifications cleared');
+    } catch (e) {
+      print('PrayerNotificationService: Error clearing notifications: $e');
+    }
+  }
 
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-      presentSound: false,
-      presentAlert:
-          true, // For iOS, alert is how it's shown. Might be less "persistent".
-      presentBadge: false,
-      interruptionLevel: InterruptionLevel.passive,
-    );
+  /// Formats duration into HH:MM:SS or MM:SS string
+  static String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
 
-    final NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    final String hoursStr = hours.toString().padLeft(2, '0');
+    final String minutesStr = minutes.toString().padLeft(2, '0');
+    final String secondsStr = seconds.toString().padLeft(2, '0');
 
-    await _notificationsPlugin.show(
-      _notificationId, // Consistent ID
-      title,
-      body,
-      details,
-    );
+    if (hours > 0) {
+      return '$hoursStr:$minutesStr:$secondsStr';
+    } else {
+      return '$minutesStr:$secondsStr';
+    }
+  }
+
+  /// Show a one-off notification. Now used as a fallback or for WorkManager.
+  static Future<void> _showNotification(String title, String body,
+      {bool ongoing = false}) async {
+    try {
+      final AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: ongoing,
+        autoCancel: false,
+        showWhen: false, // Important for a countdown look
+        playSound: false,
+        enableVibration: false,
+        icon: '@mipmap/ic_launcher',
+        ticker: 'Prayer Countdown',
+      );
+
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentSound: false,
+        presentAlert: true,
+        presentBadge: false,
+        interruptionLevel: InterruptionLevel.passive,
+      );
+
+      final NotificationDetails details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _notificationsPlugin.show(_notificationId, title, body, details);
+    } catch (e) {
+      print('PrayerNotificationService: Error showing notification: $e');
+    }
   }
 
   /// Handle notification tap
   static void _onNotificationTapped(NotificationResponse response) {
     print('Notification tapped: ${response.payload}');
-    // Implement navigation if needed, e.g., open the app to the prayer times screen.
-    // This requires setup in MainActivity and handling the intent.
+    // You can add navigation logic here if needed
   }
 
-  /// Use this to check the actual platform service status
+  /// Check platform service status
   static Future<bool> isPlatformServiceRunning() async {
     return await FlutterBackgroundService().isRunning();
   }
 
-  /// This reflects if our Dart logic for the service *should* be running
+  /// Check if Dart logic is running
   static bool get isServiceRunning => _isDartServiceLogicRunning;
+
+  /// **NEW: Manual timer start method for immediate UI updates**
+  static void ensureTimerRunning() {
+    if (_isDartServiceLogicRunning && _timer == null) {
+      _startPrayerCountdownTimer(_currentServiceInstance);
+    }
+  }
 }
 
-/// Workmanager callback dispatcher
+/// Workmanager callback
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     print("WorkManager: Task $taskName executing.");
-    DartPluginRegistrant.ensureInitialized();
-    await PrayerNotificationService
-        ._initializeTimezone(); // Initialize timezone for WorkManager isolate
-
     try {
-      // Backup prayer time calculation in case background service fails
-// In WorkManager, a less frequent update is expected.
-      // We can simplify the notification content.
-      final timeLeft = PrayerTimeings.timeLeftForNextPrayer();
-      final duration = timeLeft.$1;
-      final prayerName = timeLeft.$2;
+      DartPluginRegistrant.ensureInitialized();
+      await PrayerNotificationService
+          .initialize(); // Ensure everything is initialized
 
-      if (duration.inSeconds > 0 && prayerName.isNotEmpty) {
-        final hours = duration.inHours;
-        final minutes = duration.inMinutes.remainder(60);
-
-        String timeText;
-        if (hours > 0) {
-          timeText = '$hoursس $minutesد';
-        } else if (minutes > 0) {
-          timeText = '$minutesد';
-        } else {
-          timeText = 'أقل من دقيقة';
-        }
-
-        // Use the same _showNotification method, but it will be less frequent
-        await PrayerNotificationService._showNotification(
-          'صلاة $prayerName بعد', // Slightly different title for backup
-          timeText,
-          ongoing: true, // Still ongoing as it's part of the persistent display
-        );
-        print("WorkManager: Notification updated for $prayerName.");
+      final service = FlutterBackgroundService();
+      if (!await service.isRunning()) {
+        print(
+            "WorkManager: Service is not running, attempting to update notification directly.");
+        // A simplified update since this is just a backup
+        await PrayerNotificationService._updatePrayerTimeNotificationLogic(
+            null);
         return true;
       } else {
-        print(
-            "WorkManager: No valid prayer time found to update notification.");
-        return false; // Indicate failure if no data to show
+        print("WorkManager: Service is already running, no action needed.");
+        return true;
       }
-
-      return Future.value(true);
     } catch (e) {
-      print('Error in workmanager task: $e');
-      return false; // Indicate failure
+      print('WorkManager error: $e');
+      return false;
     }
   });
-}
-
-/// Extension to easily start/stop prayer notifications
-extension PrayerTimingsControllerExtension on PrayerTimingsController {
-  /// Start prayer countdown notifications
-  Future<void> startPrayerNotifications() async {
-    await PrayerNotificationService.startService();
-  }
-
-  /// Stop prayer countdown notifications
-  Future<void> stopPrayerNotifications() async {
-    await PrayerNotificationService.stopService();
-  }
-
-  // Consider renaming to reflect Dart logic state vs. platform service state
-  bool get areNotificationsEnabledByAppLogic =>
-      PrayerNotificationService.isServiceRunning;
-  Future<bool> get isUnderlyingPlatformServiceRunning async =>
-      await PrayerNotificationService.isPlatformServiceRunning();
-
-  /// Check if notifications are running
-  bool get areNotificationsRunning =>
-      PrayerNotificationService.isServiceRunning;
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -17,6 +18,7 @@ class PrayerTimingsController extends GetxController {
   Rx<(Duration, String)> timeLeftForNextPrayer =
       (const Duration(seconds: 0), '').obs;
   RxBool isInitialized = false.obs;
+  RxBool isNotificationServiceRunning = false.obs;
 
   Timer? _timer;
   Timer? _dayChangeTimer;
@@ -167,6 +169,79 @@ class PrayerTimingsController extends GetxController {
 
   void updateNextPrayer() {
     timeLeftForNextPrayer.value = PrayerTimeings.timeLeftForNextPrayer();
+  }
+
+  /// Start prayer countdown notifications - IMPROVED VERSION
+  Future<void> startPrayerNotifications() async {
+    try {
+      print('PrayerTimingsController: Starting prayer notifications...');
+
+      // Start the service
+      await PrayerNotificationService.startService();
+
+      // Wait a moment for service to initialize
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      // Ensure timer is running
+      PrayerNotificationService.ensureTimerRunning();
+
+      // Update our state
+      isNotificationServiceRunning.value = true;
+
+      print(
+          'PrayerTimingsController: Prayer notifications started successfully');
+    } catch (e) {
+      print('PrayerTimingsController: Error starting notifications: $e');
+      isNotificationServiceRunning.value = false;
+    }
+  }
+
+Future<void> stopPrayerNotifications() async {
+  try {
+    print('PrayerTimingsController: Stopping prayer notifications...');
+
+    await PrayerNotificationService.stopService();
+    
+    // Wait a moment for the service to fully stop
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // Explicitly clear any remaining notifications
+    await PrayerNotificationService.clearAllNotifications();
+    
+    isNotificationServiceRunning.value = false;
+
+    print('PrayerTimingsController: Prayer notifications stopped successfully');
+  } catch (e) {
+    print('PrayerTimingsController: Error stopping notifications: $e');
+    // Still update the state even if there was an error
+    isNotificationServiceRunning.value = false;
+    
+    // Try to clear notifications anyway
+    try {
+      await PrayerNotificationService.clearAllNotifications();
+    } catch (clearError) {
+      print('PrayerTimingsController: Error clearing notifications: $clearError');
+    }
+  }
+}
+
+  /// Check and sync notification service status
+  Future<void> syncNotificationServiceStatus() async {
+    try {
+      final bool isRunning =
+          await PrayerNotificationService.isPlatformServiceRunning();
+      final bool isLogicRunning = PrayerNotificationService.isServiceRunning;
+
+      // Update our observable state
+      isNotificationServiceRunning.value = isRunning && isLogicRunning;
+
+      // If service is running but timer isn't, restart timer
+      if (isRunning && !isLogicRunning) {
+        PrayerNotificationService.ensureTimerRunning();
+      }
+    } catch (e) {
+      print('PrayerTimingsController: Error syncing notification status: $e');
+    }
   }
 }
 

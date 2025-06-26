@@ -15,7 +15,7 @@ class HeliaNasabScreen extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
           actions: [
-            PlayAudioBtnZikrPage(
+            AudioActionButton(
               id: title,
               title: title,
               url: alhyliaAndNasab.url,

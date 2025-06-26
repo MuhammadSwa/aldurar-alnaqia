@@ -32,7 +32,8 @@ class NextPrayerCountdown extends StatelessWidget {
 
                 if (prayerName.isEmpty) {
                   return const Text(
-                    'خطأ في حساب أوقات الصلاة',
+                    // 'خطأ في حساب أوقات الصلاة',
+                    'يرجي ضبط إعدادات مواقيت الصلاة',
                     style: TextStyle(fontSize: 16),
                     textAlign: TextAlign.center,
                   );

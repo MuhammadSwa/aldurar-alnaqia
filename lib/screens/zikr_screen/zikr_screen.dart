@@ -56,7 +56,7 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
         title: Text(_currentTitle),
         actions: [
           // The action button updates reactively based on the current Zikr
-          PlayAudioBtnZikrPage(
+          AudioActionButton(
             id: _currentZikr.title,
             title: _currentZikr.title,
             url: _currentZikr.url,
@@ -115,7 +115,7 @@ class ZikrScreen extends StatelessWidget {
           // Refactored to use the new API for PlayAudioBtnZikrPage.
           // It now requires a unique `id` to manage its own state internally,
           // removing the need for an external Obx wrapper.
-          PlayAudioBtnZikrPage(
+          AudioActionButton(
             id: zikr
                 .title, // Use the zikr title as the unique ID for the audio file.
             title: zikr.title,

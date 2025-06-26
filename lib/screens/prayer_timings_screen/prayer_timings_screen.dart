@@ -4,6 +4,7 @@ import 'package:aldurar_alnaqia/MyDrawer.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/day_name.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
+import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -12,6 +13,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_di
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:text_responsive/text_responsive.dart';
+import 'package:universal_platform/universal_platform.dart';
 
 class PrayerTimingsScreen extends StatefulWidget {
   const PrayerTimingsScreen({super.key});
@@ -54,6 +56,32 @@ class _PrayerTimingsScreenState extends State<PrayerTimingsScreen> {
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
+        actions: [
+          if (UniversalPlatform.isAndroid)
+            Obx(() {
+              final controller = Get.find<PrayerTimingsController>();
+              final bool notificationsEnabled =
+                  controller.isNotificationServiceRunning.value;
+              return IconButton(
+                icon: Icon(
+                  notificationsEnabled
+                      ? Icons.notifications_active
+                      : Icons.notifications_off,
+                  color: notificationsEnabled ? Colors.green : Colors.grey,
+                ),
+                onPressed: () async {
+                  if (notificationsEnabled) {
+                    await controller.stopPrayerNotifications();
+                  } else {
+                    await controller.startPrayerNotifications();
+                  }
+                },
+                tooltip: notificationsEnabled
+                    ? 'إيقاف الإشعارات'
+                    : 'تفعيل الإشعارات',
+              );
+            }),
+        ],
       ),
       drawer: const MyDrawer(),
       body: const SingleChildScrollView(
