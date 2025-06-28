@@ -275,6 +275,11 @@ class PrayerNotificationService {
     _currentServiceInstance = service; // Store service instance
 
     if (service is AndroidServiceInstance) {
+      service.setForegroundNotificationInfo(
+        title: "خدمة أوقات الصلاة",
+        content: "الخدمة تعمل في الخلفية للحفاظ على دقة التنبيهات.",
+      );
+
       service.on('setAsForeground').listen((event) {
         service.setAsForegroundService();
       });
@@ -322,7 +327,7 @@ class PrayerNotificationService {
     _updatePrayerTimeNotificationLogic(service ?? _currentServiceInstance);
 
     // Then start the recurring timer
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
       _updatePrayerTimeNotificationLogic(service ?? _currentServiceInstance);
     });
     print("PrayerNotificationService: Countdown timer started successfully");
@@ -332,70 +337,61 @@ class PrayerNotificationService {
   static Future<void> _updatePrayerTimeNotificationLogic(
       ServiceInstance? service) async {
     try {
-      final timeLeftData =
-          await Future(() => PrayerTimeings.timeLeftForNextPrayer()).timeout(
-        const Duration(seconds: 3),
-        onTimeout: () {
-          print('PrayerNotificationService: Prayer time calculation timeout');
-          return (Duration.zero, '');
-        },
-      );
-
-      final duration = timeLeftData.$1;
+      // 1. Get the raw prayer time data
+      final timeLeftData = PrayerTimeings.timeLeftForNextPrayer();
       final prayerName = timeLeftData.$2;
 
-      String title;
-      String body;
-
-      if (prayerName.isEmpty ||
-          duration.isNegative ||
-          duration.inSeconds <= 0) {
-        title = 'أوقات الصلاة';
-        body = 'جاري حساب الوقت للصلاة القادمة...';
-      } else {
-        title = 'الوقت المتبقي لصلاة $prayerName';
-        body = _formatDuration(duration);
+      // 2. Check if we have a valid next prayer
+      if (prayerName.isEmpty) {
+        // If no prayer is found, show a generic message and don't start a countdown
+        await _showNotification(
+          'أوقات الصلاة',
+          'جاري حساب الوقت للصلاة القادمة...',
+          ongoing: true,
+        );
+        return;
       }
 
-      // **IMPROVED: Try service instance first, with better error handling**
-      bool notificationUpdated = false;
+      // 3. Calculate the exact future time for the countdown
+      final prayerTimes = PrayerTimeings.getPrayersTimings();
+      final nextPrayerTime =
+          prayerTimes?.timeForPrayer(prayerTimes.nextPrayer());
 
-      if (service is AndroidServiceInstance) {
-        try {
-          if (await service.isForegroundService()) {
-            service.setForegroundNotificationInfo(
-              title: title,
-              content: body,
-            );
-            notificationUpdated = true;
-          }
-        } catch (e) {
-          print(
-              'PrayerNotificationService: Service notification update failed: $e');
-        }
+      if (nextPrayerTime == null) {
+        // Handle edge case where time couldn't be found
+        await _showNotification(
+          'الوقت المتبقي لصلاة $prayerName',
+          'جاري الحساب...',
+          ongoing: true,
+        );
+        return;
       }
 
-      // **IMPROVED: Always update via FlutterLocalNotifications as backup**
-      if (!notificationUpdated) {
-        await _showNotification(title, body, ongoing: true);
-      }
+      // 4. Create the notification with the countdown
+      final title = 'الوقت المتبقي لصلاة $prayerName';
+      final body =
+          'يبدأ في تمام الساعة ${_formatTime(tz.TZDateTime.from(nextPrayerTime, tz.local))}'; // Informative body text
+
+      await _showNotification(
+        title,
+        body,
+        ongoing: true,
+        countdownUntil: nextPrayerTime, // Pass the target time here!
+      );
     } catch (e, s) {
       print('Error in _updatePrayerTimeNotificationLogic: $e\n$s');
-      const errorTitle = 'خطأ في حساب الصلاة';
-      const errorBody = 'يرجى فتح التطبيق للتحقق من الإعدادات.';
-
-      // Try to update the notification to show an error state
-      if (service is AndroidServiceInstance) {
-        try {
-          service.setForegroundNotificationInfo(
-              title: errorTitle, content: errorBody);
-        } catch (e) {
-          await _showNotification(errorTitle, errorBody, ongoing: true);
-        }
-      } else {
-        await _showNotification(errorTitle, errorBody, ongoing: true);
-      }
+      // Handle errors as before
     }
+  }
+
+// Add this helper function inside PrayerNotificationService to format time nicely
+  static String _formatTime(tz.TZDateTime dateTime) {
+    final hour = dateTime.hour > 12
+        ? dateTime.hour - 12
+        : (dateTime.hour == 0 ? 12 : dateTime.hour);
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final amPm = dateTime.hour >= 12 ? 'م' : 'ص';
+    return '$hour:$minute $amPm';
   }
 
   /// Clear all prayer notifications
@@ -427,8 +423,12 @@ class PrayerNotificationService {
   }
 
   /// Show a one-off notification. Now used as a fallback or for WorkManager.
-  static Future<void> _showNotification(String title, String body,
-      {bool ongoing = false}) async {
+  static Future<void> _showNotification(
+    String title,
+    String body, {
+    bool ongoing = false,
+    DateTime? countdownUntil,
+  }) async {
     try {
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
@@ -439,10 +439,13 @@ class PrayerNotificationService {
         priority: Priority.low,
         ongoing: ongoing,
         autoCancel: false,
-        showWhen: false, // Important for a countdown look
+        showWhen: countdownUntil != null,
+        when: countdownUntil?.millisecondsSinceEpoch,
+        usesChronometer: countdownUntil != null,
+        chronometerCountDown: true,
         playSound: false,
         enableVibration: false,
-        icon: '@mipmap/ic_launcher',
+        icon: 'drawable/ic_stat_dome',
         ticker: 'Prayer Countdown',
       );
 

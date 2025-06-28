@@ -73,16 +73,6 @@ class AppRouter {
     );
   }
 
-  // static GoRoute _createSliderRoute() {
-  //   return GoRoute(
-  //     path: RoutePaths.slider,
-  //     builder: (context, state) {
-  //       final titles = state.extra as List<String>;
-  //       return ZikrsliderScreen(titles);
-  //     },
-  //   );
-  // }
-
   // Bottom navigation branches
   static StatefulShellBranch _createHomeBranch() {
     return StatefulShellBranch(
