@@ -12,8 +12,9 @@ Future<AudioHandler> initAudioService() async {
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.aldurarl_alnaqia.audio',
       androidNotificationChannelName: 'Audio playback for Aldurar Alnaqia',
-      androidNotificationOngoing: false,
-      androidStopForegroundOnPause: false,
+      androidNotificationOngoing: true,
+      androidStopForegroundOnPause: true,
+      androidNotificationIcon: 'drawable/ic_stat_dome',
     ),
   );
 }
@@ -50,10 +51,10 @@ class MyAudioHandler extends BaseAudioHandler {
     final playing = _player.playing;
     return PlaybackState(
       controls: [
-        MediaControl.rewind,
+        // MediaControl.rewind,
         if (playing) MediaControl.pause else MediaControl.play,
         MediaControl.stop,
-        MediaControl.fastForward,
+        // MediaControl.fastForward,
       ],
       systemActions: const {
         MediaAction.seek,
@@ -140,12 +141,4 @@ class MyAudioHandler extends BaseAudioHandler {
     mediaItem.add(null);
     return await super.stop();
   }
-
-  // The old _broadcastState method is no longer needed as a standalone listener.
-  // It has been replaced by the logic inside the Rx.combineLatest3 block.
-  /*
-  void _broadcastState(PlaybackEvent event) {
-    // ... OLD CODE ...
-  }
-  */
 }
