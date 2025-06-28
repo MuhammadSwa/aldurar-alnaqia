@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:path_provider/path_provider.dart';
@@ -78,6 +82,16 @@ class MyAudioHandler extends BaseAudioHandler {
     );
   }
 
+  Future<Uri> getImageFileFromAssets(String path) async {
+    final byteData = await rootBundle.load(path);
+
+    final file = File('${(await getTemporaryDirectory()).path}/$path');
+    await file.create(recursive: true);
+    await file.writeAsBytes(byteData.buffer.asUint8List());
+
+    return file.uri;
+  }
+
   // --- The rest of your code remains largely the same ---
 
   Future<MediaItem> _createMediaItem(
@@ -89,10 +103,12 @@ class MyAudioHandler extends BaseAudioHandler {
     } else {
       uri = Uri.parse(url);
     }
+    final artUri = await getImageFileFromAssets('assets/imgs/social_png.png');
     return MediaItem(
         id: id,
         title: title,
         duration: null, // Start with null duration
+        artUri: artUri,
         extras: {'uri': uri.toString()});
   }
 
