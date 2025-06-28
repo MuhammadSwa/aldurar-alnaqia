@@ -14,6 +14,7 @@ import 'package:get/get.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
+@pragma('vm:entry-point')
 class PrayerNotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -221,41 +222,35 @@ class PrayerNotificationService {
   /// Stop the notification service
   static Future<void> stopService() async {
     print('PrayerNotificationService: Stopping service...');
-
     final service = FlutterBackgroundService();
-    bool wasRunning = await service.isRunning();
 
-    if (wasRunning) {
-      // First stop the service which should clear the foreground notification
+    // 1. If the service is running, tell it to stop.
+    // The 'stopService' handler inside onStart() is the only part that
+    // should be responsible for stopping the service and its notification.
+    if (await service.isRunning()) {
       service.invoke("stopService");
-
-      // Wait a moment for the service to properly stop
-      await Future.delayed(const Duration(milliseconds: 300));
     }
 
-    // Cancel workmanager tasks
+    // 2. Cancel the backup WorkManager task to prevent it from reviving the notification.
     await Workmanager().cancelByUniqueName("prayer-countdown-backup-task");
 
-    // Cancel any lingering notifications - try multiple approaches
-    try {
-      await _notificationsPlugin.cancel(_notificationId);
-      await _notificationsPlugin
-          .cancelAll(); // Clear all notifications as backup
-    } catch (e) {
-      print('PrayerNotificationService: Error canceling notifications: $e');
-    }
+    // 3. Update the preference to reflect the disabled state. This is crucial.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(notificationEnabledKey, false);
 
-    // Clean up timers and state
+    // 4. Clean up the main isolate's state.
     _timer?.cancel();
     _timer = null;
     _isDartServiceLogicRunning = false;
     _currentServiceInstance = null;
 
-    // Update preferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(notificationEnabledKey, false);
+    // 5. As a final safety net, clear any notifications. This will catch any
+    // orphaned notifications if the service didn't shut down cleanly. We add
+    // a small delay to give the service time to process the 'stopService' invoke.
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _notificationsPlugin.cancelAll();
 
-    print("PrayerNotificationService: Service stopped successfully");
+    print("PrayerNotificationService: Service stop process initiated.");
   }
 
   /// Background service entry point
@@ -377,6 +372,7 @@ class PrayerNotificationService {
         body,
         ongoing: true,
         countdownUntil: nextPrayerTime, // Pass the target time here!
+        payload: 'timings',
       );
     } catch (e, s) {
       print('Error in _updatePrayerTimeNotificationLogic: $e\n$s');
@@ -428,6 +424,7 @@ class PrayerNotificationService {
     String body, {
     bool ongoing = false,
     DateTime? countdownUntil,
+    String? payload,
   }) async {
     try {
       final AndroidNotificationDetails androidDetails =
@@ -461,16 +458,27 @@ class PrayerNotificationService {
         iOS: iosDetails,
       );
 
-      await _notificationsPlugin.show(_notificationId, title, body, details);
+      await _notificationsPlugin.show(_notificationId, title, body, details,
+          payload: payload);
     } catch (e) {
       print('PrayerNotificationService: Error showing notification: $e');
     }
   }
 
   /// Handle notification tap
+  @pragma('vm:entry-point') // Good practice for background callbacks
   static void _onNotificationTapped(NotificationResponse response) {
-    print('Notification tapped: ${response.payload}');
-    // You can add navigation logic here if needed
+    print('Notification tapped with payload: ${response.payload}');
+
+    // The payload is the route name we want to navigate to.
+    // We check if it's not null and not empty for safety.
+    if (response.payload != null && response.payload!.isNotEmpty) {
+      // Use GetX to navigate. This works because GetMaterialApp sets up a global
+      // navigator that can be accessed from anywhere once the app is running.
+      // The OS launches the app first, then this callback fires,
+      // so the navigation context is ready.
+      Get.toNamed('/${response.payload!}'); // e.g., Get.toNamed('/timings')
+    }
   }
 
   /// Check platform service status
@@ -496,24 +504,40 @@ void callbackDispatcher() {
     print("WorkManager: Task $taskName executing.");
     try {
       DartPluginRegistrant.ensureInitialized();
-      await PrayerNotificationService
-          .initialize(); // Ensure everything is initialized
+
+      // **FIX**: Initialize SharedPreferences to check the user's preference
+      final prefs = await SharedPreferences.getInstance();
+      final bool notificationsEnabled =
+          prefs.getBool(PrayerNotificationService.notificationEnabledKey) ??
+              false;
+
+      // **FIX**: If user turned notifications off, abort the task.
+      if (!notificationsEnabled) {
+        print(
+            "WorkManager: Notifications are disabled by user. Aborting task.");
+        // We can also ensure any stray notifications are gone.
+        await PrayerNotificationService.initialize();
+        await PrayerNotificationService.clearAllNotifications();
+        return true; // Success, we respected the user's setting.
+      }
+
+      // If we are here, notifications are enabled. Proceed with original logic.
+      await PrayerNotificationService.initialize();
 
       final service = FlutterBackgroundService();
       if (!await service.isRunning()) {
         print(
-            "WorkManager: Service is not running, attempting to update notification directly.");
-        // A simplified update since this is just a backup
-        await PrayerNotificationService._updatePrayerTimeNotificationLogic(
-            null);
-        return true;
+            "WorkManager: Service is not running, but should be. Restarting service.");
+        // Restart the service properly.
+        await PrayerNotificationService.startService();
       } else {
-        print("WorkManager: Service is already running, no action needed.");
-        return true;
+        print("WorkManager: Service is already running. Task complete.");
       }
+
+      return true;
     } catch (e) {
       print('WorkManager error: $e');
-      return false;
+      return false; // Indicate failure so WorkManager can retry.
     }
   });
 }

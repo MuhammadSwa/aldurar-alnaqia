@@ -61,7 +61,6 @@ dependencies:
   workmanager: ^0.6.0
   permission_handler: ^12.0.0+1
   flutter_background_service: ^5.1.0
-  flutter_background_service_android: ^6.3.0
   flutter_local_notifications_linux: ^6.0.0
   audio_service: ^0.18.18
   media_kit_libs_audio: ^1.0.6
@@ -71,8 +70,6 @@ dependencies:
   # timezone: ^0.9.3
   # flutter_timezone: ^1.0.8
   # workmanager: ^0.5.2
-  # flutter_background_service: ^5.0.5
-  # flutter_background_service_android: ^6.2.2
 
 dev_dependencies:
   flutter_test:

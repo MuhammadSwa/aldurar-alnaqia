@@ -196,34 +196,27 @@ class PrayerTimingsController extends GetxController {
     }
   }
 
-Future<void> stopPrayerNotifications() async {
-  try {
-    print('PrayerTimingsController: Stopping prayer notifications...');
-
-    await PrayerNotificationService.stopService();
-    
-    // Wait a moment for the service to fully stop
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    // Explicitly clear any remaining notifications
-    await PrayerNotificationService.clearAllNotifications();
-    
-    isNotificationServiceRunning.value = false;
-
-    print('PrayerTimingsController: Prayer notifications stopped successfully');
-  } catch (e) {
-    print('PrayerTimingsController: Error stopping notifications: $e');
-    // Still update the state even if there was an error
-    isNotificationServiceRunning.value = false;
-    
-    // Try to clear notifications anyway
+  Future<void> stopPrayerNotifications() async {
     try {
+      print('PrayerTimingsController: Stopping prayer notifications...');
+
+      // 1. Delegate the entire stop logic to the service.
+      await PrayerNotificationService.stopService();
+
+      // 2. Update the UI state immediately.
+      isNotificationServiceRunning.value = false;
+
+      print(
+          'PrayerTimingsController: Prayer notifications stop command issued.');
+    } catch (e) {
+      print('PrayerTimingsController: Error stopping notifications: $e');
+      // Even if there's an error, update the UI to reflect the 'off' state.
+      isNotificationServiceRunning.value = false;
+
+      // As a fallback, try to clear any notifications if the service call failed.
       await PrayerNotificationService.clearAllNotifications();
-    } catch (clearError) {
-      print('PrayerTimingsController: Error clearing notifications: $clearError');
     }
   }
-}
 
   /// Check and sync notification service status
   Future<void> syncNotificationServiceStatus() async {
