@@ -24,7 +24,7 @@
   <application
     android:label="الدرر النقية"
     android:name="${applicationName}"
-    android:icon="@mipmap/ic_launcher"
+    android:icon="@drawable/ic_stat_dome"
     android:enableOnBackInvokedCallback="true">
     <activity
       android:name=".MainActivity"

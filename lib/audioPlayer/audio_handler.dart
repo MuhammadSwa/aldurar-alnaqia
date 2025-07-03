@@ -17,7 +17,7 @@ Future<AudioHandler> initAudioService() async {
       androidNotificationChannelName: 'Audio playback for Aldurar Alnaqia',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
-      androidNotificationIcon: 'drawable/ic_stat_dome',
+      androidNotificationIcon: '@drawable/ic_stat_dome',
     ),
   );
 }

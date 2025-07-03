@@ -442,7 +442,7 @@ class PrayerNotificationService {
         chronometerCountDown: true,
         playSound: false,
         enableVibration: false,
-        icon: 'drawable/ic_stat_dome',
+        icon: '@drawable/ic_stat_dome',
         ticker: 'Prayer Countdown',
       );
 
