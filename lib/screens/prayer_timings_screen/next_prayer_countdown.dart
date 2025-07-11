@@ -27,8 +27,8 @@ class NextPrayerCountdown extends StatelessWidget {
                   );
                 }
 
-                final timeLeft = controller.timeLeftForNextPrayer.value.$1;
-                final prayerName = controller.timeLeftForNextPrayer.value.$2;
+                final timeLeft = controller.timeLeft.value;
+                final prayerName = controller.nextPrayerInfo.value.$2;
 
                 if (prayerName.isEmpty) {
                   return const Text(

@@ -28,13 +28,14 @@ class _PrayerTimingsScreenState extends State<PrayerTimingsScreen> {
   void initState() {
     super.initState();
 
-    // --- REFACTORED: Initialize controllers here, safely and only once. ---
-    // fenix: true ensures they persist even if this screen is removed from the widget tree.
+    // --- OPTIMIZATION: Use Get.lazyPut with fenix: true.
+    // This is the best practice for controllers that should persist.
+    // It ensures the controller is created only once and survives if the
+    // widget is temporarily removed from the tree.
     Get.lazyPut(() => PrayerTimingsController(), fenix: true);
-    Get.lazyPut(() => HijriOffsetController(), fenix: true);
 
-    // You can also initialize your drawer controller here if it's specific to this screen
-    // or keep it in main() if it's truly global.
+    // Assuming HijriOffsetController and GlobalDrawerController follow a similar pattern
+    Get.lazyPut(() => HijriOffsetController(), fenix: true);
     Get.lazyPut(() => GlobalDrawerController(), fenix: true);
   }
 

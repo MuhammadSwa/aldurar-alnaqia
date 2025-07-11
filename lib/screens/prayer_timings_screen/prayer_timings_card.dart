@@ -16,26 +16,24 @@ class PrayerTimingsCard extends StatelessWidget {
 
     return Card(
       elevation: 4,
-      // --- REFACTORED: Use a single Obx wrapper for the whole card ---
       child: Obx(() {
-        // 1. Read the observable variables needed for the UI.
-        //    Obx will now listen to changes in BOTH of these.
+        // 1. Read the observable for the prayer times list.
+        // This only changes once a day or on settings change.
         final prayerTimings = controller.prayerTimings.value;
-        final nextPrayerTuple = controller.timeLeftForNextPrayer.value;
-        final nextPrayerName = _getArabicPrayerName(nextPrayerTuple.$2);
-
-        // --- Use your preferred placeholder logic ---
         if (prayerTimings == null) {
-          return _buildPlaceholderTable(context); // Build the placeholder table
-        }
-
-        // If we have prayer times, build the real table.
-        final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
-        if (timezonedPrayerTimes == null) {
-          // This is an edge case, but good to handle.
           return _buildPlaceholderTable(context);
         }
 
+        // 2. Read the observable for the next prayer name.
+        // This changes frequently, but we only use it for a simple comparison.
+        final nextPrayerName = controller.nextPrayerInfo.value.$2;
+
+        // --- OPTIMIZATION: Expensive calculations are done here.
+        // This block only runs when `prayerTimings` changes, NOT every second.
+        final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
+        if (timezonedPrayerTimes == null) {
+          return _buildPlaceholderTable(context);
+        }
         final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
         final placeholderTime = tz.TZDateTime.from(DateTime(1, 1, 1), tz.local);
 
@@ -67,7 +65,9 @@ class PrayerTimingsCard extends StatelessWidget {
               0: FlexColumnWidth(2),
               1: FlexColumnWidth(1),
             },
-            // The map now passes the calculated `isNextPrayer` boolean.
+            // --- OPTIMIZATION: The map function now performs a very cheap
+            // string comparison. The TableRow rebuilds, but this is much
+            // lighter than rebuilding the entire card and recalculating all Sunnah times.
             children: prayers.map((prayer) {
               final isNextPrayer = prayer.name == nextPrayerName;
               return _buildTableRow(context, prayer, isNextPrayer);
