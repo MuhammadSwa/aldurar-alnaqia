@@ -6,18 +6,18 @@
   <uses-permission android:name="android.permission.INTERNET" />
 
   <!-- Permissions for notifications and background work -->
-  <uses-permission android:name="android.permission.INTERNET" />
-  <uses-permission android:name="android.permission.WAKE_LOCK" />
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-  <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  <!-- <uses-permission android:name="android.permission.WAKE_LOCK" /> -->
+  <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> -->
+  <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" /> -->
+
+  <!-- <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> -->
+  <!-- <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" /> -->
+  <!-- <uses-permission android:name="android.permission.USE_EXACT_ALARM" /> -->
+  <!-- <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" /> -->
+  <!-- <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" /> -->
 
   <!-- For Android 14+ background work -->
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" /> -->
 
   <application
     android:label="الدرر النقية"
@@ -49,47 +49,47 @@
     </activity>
 
     <!-- Background Service for prayer notifications -->
-    <service
-      android:name="id.flutter.flutter_background_service.BackgroundService"
-      android:foregroundServiceType="dataSync"
-      />
-
+    <!-- <service -->
+    <!--   android:name="id.flutter.flutter_background_service.BackgroundService" -->
+    <!--   android:foregroundServiceType="dataSync" -->
+    <!--   /> -->
+    <!---->
     <!-- WorkManager for backup tasks -->
-    <provider
-      android:name="androidx.startup.InitializationProvider"
-      android:authorities="${applicationId}.androidx-startup"
-      android:exported="false">
-      <!--tools:node="merge"> -->
-      <meta-data
-        android:name="androidx.work.WorkManagerInitializer"
-        android:value="androidx.startup" />
-    </provider>
-
+    <!-- <provider -->
+    <!--   android:name="androidx.startup.InitializationProvider" -->
+    <!--   android:authorities="${applicationId}.androidx-startup" -->
+    <!--   android:exported="false"> -->
+    <!--tools:node="merge"> -->
+    <!--   <meta-data -->
+    <!--     android:name="androidx.work.WorkManagerInitializer" -->
+    <!--     android:value="androidx.startup" /> -->
+    <!-- </provider> -->
+    <!---->
     <!-- Boot receiver to restart service after device reboot -->
-    <receiver
-      android:name=".BootReceiver"
-      android:exported="false"
-      android:enabled="true">
-      <intent-filter android:priority="1000">
-        <action android:name="android.intent.action.BOOT_COMPLETED" />
-        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-        <action android:name="android.intent.action.PACKAGE_REPLACED" />
-        <data android:scheme="package" />
-      </intent-filter>
-    </receiver>
-
+    <!-- <receiver -->
+    <!--   android:name=".BootReceiver" -->
+    <!--   android:exported="false" -->
+    <!--   android:enabled="true"> -->
+    <!--   <intent-filter android:priority="1000"> -->
+    <!--     <action android:name="android.intent.action.BOOT_COMPLETED" /> -->
+    <!--     <action android:name="android.intent.action.MY_PACKAGE_REPLACED" /> -->
+    <!--     <action android:name="android.intent.action.PACKAGE_REPLACED" /> -->
+    <!--     <data android:scheme="package" /> -->
+    <!--   </intent-filter> -->
+    <!-- </receiver> -->
+    <!---->
     <!-- Flutter Local Notifications -->
-    <receiver android:exported="false"
-      android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
-    <receiver android:exported="false"
-      android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
-      <intent-filter>
-        <action android:name="android.intent.action.BOOT_COMPLETED" />
-        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-        <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-        <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
-      </intent-filter>
-    </receiver>
+    <!-- <receiver android:exported="false" -->
+    <!--   android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" /> -->
+    <!-- <receiver android:exported="false" -->
+    <!--   android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"> -->
+    <!--   <intent-filter> -->
+    <!--     <action android:name="android.intent.action.BOOT_COMPLETED" /> -->
+    <!--     <action android:name="android.intent.action.MY_PACKAGE_REPLACED" /> -->
+    <!--     <action android:name="android.intent.action.QUICKBOOT_POWERON" /> -->
+    <!--     <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" /> -->
+    <!--   </intent-filter> -->
+    <!-- </receiver> -->
 
     <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
