@@ -63,7 +63,7 @@ class _MainWrapperState extends State<MainWrapper> {
   @override
   void initState() {
     super.initState();
-  // GlobalDrawerController is registered in main.dart
+    // GlobalDrawerController is registered in main.dart
   }
 
   void _goBranch(int index) async {
@@ -71,13 +71,13 @@ class _MainWrapperState extends State<MainWrapper> {
     try {
       final drawerController = Get.find<GlobalDrawerController>();
 
-  if (drawerController.hasOpenDrawer) {
+      if (drawerController.hasOpenDrawer) {
         // Close instantly without animation to avoid flickering
         drawerController.closeAllDrawers();
         await Future.delayed(const Duration(milliseconds: 300));
       }
     } catch (e) {
-  // Controller not available; ignore
+      // Controller not available; ignore
     }
 
     widget.navigationShell.goBranch(
@@ -88,7 +88,7 @@ class _MainWrapperState extends State<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
-  final c = Get.find<Controller>();
+    final c = Get.find<Controller>();
     return Scaffold(
       body: Center(
         child: ConstrainedBox(

@@ -16,7 +16,6 @@ import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
 import 'package:aldurar_alnaqia/services/notification_helper.dart';
-import 'package:go_router/go_router.dart';
 
 Future setDesktopWindow() async {
   await DesktopWindow.setMinWindowSize(const Size(600, 600));
@@ -68,45 +67,10 @@ void main() async {
   );
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key, required this.theme, this.initialLocation});
   final AdaptiveThemeMode? theme;
   final String? initialLocation;
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  late final GoRouter _router;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _router = AppRouter.createRouter(initialLocation: widget.initialLocation);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    if (state == AppLifecycleState.resumed) {
-      // When resuming from notification tap while app is in background
-      final sp = await SharedPreferences.getInstance();
-      final hint = sp.getString('initial_route_hint');
-      if (hint != null && hint.isNotEmpty) {
-        await sp.remove('initial_route_hint');
-        if (mounted) {
-          AppRouter.goTo(hint);
-        }
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,11 +91,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       Get.put(FontController(), permanent: true);
     }
 
-    final router = _router;
+    final router = AppRouter.createRouter(initialLocation: initialLocation);
     return AdaptiveTheme(
       light: lightTheme,
       dark: darkTheme,
-  initial: widget.theme ?? AdaptiveThemeMode.system,
+      initial: theme ?? AdaptiveThemeMode.system,
       // TODO: change routing to Getx
       builder: (theme, darkTheme) => MaterialApp.router(
         routerConfig: router,

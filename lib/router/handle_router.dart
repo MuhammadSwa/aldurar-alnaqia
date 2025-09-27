@@ -283,16 +283,6 @@ class AppRouter {
   static String _getCurrentPath(GoRouterState state) {
     return state.matchedLocation;
   }
-
-  // Global navigation helpers
-  static void goTo(String location) {
-    final ctx = _rootNavigatorKey.currentContext;
-    if (ctx != null) {
-      GoRouter.of(ctx).go(location);
-    }
-  }
-
-  static void goToTimings() => goTo(RoutePaths.timings);
 }
 
 // router/route_paths.dart
