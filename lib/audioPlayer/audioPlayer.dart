@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
@@ -28,25 +29,21 @@ class Controller extends GetxController {
 
   var buttonState = _ButtonState.loading.obs;
 
-  initPlayer(String newUrl, String newTitle, bool fileExists, {String? localId}) async {
-    // Keep the original (remote) URL in state so UI logic can compare against it
-    url.value = newUrl;
-    title.value = newTitle;
+  // Subscriptions to avoid adding multiple listeners across re-inits
+  StreamSubscription<PlayerState>? _playerStateSub;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration>? _bufferedSub;
+  StreamSubscription<Duration?>? _durationSub;
 
+  @override
+  void onInit() {
+    super.onInit();
+
+    // Ensure backend is initialized once on controller creation
     JustAudioMediaKit.ensureInitialized();
 
-    if (fileExists) {
-      final storage = Get.find<StorageService>();
-      final id = localId ?? newTitle; // prefer explicit id when provided
-      final path = storage.pathFor(DownloadType.narrations, id);
-      await _audioPlayer.setFilePath(path);
-    } else {
-      await _audioPlayer.setUrl(url.value);
-    }
-
-    await _audioPlayer.play();
-
-    _audioPlayer.playerStateStream.listen((playerState) {
+    // Attach listeners once; update reactive state for UI
+    _playerStateSub = _audioPlayer.playerStateStream.listen((playerState) {
       final isPlaying = playerState.playing;
       final processingState = playerState.processingState;
       if (processingState == ProcessingState.loading ||
@@ -64,7 +61,7 @@ class Controller extends GetxController {
       }
     });
 
-    _audioPlayer.positionStream.listen((position) {
+    _positionSub = _audioPlayer.positionStream.listen((position) {
       final oldState = progressBarState.value;
       progressBarState.value = ProgressBarState(
         current: position,
@@ -73,7 +70,7 @@ class Controller extends GetxController {
       );
     });
 
-    _audioPlayer.bufferedPositionStream.listen((bufferedPosition) {
+    _bufferedSub = _audioPlayer.bufferedPositionStream.listen((bufferedPosition) {
       final oldState = progressBarState.value;
       progressBarState.value = ProgressBarState(
         current: oldState.current,
@@ -82,7 +79,7 @@ class Controller extends GetxController {
       );
     });
 
-    _audioPlayer.durationStream.listen((totalDuration) {
+    _durationSub = _audioPlayer.durationStream.listen((totalDuration) {
       final oldState = progressBarState.value;
       progressBarState.value = ProgressBarState(
         current: oldState.current,
@@ -92,11 +89,41 @@ class Controller extends GetxController {
     });
   }
 
+  initPlayer(String newUrl, String newTitle, bool fileExists, {String? localId}) async {
+    // Keep the original (remote) URL in state so UI logic can compare against it
+    url.value = newUrl;
+    title.value = newTitle;
+    buttonState.value = _ButtonState.loading;
+
+    // Reset current playback before setting new source
+    await _audioPlayer.stop();
+
+    if (fileExists) {
+      final storage = Get.find<StorageService>();
+      final id = localId ?? newTitle; // prefer explicit id when provided
+      final path = storage.pathFor(DownloadType.narrations, id);
+      await _audioPlayer.setFilePath(path);
+    } else {
+      await _audioPlayer.setUrl(url.value);
+    }
+
+    // Apply current speed and start playing
+    await _audioPlayer.setSpeed(speed.value);
+    await _audioPlayer.play();
+  }
+
   void stopPlayer() {
     url.value = '';
-  // Stop and reset the player gracefully
-  _audioPlayer.stop();
-  _audioPlayer.seek(Duration.zero);
+    // Stop and reset the player gracefully
+    _audioPlayer.stop();
+    _audioPlayer.seek(Duration.zero);
+    progressBarState.value = ProgressBarState(
+      current: Duration.zero,
+      buffered: Duration.zero,
+      total: Duration.zero,
+    );
+    buttonState.value = _ButtonState.paused;
+    title.value = '';
   }
 
   void play() {
@@ -119,6 +146,10 @@ class Controller extends GetxController {
   @override
   void onClose() {
     // Dispose the underlying player to free native resources
+    _playerStateSub?.cancel();
+    _positionSub?.cancel();
+    _bufferedSub?.cancel();
+    _durationSub?.cancel();
     _audioPlayer.dispose();
     super.onClose();
   }
@@ -143,7 +174,8 @@ class AudioControllerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(Controller());
+    // Use the singleton instance registered at app start
+    final c = Get.find<Controller>();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -265,7 +297,8 @@ class SpeedSliderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(Controller());
+    // Use the singleton instance registered at app start
+    final c = Get.find<Controller>();
 
     return IconButton(
       icon: Obx(() {
