@@ -28,6 +28,7 @@ class NotificationHelper {
     final android = _fln.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
     await android?.createNotificationChannel(_channel);
+    // Default small icon is taken from AndroidInitializationSettings
 
     // Request notification permission on Android 13+
     if (Platform.isAndroid) {

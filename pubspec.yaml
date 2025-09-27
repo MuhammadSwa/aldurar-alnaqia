@@ -84,6 +84,12 @@ flutter_launcher_icons:
   ios: true
   image_path: "app_logo_cropped.png"
   image_path_android: "app_logo_cropped.png"
+  # Generate adaptive icons (Android 8+) with a monochrome layer (Android 13+)
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "app_logo_cropped.png"
+  # For Android 13+, we supply a monochrome vector under mipmap-anydpi-v33
+  # flutter_launcher_icons can't reference XML directly, but the OS will prefer
+  # ic_launcher_monochrome from mipmap-anydpi-v33 automatically when present.
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true

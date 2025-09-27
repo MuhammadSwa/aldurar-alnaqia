@@ -140,15 +140,8 @@ Future<String> _buildNotificationContent() async {
       precision: true,
     );
 
-    String formatHM(DateTime? dt) {
-      if (dt == null) return '--:--';
-      final tzdt = tz.TZDateTime.from(dt, tz.local);
-      final h = tzdt.hour.toString().padLeft(2, '0');
-      final m = tzdt.minute.toString().padLeft(2, '0');
-      return '$h:$m';
-    }
-
-    // buffer.write('فجر ${formatHM(prayers.fajr)} • شروق ${formatHM(prayers.sunrise)} • ظهر ${formatHM(prayers.dhuhr)} • عصر ${formatHM(prayers.asr)} • مغرب ${formatHM(prayers.maghrib)} • عشاء ${formatHM(prayers.isha)}');
+    // buffer.write(
+    // 'فجر ${_formatHm(prayers.fajr)} • شروق ${_formatHm(prayers.sunrise)} • ظهر ${_formatHm(prayers.dhuhr)} • عصر ${_formatHm(prayers.asr)} • مغرب ${_formatHm(prayers.maghrib)} • عشاء ${_formatHm(prayers.isha)}');
 
     // Next prayer
     String nextName = prayers.nextPrayer();
@@ -167,7 +160,7 @@ Future<String> _buildNotificationContent() async {
       final s = (visible.inSeconds % 60).toString().padLeft(2, '0');
 
       final arName = _arabicPrayerName(nextName);
-      buffer.write('  •  التالي: $arName بعد $h:$m:$s');
+      buffer.write('$arName بعد $h:$m:$s');
     }
 
     return buffer.toString();
@@ -176,15 +169,17 @@ Future<String> _buildNotificationContent() async {
   }
 }
 
+String _toRtl(String s) => '\u202B' + s + '\u202C';
+
 Future<void> _pushNotificationUpdate(ServiceInstance service) async {
-  final content = await _buildNotificationContent();
+  final content = _toRtl(await _buildNotificationContent());
   if (service is AndroidServiceInstance) {
     // Many launchers open the app on notification tap by default.
     // To support direct navigation, we also store a hint flag.
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('initial_route_hint', '/timings');
     await service.setForegroundNotificationInfo(
-      title: 'مواقيت الصلاة',
+      title: _toRtl('مواقيت الصلاة'),
       content: content,
     );
   }
@@ -274,4 +269,12 @@ String _arabicPrayerName(String englishName) {
     default:
       return 'الفجر';
   }
+}
+
+String _formatHm(DateTime? dt) {
+  if (dt == null) return '--:--';
+  final tzdt = tz.TZDateTime.from(dt, tz.local);
+  final h = tzdt.hour.toString().padLeft(2, '0');
+  final m = tzdt.minute.toString().padLeft(2, '0');
+  return '$h:$m';
 }
