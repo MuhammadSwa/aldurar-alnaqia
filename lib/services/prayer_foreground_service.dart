@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
+import 'package:flutter/widgets.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,8 +51,12 @@ Future<void> setPrayerForegroundEnabled(bool enabled) async {
   if (enabled && !isRunning) {
     await initializePrayerForegroundService();
   } else if (!enabled && isRunning) {
-    // In v5, stopping is done via an invoke call (no await needed)
+    // Ask the service to stop and wait briefly for it to shut down
     service.invoke('stopService');
+    for (var i = 0; i < 20; i++) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (!await service.isRunning()) break;
+    }
   }
 }
 
@@ -64,7 +69,8 @@ Future<bool> isPrayerForegroundEnabled() async {
 // Entry point for the background isolate. Keep it TOP-LEVEL or STATIC.
 @pragma('vm:entry-point')
 void _onStart(ServiceInstance service) async {
-  // Keep the isolate lean; we only use pure Dart plugins here.
+  // Initialize flutter binding for background isolate
+  WidgetsFlutterBinding.ensureInitialized();
 
   // Timezone setup: use stored timezone if available, fallback to local or UTC
   try {
@@ -78,17 +84,31 @@ void _onStart(ServiceInstance service) async {
     // ignore and use default
   }
 
-  // Periodically update the foreground notification
-  Timer.periodic(const Duration(seconds: 1), (timer) async {
-    // Compose notification content
-    final content = await _buildNotificationContent();
+  // Ensure foreground mode and show immediately
+  Timer? _ticker;
+  if (service is AndroidServiceInstance) {
+    await service.setAsForegroundService();
+  }
 
+  // Stop handler: cancel ticker and remove notification by stopping service
+  service.on('stopService').listen((event) async {
+    _ticker?.cancel();
     if (service is AndroidServiceInstance) {
-      await service.setForegroundNotificationInfo(
-        title: 'مواقيت الصلاة',
-        content: content,
-      );
+      await service.stopSelf();
     }
+  });
+
+  // Manual refresh handler
+  service.on('refresh').listen((event) async {
+    await _pushNotificationUpdate(service);
+  });
+
+  // Immediate notification update
+  await _pushNotificationUpdate(service);
+
+  // Periodically update the foreground notification
+  _ticker = Timer.periodic(const Duration(seconds: 1), (timer) async {
+    await _pushNotificationUpdate(service);
   });
 }
 
@@ -153,6 +173,20 @@ Future<String> _buildNotificationContent() async {
     return buffer.toString();
   } catch (_) {
     return 'تعذّر حساب المواقيت';
+  }
+}
+
+Future<void> _pushNotificationUpdate(ServiceInstance service) async {
+  final content = await _buildNotificationContent();
+  if (service is AndroidServiceInstance) {
+    // Many launchers open the app on notification tap by default.
+    // To support direct navigation, we also store a hint flag.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('initial_route_hint', '/timings');
+    await service.setForegroundNotificationInfo(
+      title: 'مواقيت الصلاة',
+      content: content,
+    );
   }
 }
 

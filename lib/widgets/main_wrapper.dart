@@ -60,8 +60,6 @@ class MainWrapper extends StatefulWidget {
 }
 
 class _MainWrapperState extends State<MainWrapper> {
-  int selectedIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -135,12 +133,9 @@ class _MainWrapperState extends State<MainWrapper> {
                       label: 'المكتبة'),
                 ],
                 onDestinationSelected: (index) {
-                  setState(() {
-                    selectedIndex = index;
-                  });
-                  _goBranch(selectedIndex);
+                  _goBranch(index);
                 },
-                selectedIndex: selectedIndex,
+                selectedIndex: widget.navigationShell.currentIndex,
               ),
             ),
           ),

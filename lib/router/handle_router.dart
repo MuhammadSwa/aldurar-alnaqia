@@ -24,9 +24,9 @@ final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
 
 class AppRouter {
-  static GoRouter createRouter() {
+  static GoRouter createRouter({String? initialLocation}) {
     return GoRouter(
-      initialLocation: RoutePaths.home,
+      initialLocation: initialLocation ?? RoutePaths.home,
       debugLogDiagnostics: true,
       navigatorKey: _rootNavigatorKey,
       routes: [
@@ -283,6 +283,16 @@ class AppRouter {
   static String _getCurrentPath(GoRouterState state) {
     return state.matchedLocation;
   }
+
+  // Global navigation helpers
+  static void goTo(String location) {
+    final ctx = _rootNavigatorKey.currentContext;
+    if (ctx != null) {
+      GoRouter.of(ctx).go(location);
+    }
+  }
+
+  static void goToTimings() => goTo(RoutePaths.timings);
 }
 
 // router/route_paths.dart

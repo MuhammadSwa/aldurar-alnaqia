@@ -50,6 +50,14 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+
+      <!-- Handle notification taps via VIEW action with app-specific scheme -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="aldurar" android:host="open" />
+      </intent-filter>
     </activity>
 
     <!-- Background Service for prayer notifications (managed by flutter_background_service) -->
