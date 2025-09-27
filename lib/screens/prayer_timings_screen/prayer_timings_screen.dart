@@ -12,6 +12,10 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_di
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:text_responsive/text_responsive.dart';
+import 'package:universal_platform/universal_platform.dart';
+import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:aldurar_alnaqia/router/handle_router.dart' show RoutePaths;
 
 class PrayerTimingsScreen extends StatefulWidget {
   const PrayerTimingsScreen({super.key});
@@ -55,6 +59,32 @@ class _PrayerTimingsScreenState extends State<PrayerTimingsScreen> {
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
+        actions: [
+          if (UniversalPlatform.isAndroid)
+            FutureBuilder<bool>(
+              future: isPrayerForegroundEnabled(),
+              builder: (context, snapshot) {
+                final enabled = snapshot.data ?? false;
+                return IconButton(
+                  tooltip: enabled
+                      ? 'إيقاف إشعار المواقيت'
+                      : 'تشغيل إشعار المواقيت',
+                  icon: Icon(
+                    enabled ? Icons.notifications_active : Icons.notifications_off,
+                  ),
+                  onPressed: () async {
+                    final newValue = !enabled;
+                    await setPrayerForegroundEnabled(newValue);
+                    if (!context.mounted) return;
+                    // Refresh icon
+                    setState(() {});
+                    // Navigate to the same screen (as requested)
+                    context.go(RoutePaths.timings);
+                  },
+                );
+              },
+            ),
+        ],
       ),
       drawer: const MyDrawer(),
       body: const SingleChildScrollView(

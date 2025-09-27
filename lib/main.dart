@@ -13,6 +13,8 @@ import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
+import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
+import 'package:aldurar_alnaqia/services/notification_helper.dart';
 
 Future setDesktopWindow() async {
   await DesktopWindow.setMinWindowSize(const Size(600, 600));
@@ -40,6 +42,11 @@ void main() async {
   // if (Platform.isAndroid) {
   //   await PrayerNotificationService.initialize();
   // }
+
+  // Create notification channel and request permission (Android 13+)
+  await NotificationHelper.initialize();
+  // Start persistent foreground notification with next prayer countdown (Android only)
+  await initializePrayerForegroundService();
 
   runApp(
     MyApp(theme: savedThemeMode),

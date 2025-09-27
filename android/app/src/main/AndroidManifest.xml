@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
 
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -6,15 +7,18 @@
   <uses-permission android:name="android.permission.INTERNET" />
 
   <!-- Permissions for notifications and background work -->
-  <!-- <uses-permission android:name="android.permission.WAKE_LOCK" /> -->
-  <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> -->
-  <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" /> -->
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-  <!-- <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> -->
-  <!-- <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" /> -->
-  <!-- <uses-permission android:name="android.permission.USE_EXACT_ALARM" /> -->
-  <!-- <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" /> -->
-  <!-- <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" /> -->
+  <!-- Android 13+ runtime notification permission -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Optional exact alarm for future expansion (if we schedule exact adhan) -->
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+  <!-- Allow restart after boot -->
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- Optional: Ignore battery optimizations to keep service responsive -->
+  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
   <!-- For Android 14+ background work -->
   <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" /> -->
@@ -48,11 +52,12 @@
       </intent-filter>
     </activity>
 
-    <!-- Background Service for prayer notifications -->
-    <!-- <service -->
-    <!--   android:name="id.flutter.flutter_background_service.BackgroundService" -->
-    <!--   android:foregroundServiceType="dataSync" -->
-    <!--   /> -->
+    <!-- Background Service for prayer notifications (managed by flutter_background_service) -->
+    <service
+      android:name="id.flutter.flutter_background_service.BackgroundService"
+      android:exported="true"
+      android:foregroundServiceType="dataSync"
+      tools:replace="android:exported" />
     <!---->
     <!-- WorkManager for backup tasks -->
     <!-- <provider -->
@@ -65,18 +70,7 @@
     <!--     android:value="androidx.startup" /> -->
     <!-- </provider> -->
     <!---->
-    <!-- Boot receiver to restart service after device reboot -->
-    <!-- <receiver -->
-    <!--   android:name=".BootReceiver" -->
-    <!--   android:exported="false" -->
-    <!--   android:enabled="true"> -->
-    <!--   <intent-filter android:priority="1000"> -->
-    <!--     <action android:name="android.intent.action.BOOT_COMPLETED" /> -->
-    <!--     <action android:name="android.intent.action.MY_PACKAGE_REPLACED" /> -->
-    <!--     <action android:name="android.intent.action.PACKAGE_REPLACED" /> -->
-    <!--     <data android:scheme="package" /> -->
-    <!--   </intent-filter> -->
-    <!-- </receiver> -->
+    <!-- Boot receiver removed; service is user-toggled from the app -->
     <!---->
     <!-- Flutter Local Notifications -->
     <!-- <receiver android:exported="false" -->
