@@ -41,6 +41,8 @@ dependencies:
   adaptive_theme: ^3.6.0
   easy_rich_text: ^2.1.0
   just_audio: ^0.9.38
+  audio_service: ^0.18.18
+  just_audio_background: ^0.0.1-beta.17
   media_kit_libs_audio: any
   media_kit_libs_linux: any
   just_audio_media_kit: ^2.0.4
@@ -84,12 +86,6 @@ flutter_launcher_icons:
   ios: true
   image_path: "app_logo_cropped.png"
   image_path_android: "app_logo_cropped.png"
-  # Generate adaptive icons (Android 8+) with a monochrome layer (Android 13+)
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "app_logo_cropped.png"
-  # For Android 13+, we supply a monochrome vector under mipmap-anydpi-v33
-  # flutter_launcher_icons can't reference XML directly, but the OS will prefer
-  # ic_launcher_monochrome from mipmap-anydpi-v33 automatically when present.
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true

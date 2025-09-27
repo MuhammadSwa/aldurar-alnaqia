@@ -10,6 +10,7 @@ import 'package:desktop_window/desktop_window.dart';
 import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/audioPlayer/audioPlayer.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
@@ -24,6 +25,15 @@ Future setDesktopWindow() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Enable background audio playback + media notification controls.
+  // Note: Requires Android manifest service/receiver entries and iOS background mode.
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.example.aldurar_alnaqia.channel.audio',
+    androidNotificationChannelName: 'تشغيل الصوت',
+    // Keep the service foreground while playing; allow swipe-to-dismiss when paused.
+    androidNotificationOngoing: true,
+  );
 
   if (UniversalPlatform.isWindows ||
       UniversalPlatform.isLinux ||

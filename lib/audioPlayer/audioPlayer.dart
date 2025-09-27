@@ -5,6 +5,8 @@ import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
 import 'package:get/instance_manager.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
@@ -70,7 +72,8 @@ class Controller extends GetxController {
       );
     });
 
-    _bufferedSub = _audioPlayer.bufferedPositionStream.listen((bufferedPosition) {
+    _bufferedSub =
+        _audioPlayer.bufferedPositionStream.listen((bufferedPosition) {
       final oldState = progressBarState.value;
       progressBarState.value = ProgressBarState(
         current: oldState.current,
@@ -89,7 +92,8 @@ class Controller extends GetxController {
     });
   }
 
-  initPlayer(String newUrl, String newTitle, bool fileExists, {String? localId}) async {
+  initPlayer(String newUrl, String newTitle, bool fileExists,
+      {String? localId}) async {
     // Keep the original (remote) URL in state so UI logic can compare against it
     url.value = newUrl;
     title.value = newTitle;
@@ -98,13 +102,34 @@ class Controller extends GetxController {
     // Reset current playback before setting new source
     await _audioPlayer.stop();
 
+    final art = Uri.parse('asset:///assets/imgs/social_png.png');
     if (fileExists) {
       final storage = Get.find<StorageService>();
       final id = localId ?? newTitle; // prefer explicit id when provided
       final path = storage.pathFor(DownloadType.narrations, id);
-      await _audioPlayer.setFilePath(path);
+      await _audioPlayer.setAudioSource(
+        AudioSource.uri(
+          Uri.file(path),
+          tag: MediaItem(
+            id: id,
+            title: newTitle,
+            album: 'الطريقة اليسرية',
+            artUri: art,
+          ),
+        ),
+      );
     } else {
-      await _audioPlayer.setUrl(url.value);
+      await _audioPlayer.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(url.value),
+          tag: MediaItem(
+            id: localId ?? newTitle,
+            title: newTitle,
+            album: 'الطريقة اليسرية',
+            artUri: art,
+          ),
+        ),
+      );
     }
 
     // Apply current speed and start playing
