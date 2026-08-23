@@ -13,7 +13,7 @@ import 'package:text_responsive/text_responsive.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
 import 'package:go_router/go_router.dart';
-import 'package:aldurar_alnaqia/router/handle_router.dart' show RoutePaths;
+import 'package:aldurar_alnaqia/router/app_routes.dart' show RoutePaths;
 
 class PrayerTimingsScreen extends ConsumerStatefulWidget {
   const PrayerTimingsScreen({super.key});

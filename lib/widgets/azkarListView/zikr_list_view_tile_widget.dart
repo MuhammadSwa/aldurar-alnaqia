@@ -1,18 +1,19 @@
+import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/bookmark_button.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
+/// A single azkar list entry. Navigation is expressed as a typed
+/// [ZikrTarget] instead of a raw path string, so titles with spaces or
+/// special characters are always encoded correctly.
 class ZikrListViewTile extends StatelessWidget {
   const ZikrListViewTile({
     super.key,
     required this.title,
-    this.titles,
-    this.index,
-    required this.route,
+    required this.target,
   });
-  final String title, route;
-  final List<String>? titles;
-  final int? index;
+
+  final String title;
+  final ZikrTarget target;
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +24,7 @@ class ZikrListViewTile extends StatelessWidget {
       ),
       trailing: const Icon(Icons.chevron_right),
       leading: BookmarkButton(bookmarkId: title),
-      onTap: () {
-        // TODO: pass titles to ZikrScreen
-        context.go(route, extra: {'titles': titles, 'index': index});
-      },
+      onTap: () => target.go(context),
     );
   }
 }

@@ -1,8 +1,11 @@
-// router/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:aldurar_alnaqia/router/app_routes.dart';
+import 'package:aldurar_alnaqia/widgets/collection_screens.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
+import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
 import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
 import 'package:aldurar_alnaqia/screens/award_list_screen/awrad_list_screen.dart';
@@ -12,12 +15,9 @@ import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
-import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
-import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
     show islamicWeekdayNow;
 
@@ -32,6 +32,8 @@ final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
 
 class AppRouter {
+  AppRouter._();
+
   static GoRouter createRouter({String? initialLocation}) {
     return GoRouter(
       initialLocation: initialLocation ?? RoutePaths.home,
@@ -41,7 +43,6 @@ class AppRouter {
         // Standalone routes (not in bottom nav)
         _createSocialRoute(),
         _createDownloadManagerRoute(),
-        // _createSliderRoute(),
 
         // Bottom navigation shell with main tabs
         StatefulShellRoute.indexedStack(
@@ -59,7 +60,7 @@ class AppRouter {
     );
   }
 
-  // Standalone routes
+  // --- Standalone routes ---------------------------------------------------
 
   static GoRoute _createSocialRoute() {
     return GoRoute(
@@ -73,24 +74,13 @@ class AppRouter {
       path: '${RoutePaths.downloadManager}/:index',
       builder: (context, state) {
         final index = int.parse(state.pathParameters['index']!);
-        return DownloadManagerPage(
-          initialIndex: index,
-        );
+        return DownloadManagerPage(initialIndex: index);
       },
     );
   }
 
-  // static GoRoute _createSliderRoute() {
-  //   return GoRoute(
-  //     path: RoutePaths.slider,
-  //     builder: (context, state) {
-  //       final titles = state.extra as List<String>;
-  //       return ZikrsliderScreen(titles);
-  //     },
-  //   );
-  // }
+  // --- Bottom navigation branches -------------------------------------------
 
-  // Bottom navigation branches
   static StatefulShellBranch _createHomeBranch() {
     return StatefulShellBranch(
       routes: [
@@ -100,9 +90,9 @@ class AppRouter {
           builder: (context, state) => const HomePage(),
           routes: [
             _createTodayZikrRoute(),
-            _createWeekCollectionRoute('home'),
-            _createZikrCollectionRoute('home'),
-            _createZikrPageRoute('home'),
+            _createWeekCollectionRoute(ZikrBranch.home),
+            _createZikrCollectionRoute(ZikrBranch.home),
+            _createZikrPageRoute(ZikrBranch.home, pagePrefix: 'home'),
           ],
         ),
       ],
@@ -129,9 +119,9 @@ class AppRouter {
           name: RouteNames.awrad,
           builder: (context, state) => const AwradListScreen(),
           routes: [
-            _createWeekCollectionRoute('awrad'),
-            _createZikrCollectionRoute('awrad'),
-            _createZikrPageRoute('awrad'),
+            _createWeekCollectionRoute(ZikrBranch.awrad),
+            _createZikrCollectionRoute(ZikrBranch.awrad),
+            _createZikrPageRoute(ZikrBranch.awrad, pagePrefix: 'awrad'),
             _createHeliaNasabRoute(),
           ],
         ),
@@ -154,86 +144,100 @@ class AppRouter {
     );
   }
 
-  // Nested routes
+  // --- Nested content routes -------------------------------------------------
+  //
+  // Path parameters are read RAW from state.pathParameters: go_router has
+  // already percent-decoded them. Never decode again here.
+
   static GoRoute _createTodayZikrRoute() {
     return GoRoute(
-      path: 'todaysZikr',
+      path: RoutePaths.todaysZikrSegment,
       name: RouteNames.todayZikr,
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
           DayAzkarList(
             dayNum: islamicWeekdayNow(),
-            route: '${_getCurrentPath(state)}/zikr',
+            branch: ZikrBranch.home,
+            detailPagePrefix: RouteNames.todayZikrPagePrefix,
           ),
         );
       },
-      routes: [_createZikrPageRoute('todayZikr')],
+      routes: [_createZikrPageRoute(ZikrBranch.home, pagePrefix: RouteNames.todayZikrPagePrefix)],
     );
   }
 
-  static GoRoute _createWeekCollectionRoute(String branch) {
+  static GoRoute _createWeekCollectionRoute(ZikrBranch branch) {
     return GoRoute(
-      path: 'weekCollection',
-      name: '${branch}WeekCollection',
+      path: RoutePaths.weekCollectionSegment,
+      name: RouteNames.weekCollection(branch),
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
-          WeekCollectionScreen(basePath: _getCurrentPath(state)),
+          WeekCollectionScreen(branch: branch),
         );
       },
       routes: _createDayCollectionRoutes(branch),
     );
   }
 
-  static List<GoRoute> _createDayCollectionRoutes(String branch) {
+  static List<GoRoute> _createDayCollectionRoutes(ZikrBranch branch) {
     return List.generate(8, (index) {
+      final pagePrefix = RouteNames.weekCollectionDay(branch, index);
       return GoRoute(
         path: index.toString(),
         pageBuilder: (context, state) {
           return RouteTransitions.slideTransition(
             DayAzkarList(
               dayNum: index,
-              route: '${_getCurrentPath(state)}/zikr',
+              branch: branch,
+              detailPagePrefix: pagePrefix,
             ),
           );
         },
-        routes: [_createZikrPageRoute('${branch}WeekCollection$index')],
+        routes: [
+          _createZikrPageRoute(branch, pagePrefix: pagePrefix),
+        ],
       );
     });
   }
 
-  static GoRoute _createZikrCollectionRoute(String branch) {
+  static GoRoute _createZikrCollectionRoute(ZikrBranch branch) {
     return GoRoute(
-      path: 'zikrCollection/:collection',
-      name: '${branch}ZikrCollection',
+      path: RoutePaths.zikrCollectionSegment,
+      name: RouteNames.zikrCollection(branch),
       pageBuilder: (context, state) {
         final collection = state.pathParameters['collection']!;
         final azkarTitles = azkarCollections.getAzkarTitles(collection);
 
         return RouteTransitions.slideTransition(
           ZikrCollectionScreen(
+            branch: branch,
             collection: collection,
             azkarTitles: azkarTitles,
-            basePath: _getCurrentPath(state),
           ),
         );
       },
-      routes: [_createZikrPageRoute('${branch}ZikrCollection')],
+      routes: [
+        _createZikrPageRoute(
+          branch,
+          pagePrefix: RouteNames.zikrCollection(branch),
+        ),
+      ],
     );
   }
 
-  // TODO: get extra titles here
-  static GoRoute _createZikrPageRoute(String prefix) {
+  static GoRoute _createZikrPageRoute(
+    ZikrBranch branch, {
+    required String pagePrefix,
+  }) {
     return GoRoute(
-      path: 'zikr/:zikr',
-      name: '${prefix}ZikrPage',
+      path: RoutePaths.zikrSegment,
+      name: RouteNames.zikrPage(pagePrefix),
       pageBuilder: (context, state) {
-        // Path parameters may be percent-encoded (e.g. from free-text search)
-        final zikr = Uri.decodeComponent(state.pathParameters['zikr']!);
+        final zikr = state.pathParameters['zikr']!;
 
-        // Typed route extras parsing
         final (titles, index) = _parseZikrExtras(state.extra);
 
-        // Handle special cases
+        // Handle special standalone compositions
         if (zikr == alhyliaAndNasab.title) {
           return RouteTransitions.slideTransition(const HeliaNasabScreen());
         }
@@ -242,24 +246,10 @@ class AppRouter {
         }
 
         return RouteTransitions.slideTransition(
-            ZikrScreen(title: zikr, titles: titles, index: index));
+          ZikrScreen(title: zikr, titles: titles, index: index),
+        );
       },
     );
-  }
-
-  // Typed extras contract for Zikr page
-  static (List<String>?, int?) _parseZikrExtras(Object? extra) {
-    if (extra is ZikrRouteExtra) {
-      return (extra.titles, extra.index);
-    }
-    if (extra is Map) {
-      final t = extra['titles'];
-      final i = extra['index'];
-      final titles = t is List ? t.whereType<String>().toList() : null;
-      final index = i is int ? i : null;
-      return (titles, index);
-    }
-    return (null, null);
   }
 
   static GoRoute _createHeliaNasabRoute() {
@@ -283,44 +273,28 @@ class AppRouter {
     );
   }
 
-  // Helper method to get current path
-  static String _getCurrentPath(GoRouterState state) {
-    return state.matchedLocation;
+  /// Typed extras parsing for zikr detail pages. Accepts both the typed
+  /// [ZikrRouteExtra] and legacy map extras.
+  static (List<String>?, int?) _parseZikrExtras(Object? extra) {
+    if (extra is ZikrRouteExtra) {
+      return (extra.titles, extra.index);
+    }
+    if (extra is Map) {
+      final t = extra['titles'];
+      final i = extra['index'];
+      final titles = t is List ? t.whereType<String>().toList() : null;
+      final index = i is int ? i : null;
+      return (titles, index);
+    }
+    return (null, null);
   }
-}
-
-// router/route_paths.dart
-class RoutePaths {
-  static const String home = '/home';
-  static const String timings = '/timings';
-  static const String awrad = '/awradScreen';
-  static const String library = '/library';
-  static const String settings = '/settings';
-  static const String social = '/social';
-  static const String downloadManager = '/downloadManager';
-  static const String slider = '/slider';
-}
-
-class RouteNames {
-  static const String home = 'home';
-  static const String timings = 'timings';
-  static const String awrad = 'awrad';
-  static const String library = 'library';
-  static const String todayZikr = 'todayZikr';
-  static const String heliaNasab = 'heliaNasab';
-  static const String pdfViewer = 'pdfViewer';
-}
-
-// Route extras helpers
-class ZikrRouteExtra {
-  final List<String>? titles;
-  final int? index;
-  const ZikrRouteExtra({this.titles, this.index});
 }
 
 // router/route_transitions.dart
 
 class RouteTransitions {
+  RouteTransitions._();
+
   static CustomTransitionPage<Widget> slideTransition(Widget child) {
     return CustomTransitionPage<Widget>(
       child: child,
@@ -347,78 +321,6 @@ class RouteTransitions {
       child: FadeTransition(
         opacity: animation,
         child: child,
-      ),
-    );
-  }
-}
-
-// widgets/week_collection_screen.dart
-
-class WeekCollectionScreen extends StatelessWidget {
-  final String basePath;
-
-  const WeekCollectionScreen({
-    super.key,
-    required this.basePath,
-  });
-
-  static const Map<String, String> daysAzkarTitles = {
-    '6': 'ورد يوم السبت',
-    '7': 'ورد يوم الأحد',
-    '1': 'ورد يوم الإثنين',
-    '2': 'ورد يوم الثلاثاء',
-    '3': 'ورد يوم الأربعاء',
-    '4': 'ورد يوم الخميس',
-    '5': 'ورد يوم الجمعة',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('أوراد الأسبوع'),
-      ),
-      body: ListView.builder(
-        itemCount: daysAzkarTitles.length,
-        itemBuilder: (context, index) {
-          final day = daysAzkarTitles.keys.elementAt(index);
-          final title = daysAzkarTitles[day]!;
-
-          return ZikrListViewTile(
-            title: title,
-            route: '$basePath/$day',
-          );
-        },
-      ),
-    );
-  }
-}
-
-// widgets/zikr_collection_screen.dart
-
-class ZikrCollectionScreen extends StatelessWidget {
-  final String collection;
-  final List<String> azkarTitles;
-  final String basePath;
-
-  const ZikrCollectionScreen({
-    super.key,
-    required this.collection,
-    required this.azkarTitles,
-    required this.basePath,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(collection),
-      ),
-      // floatingActionButton: FloatingSliderBtn(titles: azkarTitles),
-      body: AzkarListViewWidget(
-        titles: azkarTitles,
-        route: '$basePath/zikr',
-        barTitle: collection,
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'package:aldurar_alnaqia/router/app_routes.dart';
+import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/toggle_theme_btn_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
@@ -52,7 +54,7 @@ class MyDrawer extends StatelessWidget {
                   title: 'الصفحات الرسمية',
                   onTap: () {
                     Navigator.pop(context);
-                    context.push('/social');
+                    context.push(RoutePaths.social);
                   }),
 
               _buildDrawerItem(
@@ -65,7 +67,7 @@ class MyDrawer extends StatelessWidget {
                   title: 'إدارة التحميلات',
                   onTap: () {
                     Navigator.pop(context);
-                    context.push('/downloadManager/0');
+                    AppNav.goToDownloadManager(context, 0);
                   }),
               _buildDrawerItem(
                   context: context,

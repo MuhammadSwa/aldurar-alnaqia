@@ -3,7 +3,7 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 
 // This map can stay here as it's static data
@@ -165,7 +165,7 @@ class _BookListTile extends ConsumerWidget {
   void _handleTap(BuildContext context, WidgetRef ref, bool isDownloaded) {
     if (isDownloaded) {
       // Open viewer; it will auto-restore last page.
-      context.push('/library/pdfViewer/${Uri.encodeComponent(item.title)}');
+      AppNav.goToPdfViewer(context, item.title);
     } else {
       _showDownloadOptionsDialog(context, ref);
     }
@@ -178,7 +178,7 @@ class _BookListTile extends ConsumerWidget {
         item: item,
         onStream: () {
           Navigator.of(dialogContext).pop();
-          context.go('/library/pdfViewer/${Uri.encodeComponent(item.title)}');
+          AppNav.goToPdfViewer(context, item.title);
         },
         onDownload: () {
           Navigator.of(dialogContext).pop();
@@ -186,7 +186,7 @@ class _BookListTile extends ConsumerWidget {
         },
         onManageDownloads: () {
           Navigator.of(dialogContext).pop();
-          context.push('/downloadManager/1');
+          AppNav.goToDownloadManager(context, 1);
         },
       ),
     );

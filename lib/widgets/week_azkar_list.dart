@@ -3,6 +3,7 @@ import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/azkar_morning_evening_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/ibn_ata_allah.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/models/consts/ahzab_alshazly_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/azkar_algomari_collection.dart';
@@ -10,19 +11,21 @@ import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
 import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
-// TODO: instad of engDay make it numbers for previty and List
 
 class DayAzkarList extends StatelessWidget {
   const DayAzkarList({
     super.key,
     required this.dayNum,
-    // TODO: generate the route yourself
-    // if today is true make it /home/todaysZikr/zikr
-    required this.route,
+    required this.branch,
+    required this.detailPagePrefix,
   });
 
   final int dayNum;
-  final String route;
+  final ZikrBranch branch;
+
+  /// Route-name prefix of the nested zikr page this day's tiles open
+  /// (differs between today's wird and the week-collection days).
+  final String detailPagePrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +38,14 @@ class DayAzkarList extends StatelessWidget {
       ),
       body: AzkarListViewWidget(
         titles: titles,
-        route: route,
         barTitle: 'الأذكار',
+        targetBuilder: (title, index) => ZikrDetailTarget(
+          branch: branch,
+          title: title,
+          pagePrefix: detailPagePrefix,
+          titles: titles,
+          index: index,
+        ),
       ),
     );
   }

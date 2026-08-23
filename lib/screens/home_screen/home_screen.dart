@@ -1,5 +1,6 @@
 import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
@@ -24,9 +25,10 @@ class _HomePageState extends ConsumerState<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void handleSearch(String query) {
+    // Pass the raw title; go_router percent-encodes path parameters itself.
     context.goNamed(
-      'homeZikrPage',
-      pathParameters: {'zikr': Uri.encodeComponent(query)},
+      RouteNames.zikrPage(ZikrBranch.home.namePrefix),
+      pathParameters: {'zikr': query},
     );
   }
 
@@ -82,9 +84,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   leading: const Icon(Icons.arrow_right),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    context.go('/home/todaysZikr');
-                  },
+                  onTap: () => const TodaysZikrTarget().go(context),
                 ),
                 ListTile(
                   title: Text(
@@ -95,7 +95,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   onTap: () {
                     AppNav.goToZikr(
                       context,
-                      'home',
+                      ZikrBranch.home,
                       dalayilAlkhayratCollection[dayIndex].title,
                     );
                   },
@@ -115,14 +115,14 @@ class _HomePageState extends ConsumerState<HomePage> {
 class BookmarksTilesHomeScreen extends ConsumerWidget {
   const BookmarksTilesHomeScreen({super.key});
 
-  static const azkarDayTitlesToNum = <String, String>{
-    'ورد يوم الإثنين': '1',
-    'ورد يوم الثلاثاء': '2',
-    'ورد يوم الأربعاء': '3',
-    'ورد يوم الخميس': '4',
-    'ورد يوم الجمعة': '5',
-    'ورد يوم السبت': '6',
-    'ورد يوم الأحد': '7',
+  static const azkarDayTitlesToNum = <String, int>{
+    'ورد يوم الإثنين': 1,
+    'ورد يوم الثلاثاء': 2,
+    'ورد يوم الأربعاء': 3,
+    'ورد يوم الخميس': 4,
+    'ورد يوم الجمعة': 5,
+    'ورد يوم السبت': 6,
+    'ورد يوم الأحد': 7,
   };
 
   @override
@@ -153,25 +153,33 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
           children: [
             if (weekAzkarBookmarked) ...{
               const ZikrListViewTile(
-                  title: 'أوراد الأسبوع', route: '/home/weekCollection'),
+                  title: 'أوراد الأسبوع',
+                  target: WeekCollectionTarget(ZikrBranch.home)),
             },
             if (bookmarks.isNotEmpty) ...{
               for (var day in azkarOfDays) ...{
                 ZikrListViewTile(
                     title: day,
-                    route: '/home/weekCollection/${azkarDayTitlesToNum[day]}'),
+                    target: DayWirdTarget(ZikrBranch.home,
+                        day: azkarDayTitlesToNum[day]!)),
               },
               AzkarListViewWidget(
                 titles: collectionTitles,
-                route: '/home/zikrCollection',
                 barTitle: 'الأذكار',
                 scrollable: false,
+                targetBuilder: (title, index) =>
+                    ZikrCollectionViewTarget(ZikrBranch.home, collection: title),
               ),
               AzkarListViewWidget(
                 titles: orphanTitles,
-                route: '/home/zikr',
                 barTitle: 'الأذكار',
                 scrollable: false,
+                targetBuilder: (title, index) => ZikrDetailTarget(
+                  branch: ZikrBranch.home,
+                  title: title,
+                  titles: orphanTitles,
+                  index: index,
+                ),
               ),
             } else ...{
               // TODO: design empty state

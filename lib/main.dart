@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/common/theme/dark_theme.dart';
-import 'package:aldurar_alnaqia/router/handle_router.dart';
+import 'package:aldurar_alnaqia/router/app_router.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_platform/universal_platform.dart';

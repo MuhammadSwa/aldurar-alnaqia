@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/toggle_theme_btn_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
@@ -65,7 +65,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   IconButton(
                       onPressed: () {
-                        context.push('/downloadManager/0');
+                        AppNav.goToDownloadManager(context, 0);
                       },
                       icon: const Icon(Icons.cloud_download_outlined))
                 ],

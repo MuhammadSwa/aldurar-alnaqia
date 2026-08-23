@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
+
+/// Builds the navigation target for a tile from its [title] and [index].
+typedef ZikrTargetBuilder = ZikrTarget Function(String title, int index);
 
 class AzkarListViewWidget extends StatelessWidget {
   const AzkarListViewWidget({
     super.key,
     // titles of collection
     required this.titles,
-    required this.route,
     required this.barTitle,
+    required this.targetBuilder,
     this.scrollable = true,
   });
+
   final List<String> titles;
-  final String route;
   final String barTitle;
+  final ZikrTargetBuilder targetBuilder;
   final bool scrollable;
 
   @override
@@ -27,11 +32,7 @@ class AzkarListViewWidget extends StatelessWidget {
           final title = titles[index];
           return ZikrListViewTile(
             title: title,
-            // TODO: pass titles here as well. optional. if there are titles swipe
-            titles: titles,
-            // TODO: pass index
-            index: index,
-            route: '$route/$title',
+            target: targetBuilder(title, index),
           );
         });
   }
