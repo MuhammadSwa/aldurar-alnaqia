@@ -11,6 +11,8 @@ import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
 import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+    show PrayerTimeings, islamicWeekdayNow;
 
 class DayAzkarList extends StatelessWidget {
   const DayAzkarList({
@@ -29,7 +31,10 @@ class DayAzkarList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isToday = dayNum == DateTime.now().weekday;
+    // "Today" follows the Islamic day (which starts at Maghrib), matching
+    // the day the home screen and todaysZikr route selected — otherwise the
+    // Yousria wird would disappear between Maghrib and midnight.
+    final bool isToday = dayNum == islamicWeekdayNow();
     final titles = WeekCollectionAzkar.getDay(dayNum, isToday: isToday);
     return Scaffold(
       // floatingActionButton: FloatingSliderBtn(titles: titles),
@@ -81,10 +86,22 @@ class WeekCollectionAzkar {
     [poemMonfarigaGazali.title, poemMonfarigaNahawi.title, poemBanatSuad.title],
   ];
 
+  /// The civil date of the current *Islamic* day: between Maghrib and
+  /// midnight the Islamic day has already advanced to tomorrow.
+  static DateTime islamicEffectiveDate() {
+    final now = DateTime.now();
+    final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
+    if (maghrib != null && now.isAfter(maghrib)) {
+      return now.add(const Duration(days: 1));
+    }
+    return now;
+  }
+
   static List<String> getYousriaForToday() {
     // TODO: in settings make user to chose startingDay
     final startingDay = SharedPreferencesService.getYousriaBeginning();
-    final difference = (DateTime.now().difference(startingDay).inDays);
+    final difference =
+        islamicEffectiveDate().difference(startingDay).inDays;
     final yousriaDay = (difference + 1) % 6;
 
     // this is the 6th day
