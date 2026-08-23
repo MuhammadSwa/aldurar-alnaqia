@@ -1,106 +1,115 @@
 import 'dart:async';
 import 'package:adhan_dart/adhan_dart.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:get/get.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
-class PrayerTimingsController extends GetxController {
-  /// --- OPTIMIZATION: Main prayer times object.
-  /// This is now the single source of truth for the day's prayer times.
-  /// It's only recalculated when necessary (on init, settings change, or day change),
-  /// not every second.
-  // Nullable by design: null indicates data not yet available
-  final Rxn<PrayerTimes> prayerTimings = Rxn<PrayerTimes>();
+/// Immutable snapshot of everything the prayer UI needs.
+class PrayerState {
+  final PrayerTimes? prayerTimings;
 
   /// The current Islamic day of the week (Monday=1, Sunday=7).
-  /// This automatically updates after Maghrib.
-  final RxInt islamicWeekday = DateTime.now().weekday.obs;
+  final int islamicWeekday;
+  final (DateTime?, String) nextPrayerInfo;
+  final Duration timeLeft;
+  final bool isInitialized;
 
-  /// --- OPTIMIZATION: Now holds the next prayer time and name.
-  /// This structure is more efficient than recalculating constantly.
-  final Rx<(DateTime?, String)> nextPrayerInfo =
-      Rx<(DateTime?, String)>((null, ''));
+  // ignore: prefer_const_constructors_in_immutables
+  PrayerState({
+    this.prayerTimings,
+    int? islamicWeekday,
+    this.nextPrayerInfo = (null, ''),
+    this.timeLeft = Duration.zero,
+    this.isInitialized = false,
+  }) : islamicWeekday = islamicWeekday ?? DateTime.now().weekday;
 
-  /// --- OPTIMIZATION: The countdown duration is now separate.
-  /// This is the only value that needs to be updated every second.
-  final Rx<Duration> timeLeft = Duration.zero.obs;
+  PrayerState copyWith({
+    PrayerTimes? prayerTimings,
+    int? islamicWeekday,
+    (DateTime?, String)? nextPrayerInfo,
+    Duration? timeLeft,
+    bool? isInitialized,
+  }) {
+    return PrayerState(
+      prayerTimings: prayerTimings ?? this.prayerTimings,
+      islamicWeekday: islamicWeekday ?? this.islamicWeekday,
+      nextPrayerInfo: nextPrayerInfo ?? this.nextPrayerInfo,
+      timeLeft: timeLeft ?? this.timeLeft,
+      isInitialized: isInitialized ?? this.isInitialized,
+    );
+  }
+}
 
-  final RxBool isInitialized = false.obs;
-
-  // Timers
-  Timer? _countdownTimer; // For the 1-second UI countdown
-  Timer? _dayChangeTimer; // For the once-a-day recalculation
+/// Owns the day's prayer times and drives the countdown.
+/// Heavy work (solar calculation) happens only on init, settings change or
+/// day change; the per-second tick only computes a time difference.
+class PrayerTimingsNotifier extends Notifier<PrayerState> {
+  Timer? _countdownTimer;
+  Timer? _dayChangeTimer;
 
   @override
-  void onInit() {
-    super.onInit();
-    _initializeController();
+  PrayerState build() {
+    ref.onDispose(_dispose);
+    _initialize();
+    return PrayerState();
   }
 
-  @override
-  void onClose() {
+  void _dispose() {
     _countdownTimer?.cancel();
     _dayChangeTimer?.cancel();
-    super.onClose();
   }
 
-  Future<void> _initializeController() async {
-    isInitialized.value = false;
+  Future<void> _initialize() async {
     tz.initializeTimeZones();
 
     try {
       final String localTimezoneName = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(localTimezoneName));
       SharedPreferencesService.setTimezone(localTimezoneName);
-  logInfo("Device timezone set to: ${tz.local.name}");
+      logInfo("Device timezone set to: ${tz.local.name}");
     } catch (e) {
-  logWarn("Failed to get or set local timezone: $e");
+      logWarn("Failed to get or set local timezone: $e");
       // Fallback to stored timezone
-      final String? storedTimezone = SharedPreferencesService.getTimezone();
-      if (storedTimezone != null && storedTimezone.isNotEmpty) {
+      final String storedTimezone = SharedPreferencesService.getTimezone();
+      if (storedTimezone.isNotEmpty) {
         try {
           tz.setLocalLocation(tz.getLocation(storedTimezone));
           logInfo("Using stored timezone: ${tz.local.name}");
         } catch (tzError) {
-          logWarn("Failed to load stored timezone '$storedTimezone': $tzError.");
+          logWarn(
+              "Failed to load stored timezone '$storedTimezone': $tzError.");
         }
       }
     }
 
-    // --- OPTIMIZATION: Calculate everything once.
     _recalculateAllPrayerData();
-    isInitialized.value = true;
+    state = state.copyWith(isInitialized: true);
   }
 
-  /// --- OPTIMIZATION: Centralized method to recalculate all prayer data.
-  /// This should be called only when data can fundamentally change.
+  /// Centralized method to recalculate all prayer data.
+  /// Called only when data can fundamentally change.
   void _recalculateAllPrayerData() {
     // 1. Calculate and cache prayer times for the current day.
-    prayerTimings.value = PrayerTimeings.getPrayersTimings();
-
     // 2. Determine the next prayer and its time.
-    _updateNextPrayerInfo();
-
     // 3. Schedule the timer for the Islamic day change (at Maghrib).
-    _updateAndScheduleDayChange();
-
     // 4. Start/restart the 1-second countdown timer.
+    final prayers = PrayerTimeings.getPrayersTimings();
+    state = state.copyWith(prayerTimings: prayers);
+    _updateNextPrayerInfo();
+    _updateAndScheduleDayChange();
     _startCountdownTimer();
   }
 
-  /// --- OPTIMIZATION: Updates the next prayer info based on the cached prayerTimings.
   void _updateNextPrayerInfo() {
-    final prayers = prayerTimings.value;
+    final prayers = state.prayerTimings;
     if (prayers == null) {
-      nextPrayerInfo.value = (null, '');
+      state = state.copyWith(nextPrayerInfo: (null, ''));
       return;
     }
 
-    // --- OPTIMIZATION: The adhan_dart logic to find the next prayer is efficient.
-    // We call it here, once, instead of inside a loop.
     String nextPrayerNameString = prayers.nextPrayer();
     DateTime? nextPrayerDateTime = prayers.timeForPrayer(nextPrayerNameString);
 
@@ -113,32 +122,30 @@ class PrayerTimingsController extends GetxController {
     if (nextPrayerDateTime != null) {
       final tz.TZDateTime localNextPrayerTime =
           tz.TZDateTime.from(nextPrayerDateTime, tz.local);
-      nextPrayerInfo.value =
-          (localNextPrayerTime, _getArabicPrayerName(nextPrayerNameString));
+      state = state.copyWith(
+        nextPrayerInfo: (localNextPrayerTime, arabicPrayerName(nextPrayerNameString)),
+      );
     } else {
-      nextPrayerInfo.value = (null, '');
+      state = state.copyWith(nextPrayerInfo: (null, ''));
     }
   }
 
-  /// --- OPTIMIZATION: Renamed from _startTimer to be more descriptive.
-  /// This timer is now very lightweight. It only calculates a time difference.
   void _startCountdownTimer() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final nextPrayerTime = nextPrayerInfo.value.$1;
+      final nextPrayerTime = state.nextPrayerInfo.$1;
 
-      if (nextPrayerTime != null) {
-        final now = tz.TZDateTime.now(tz.local);
-        final newTimeLeft = nextPrayerTime.difference(now);
+      if (nextPrayerTime == null) return;
 
-        // If time is up, it's time to recalculate the *next* prayer.
-        if (newTimeLeft.isNegative) {
-          // This will find the new next prayer and update the countdown target.
-          _updateNextPrayerInfo();
-        } else {
-          timeLeft.value = newTimeLeft;
-        }
+      final now = tz.TZDateTime.now(tz.local);
+      var newTimeLeft = nextPrayerTime.difference(now);
+
+      // If time is up, it's time to recalculate the *next* prayer.
+      if (newTimeLeft.isNegative) {
+        _updateNextPrayerInfo();
+        newTimeLeft = Duration.zero;
       }
+      state = state.copyWith(timeLeft: newTimeLeft);
     });
   }
 
@@ -157,18 +164,15 @@ class PrayerTimingsController extends GetxController {
       SharedPreferencesService.setHighLatitudeRule(highLatitudeRule);
     }
 
-    // --- OPTIMIZATION: Simply call the master recalculation method.
     _recalculateAllPrayerData();
   }
 
-  // This method efficiently determines the Islamic weekday based on Maghrib time.
-  // Its logic was already good and remains unchanged.
   void _updateIslamicWeekday() {
     final now = tz.TZDateTime.now(tz.local);
-    final prayers = prayerTimings.value;
+    final prayers = state.prayerTimings;
 
     if (prayers?.maghrib == null) {
-      islamicWeekday.value = now.weekday; // Fallback
+      state = state.copyWith(islamicWeekday: now.weekday); // Fallback
       return;
     }
 
@@ -177,16 +181,15 @@ class PrayerTimingsController extends GetxController {
     if (now.isAfter(maghribTime)) {
       effectiveDate = now.add(const Duration(days: 1));
     }
-    islamicWeekday.value = effectiveDate.weekday;
+    state = state.copyWith(islamicWeekday: effectiveDate.weekday);
   }
 
-  // This method efficiently schedules a SINGLE timer to fire at the next Maghrib.
-  // This is excellent for battery life. Its logic was already good.
+  /// Schedules a SINGLE timer to fire at the next Maghrib (battery friendly).
   void _updateAndScheduleDayChange() {
     _updateIslamicWeekday();
     _dayChangeTimer?.cancel();
 
-    final prayers = prayerTimings.value;
+    final prayers = state.prayerTimings;
     if (prayers?.maghrib == null) return;
 
     final now = tz.TZDateTime.now(tz.local);
@@ -204,32 +207,47 @@ class PrayerTimingsController extends GetxController {
 
     final timeUntilNextMaghrib = nextMaghrib.difference(now);
 
-    // This single timer will fire and then trigger a full data refresh.
     _dayChangeTimer = Timer(timeUntilNextMaghrib, () {
       // Once Maghrib hits, recalculate everything for the new Islamic day.
       _recalculateAllPrayerData();
     });
   }
+}
 
-  // Helper to map English prayer names from the library to Arabic.
-  String _getArabicPrayerName(String englishName) {
-    switch (englishName.toLowerCase()) {
-      case 'fajr':
-        return 'الفجر';
-      case 'sunrise':
-        return 'الشروق';
-      case 'dhuhr':
-        return 'الظهر';
-      case 'asr':
-        return 'العصر';
-      case 'maghrib':
-        return 'المغرب';
-      case 'isha':
-        return 'العشاء';
-      default:
-        return 'الفجر'; // Sensible default
-    }
+final prayerProvider =
+    NotifierProvider<PrayerTimingsNotifier, PrayerState>(
+        PrayerTimingsNotifier.new);
+
+/// Maps English prayer names from the library to Arabic.
+String arabicPrayerName(String englishName) {
+  switch (englishName.toLowerCase()) {
+    case 'fajr':
+    case 'fajrafter':
+      return 'الفجر';
+    case 'sunrise':
+      return 'الشروق';
+    case 'dhuhr':
+      return 'الظهر';
+    case 'asr':
+      return 'العصر';
+    case 'maghrib':
+      return 'المغرب';
+    case 'isha':
+      return 'العشاء';
+    default:
+      return 'الفجر'; // Sensible default
   }
+}
+
+/// The current Islamic weekday (after Maghrib the next day begins),
+/// computed without needing a running notifier — safe for routing.
+int islamicWeekdayNow() {
+  final now = tz.TZDateTime.now(tz.local);
+  final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
+  if (maghrib == null) return now.weekday;
+  final maghribTime = tz.TZDateTime.from(maghrib, tz.local);
+  if (now.isAfter(maghribTime)) return now.add(const Duration(days: 1)).weekday;
+  return now.weekday;
 }
 
 class PrayerTimeings {
@@ -249,8 +267,8 @@ class PrayerTimeings {
     }
 
     try {
-      // Use tz.local, which should have been configured in PrayerTimingsController.onInit
-      // Create timezone-aware current date using the device's local timezone
+      // Use tz.local, which should have been configured in
+      // PrayerTimingsNotifier._initialize.
       final tz.TZDateTime dateForCalculation = forDate != null
           ? tz.TZDateTime.from(forDate, tz.local)
           : tz.TZDateTime.now(tz.local);
@@ -332,7 +350,7 @@ class PrayerTimeings {
       );
     } catch (e) {
       // Handle timezone errors
-  logError('Error initializing prayer times', e);
+      logError('Error initializing prayer times', e);
       return null;
     }
   }
@@ -363,35 +381,9 @@ class PrayerTimeings {
           tz.TZDateTime.from(nextPrayerTime, tz.local);
       final timeLeft = localNextPrayerTime.difference(now);
 
-      final String prayerName;
-      switch (nextPrayer) {
-        case 'fajr':
-        case 'fajrafter':
-          prayerName = 'الفجر';
-          break;
-        case 'sunrise':
-          prayerName = 'الشروق';
-          break;
-        case 'dhuhr':
-          prayerName = 'الظهر';
-          break;
-        case 'asr':
-          prayerName = 'العصر';
-          break;
-        case 'maghrib':
-          prayerName = 'المغرب';
-          break;
-        case 'isha':
-          prayerName = 'العشاء';
-          break;
-        default:
-          prayerName = 'الفجر';
-          break;
-      }
-
-      return (timeLeft, prayerName);
+      return (timeLeft, arabicPrayerName(nextPrayer));
     } catch (e) {
-  logError('Error calculating time left for next prayer', e);
+      logError('Error calculating time left for next prayer', e);
       return (const Duration(hours: 0, minutes: 0, seconds: 0), '');
     }
   }
@@ -405,7 +397,7 @@ class PrayerTimeings {
       final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
       return prayerTimes.currentPrayer(date: now);
     } catch (e) {
-  logError('Error getting current prayer', e);
+      logError('Error getting current prayer', e);
       return null;
     }
   }
@@ -428,7 +420,7 @@ class PrayerTimeings {
         'isha': tz.TZDateTime.from(prayerTimes.isha!, timezone),
       };
     } catch (e) {
-  logError('Error getting prayer times', e);
+      logError('Error getting prayer times', e);
       return null;
     }
   }

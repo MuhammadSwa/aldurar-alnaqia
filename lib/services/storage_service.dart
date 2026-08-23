@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../screens/download_manager_screen/download_controller.dart';
@@ -8,7 +7,7 @@ import '../screens/download_manager_screen/download_controller.dart';
 /// StorageService centralizes where we keep persistent files
 /// (e.g., downloaded books and narrations) under the app's
 /// Application Support directory, and ensures subfolders exist.
-class StorageService extends GetxService {
+class StorageService {
   late final String supportDirPath;
 
   Future<StorageService> init() async {

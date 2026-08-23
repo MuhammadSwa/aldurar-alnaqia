@@ -7,14 +7,10 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:desktop_window/desktop_window.dart';
-import 'package:get/get.dart';
-import 'package:aldurar_alnaqia/audioPlayer/audioPlayer.dart';
-import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
-import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
-import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
 import 'package:aldurar_alnaqia/services/notification_helper.dart';
 
@@ -23,7 +19,7 @@ Future setDesktopWindow() async {
   await DesktopWindow.setWindowSize(const Size(1300, 900));
 }
 
-void main() async {
+Future<ProviderContainer> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Enable background audio playback + media notification controls.
@@ -42,24 +38,21 @@ void main() async {
   }
 
   await SharedPreferencesService().init();
-  await Get.put(StorageService(), permanent: true).init();
-  final savedThemeMode = await AdaptiveTheme.getThemeMode();
 
-  // Register long-lived controllers/services
-  Get.put(Controller(), permanent: true);
-  Get.put(DownloaderController(), permanent: true);
-  Get.put(PrayerTimingsController(), permanent: true);
-  Get.put(GlobalDrawerController(), permanent: true);
-  Get.put(FontController(), permanent: true);
-
-  // if (Platform.isAndroid) {
-  //   await PrayerNotificationService.initialize();
-  // }
+  final container = ProviderContainer(overrides: [
+    storageProvider.overrideWithValue(await StorageService().init()),
+  ]);
 
   // Create notification channel and request permission (Android 13+)
   await NotificationHelper.initialize();
   // Start persistent foreground notification with next prayer countdown (Android only)
   await initializePrayerForegroundService();
+
+  return container;
+}
+
+Future<void> main() async {
+  final container = await _bootstrap();
 
   // Choose initial route based on a hint from notification tap
   String? initialLocation;
@@ -72,41 +65,28 @@ void main() async {
     }
   } catch (_) {}
 
+  final savedThemeMode = await AdaptiveTheme.getThemeMode();
+
   runApp(
-    MyApp(theme: savedThemeMode, initialLocation: initialLocation),
+    UncontrolledProviderScope(
+      container: container,
+      child: MyApp(theme: savedThemeMode, initialLocation: initialLocation),
+    ),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key, required this.theme, this.initialLocation});
   final AdaptiveThemeMode? theme;
   final String? initialLocation;
 
   @override
-  Widget build(BuildContext context) {
-    // Ensure DI exists even when MyApp is directly pumped in tests (main() not run)
-    if (!Get.isRegistered<Controller>()) {
-      Get.put(Controller(), permanent: true);
-    }
-    if (!Get.isRegistered<DownloaderController>()) {
-      Get.put(DownloaderController(), permanent: true);
-    }
-    if (!Get.isRegistered<PrayerTimingsController>()) {
-      Get.put(PrayerTimingsController(), permanent: true);
-    }
-    if (!Get.isRegistered<GlobalDrawerController>()) {
-      Get.put(GlobalDrawerController(), permanent: true);
-    }
-    if (!Get.isRegistered<FontController>()) {
-      Get.put(FontController(), permanent: true);
-    }
-
-    final router = AppRouter.createRouter(initialLocation: initialLocation);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider(initialLocation));
     return AdaptiveTheme(
       light: lightTheme,
       dark: darkTheme,
       initial: theme ?? AdaptiveThemeMode.system,
-      // TODO: change routing to Getx
       builder: (theme, darkTheme) => MaterialApp.router(
         routerConfig: router,
         scrollBehavior: AppScrollBehavior(),
@@ -115,7 +95,6 @@ class MyApp extends StatelessWidget {
         darkTheme: darkTheme,
         theme: theme,
       ),
-      // ),
     );
   }
 }

@@ -1,32 +1,37 @@
-import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
-import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 
-class AwradListScreen extends StatelessWidget {
-  AwradListScreen({super.key});
-  static final GlobalKey<ScaffoldState> _scaffoldKey =
-      GlobalKey<ScaffoldState>();
+class AwradListScreen extends ConsumerStatefulWidget {
+  const AwradListScreen({super.key});
 
-  final List<String> collectionTitles =
+  @override
+  ConsumerState<AwradListScreen> createState() => _AwradListScreenState();
+}
+
+class _AwradListScreenState extends ConsumerState<AwradListScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  late final List<String> collectionTitles =
       azkarCollections.getTitles().sublist(0, 8);
-  final List<String> azkarTitles = orphanAzkar.getTitles();
+  late final List<String> azkarTitles = orphanAzkar.getTitles();
 
   @override
   Widget build(BuildContext context) {
-    Get.lazyPut(() => GlobalDrawerController());
-    final drawerController = Get.find<GlobalDrawerController>();
-
-    drawerController.registerScaffoldKey(_scaffoldKey);
+    ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
 
     void handleSearch(String query) {
-      context.go('/awradScreen/zikr/$query');
+      context.goNamed(
+        'awradZikrPage',
+        pathParameters: {'zikr': Uri.encodeComponent(query)},
+      );
     }
 
     return Scaffold(

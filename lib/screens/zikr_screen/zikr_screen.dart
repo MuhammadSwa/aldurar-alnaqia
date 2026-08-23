@@ -1,11 +1,10 @@
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
 import 'package:easy_rich_text/easy_rich_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
-import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
-import 'package:get/get.dart';
-import 'package:aldurar_alnaqia/screens/zikr_screen/playAudio_btn_zikr_page.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 class SlidableZikrScreen extends StatefulWidget {
@@ -36,7 +35,8 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
 
   void _updateCurrentZikr(int index) {
     _currentTitle = widget.allTitles[index];
-    _currentZikr = allAzkar.azkarCategMap[_currentTitle]!;
+    _currentZikr =
+        allAzkar.azkarCategMap[_currentTitle] ?? allAzkar.azkarCategMap.values.first;
   }
 
   @override
@@ -47,9 +47,6 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
 
   @override
   Widget build(BuildContext context) {
-  // Ensure controllers are available globally
-  Get.find<DownloaderController>();
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_currentTitle),
@@ -103,20 +100,25 @@ class ZikrScreen extends StatelessWidget {
     if (titles != null && index != null) {
       return SlidableZikrScreen(allTitles: titles!, initialIndex: index!);
     }
-    // Find the specific Zikr data using the title.
-    final Zikr zikr = allAzkar.azkarCategMap[title]!;
-  // Ensure the DownloaderController is available for child widgets.
-  Get.find<DownloaderController>();
+    // Find the specific Zikr data using the title; show a friendly page
+    // instead of crashing when the title is unknown (e.g. from search).
+    final Zikr? zikr = allAzkar.azkarCategMap[title];
+
+    if (zikr == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: const Center(
+          child: Text('لم يتم العثور على هذا الذكر',
+              style: TextStyle(fontSize: 18)),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
         actions: [
-          // Refactored to use the new API for PlayAudioBtnZikrPage.
-          // It now requires a unique `id` to manage its own state internally,
-          // removing the need for an external Obx wrapper.
           PlayAudioBtnZikrPage(
-            id: zikr
-                .title, // Use the zikr title as the unique ID for the audio file.
+            id: zikr.title,
             title: zikr.title,
             url: zikr.url,
           ),
@@ -132,46 +134,36 @@ class ZikrScreen extends StatelessWidget {
   }
 }
 
-class ZikrContentWidget extends StatefulWidget {
+class ZikrContentWidget extends ConsumerWidget {
   const ZikrContentWidget({super.key, required this.title});
   final String title;
 
   @override
-  State<ZikrContentWidget> createState() => _ZikrContentWidgetState();
-}
-
-const String space = '\u0020';
-const String araLettersRegex = '\u0600-\u06FF';
-
-class _ZikrContentWidgetState extends State<ZikrContentWidget> {
-  // TODO: ground settings options in one SettingsController?
-  @override
-  Widget build(BuildContext context) {
-    final Zikr zikr = allAzkar.azkarCategMap[widget.title]!;
-  final fc = Get.find<FontController>();
-  return Obx(() {
-    final fontSize = fc.fontSize.value;
-        return SingleChildScrollView(
-            child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (zikr.notes != '') ...{
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      zikr.notes,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall!
-                          .copyWith(fontSize: fontSize * .7),
-                    ),
-                    const Divider()
-                  ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final Zikr zikr = allAzkar.azkarCategMap[title]!;
+    final fontSize = ref.watch(fontSizeProvider);
+    final fontFamily = ref.watch(fontFamilyProvider);
+    return SingleChildScrollView(
+        child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (zikr.notes != '') ...{
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  zikr.notes,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall!
+                      .copyWith(fontSize: fontSize * .7),
                 ),
-              },
+                const Divider()
+              ],
+            ),
+          },
               EasyRichText(
                 zikr.content,
                 defaultStyle: Theme.of(context)
@@ -234,7 +226,7 @@ class _ZikrContentWidgetState extends State<ZikrContentWidget> {
                       'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ'
                     ],
                     style: TextStyle(
-                      fontFamily: fc.fontFamily.value,
+                      fontFamily: fontFamily,
                       color: Theme.of(context).textTheme.bodyMedium!.color,
                     ),
                   ),
@@ -324,7 +316,7 @@ class _ZikrContentWidgetState extends State<ZikrContentWidget> {
                               .bodySmall!
                               .copyWith(
                                   fontSize: fontSize * .7,
-                                  fontFamily: fc.fontFamily.value),
+                                  fontFamily: fontFamily),
                         )
                       ],
                     )
@@ -334,34 +326,35 @@ class _ZikrContentWidgetState extends State<ZikrContentWidget> {
             ],
           ),
         ));
-  });
   }
 }
 
-class RhymesWidget extends StatelessWidget {
+const String space = '\u0020';
+const String araLettersRegex = '\u0600-\u06FF';
+
+class RhymesWidget extends ConsumerWidget {
   const RhymesWidget({super.key, required this.first, required this.second});
   final String first, second;
 
-  EasyRichTextPattern _buildPattern() {
-    final cf = Get.put(FontController());
+  EasyRichTextPattern _buildPattern(BuildContext context, WidgetRef ref) {
     return EasyRichTextPattern(
       targetString: r'\[\^\^[0-9]+\]',
       matchBuilder: (context, match) {
         final text = match?[0]?.replaceAll('^', '');
-        // TODO: make it 50% transparent?
-        // better styling
+        final fontSize = ref.watch(fontSizeProvider);
         return TextSpan(
           text: text,
           style: Theme.of(context)
               .textTheme
               .bodySmall!
-              .copyWith(fontSize: cf.fontSize.value * .7),
+              .copyWith(fontSize: fontSize * .7),
         );
       },
     );
   }
 
-  Widget _buildRhyme(context, String text, double fontSize, String alignment) {
+  Widget _buildRhyme(BuildContext context, WidgetRef ref, String text,
+      double fontSize, String alignment) {
     return Align(
       alignment:
           alignment == 'right' ? Alignment.centerRight : Alignment.centerLeft,
@@ -372,21 +365,21 @@ class RhymesWidget extends StatelessWidget {
             .copyWith(fontSize: fontSize),
         text,
         textAlign: alignment == 'right' ? TextAlign.right : TextAlign.left,
-        patternList: [_buildPattern()],
+        patternList: [_buildPattern(context, ref)],
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final fontSize = Get.put(FontController()).fontSize.value;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fontSize = ref.watch(fontSizeProvider);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 500),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildRhyme(context, first, fontSize, 'right'),
-          _buildRhyme(context, second, fontSize, 'left'),
+          _buildRhyme(context, ref, first, fontSize, 'right'),
+          _buildRhyme(context, ref, second, fontSize, 'left'),
         ],
       ),
     );

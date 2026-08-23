@@ -1,55 +1,34 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/day_name.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
-import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialogBox.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialog_box.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:text_responsive/text_responsive.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/router/handle_router.dart' show RoutePaths;
 
-class PrayerTimingsScreen extends StatefulWidget {
+class PrayerTimingsScreen extends ConsumerStatefulWidget {
   const PrayerTimingsScreen({super.key});
 
   @override
-  State<PrayerTimingsScreen> createState() => _PrayerTimingsScreenState();
+  ConsumerState<PrayerTimingsScreen> createState() =>
+      _PrayerTimingsScreenState();
 }
 
-class _PrayerTimingsScreenState extends State<PrayerTimingsScreen> {
+class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   // The ScaffoldKey should be part of the State, not static.
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
-  void initState() {
-    super.initState();
-
-    // --- OPTIMIZATION: Use Get.lazyPut with fenix: true.
-    // This is the best practice for controllers that should persist.
-    // It ensures the controller is created only once and survives if the
-    // widget is temporarily removed from the tree.
-    Get.lazyPut(() => PrayerTimingsController(), fenix: true);
-
-    // Assuming HijriOffsetController and GlobalDrawerController follow a similar pattern
-    Get.lazyPut(() => HijriOffsetController(), fenix: true);
-    Get.lazyPut(() => GlobalDrawerController(), fenix: true);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Get the global drawer controller
-    final drawerController = Get.find<GlobalDrawerController>();
-    // Register this scaffold key
-    drawerController.registerScaffoldKey(_scaffoldKey);
-
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(

@@ -1,34 +1,41 @@
-import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
-import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/bookmarks_controller.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
 import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+    show prayerProvider;
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
-  static final GlobalKey<ScaffoldState> _scaffoldKey =
-      GlobalKey<ScaffoldState>();
+
+  @override
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  void handleSearch(String query) {
+    context.goNamed(
+      'homeZikrPage',
+      pathParameters: {'zikr': Uri.encodeComponent(query)},
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    void handleSearch(String query) {
-      context.go('/home/zikr/$query');
-    }
-
-  final drawerController = Get.find<GlobalDrawerController>();
-
-    drawerController.registerScaffoldKey(_scaffoldKey);
-
-  final controller = Get.find<PrayerTimingsController>();
+    ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
+    final islamicWeekday =
+        ref.watch(prayerProvider.select((state) => state.islamicWeekday));
+    final dayIndex = islamicWeekday - 1;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -63,55 +70,41 @@ class HomePage extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
-                    // style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    //       fontWeight: FontWeight.bold,
-                    //     ),
                   ),
                 ],
               ),
             ),
-            Obx(() {
-              // TODO: make it truely reactive(change after maghrib)
-              final dayNum = controller.islamicWeekday.value;
-              final dayIndex = dayNum - 1;
-
-              return Column(
-                children: [
-                  ListTile(
-                    title: Text(
-                      'ورد يوم ${arabicWeekdays[dayIndex]}',
-                    ),
-                    leading: const Icon(Icons.arrow_right),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      context.go('/home/todaysZikr');
-                    },
+            Column(
+              children: [
+                ListTile(
+                  title: Text(
+                    'ورد يوم ${arabicWeekdays[dayIndex]}',
                   ),
-                  ListTile(
-                    title: Text(
-                      'دلائل الخيرات ورد يوم ${arabicWeekdays[dayIndex]}',
-                    ),
-                    leading: const Icon(Icons.arrow_right),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      AppNav.goToZikr(
-                        context,
-                        'home',
-                        dalayilAlkhayratCollection[dayIndex].title,
-                      );
-                    },
+                  leading: const Icon(Icons.arrow_right),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    context.go('/home/todaysZikr');
+                  },
+                ),
+                ListTile(
+                  title: Text(
+                    'دلائل الخيرات ورد يوم ${arabicWeekdays[dayIndex]}',
                   ),
-                ],
-              );
-            }),
+                  leading: const Icon(Icons.arrow_right),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    AppNav.goToZikr(
+                      context,
+                      'home',
+                      dalayilAlkhayratCollection[dayIndex].title,
+                    );
+                  },
+                ),
+              ],
+            ),
 
-            // ZikrOfTheDayTile(
-            //     title: 'ورد يوم ${arabicWeekdays[todaysNum() - 1]}',
-            //     route: '/home/todaysZikr'),
             const Divider(),
             const BookmarksTilesHomeScreen(),
-            //
-            // if (Platform.isAndroid) const NotificationSettings()
           ],
         ),
       ),
@@ -119,7 +112,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class BookmarksTilesHomeScreen extends StatelessWidget {
+class BookmarksTilesHomeScreen extends ConsumerWidget {
   const BookmarksTilesHomeScreen({super.key});
 
   static const azkarDayTitlesToNum = <String, String>{
@@ -133,69 +126,60 @@ class BookmarksTilesHomeScreen extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
-    // TODO: refactor this
-    return GetBuilder<BookmarksController>(
-      init: BookmarksController(),
-      builder: (c) {
-        final bookmarks = c.bookmarks;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bookmarks = ref.watch(bookmarksProvider);
 
-        // TODO: refactor this
-        // see if a bookmark is collection or orphan
-        final List<String> collectionTitles = [];
-        final List<String> orphanTitles = [];
-        final List<String> azkarOfDays = [];
-        var weekAzkarBookmarked = false;
+    // see if a bookmark is collection or orphan
+    final List<String> collectionTitles = [];
+    final List<String> orphanTitles = [];
+    final List<String> azkarOfDays = [];
+    var weekAzkarBookmarked = false;
 
-        for (var bookmark in bookmarks) {
-          if (azkarDayTitlesToNum.keys.contains(bookmark)) {
-            azkarOfDays.add(bookmark);
-          } else if (bookmark == 'أوراد الأسبوع') {
-            weekAzkarBookmarked = true;
-          } else if (azkarCollections.azkarCategList.keys.contains(bookmark)) {
-            collectionTitles.add(bookmark);
-          } else {
-            orphanTitles.add(bookmark);
-          }
-        }
-        return SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                if (weekAzkarBookmarked) ...{
-                  const ZikrListViewTile(
-                      title: 'أوراد الأسبوع', route: '/home/weekCollection'),
-                },
-                if (bookmarks.isNotEmpty) ...{
-                  for (var day in azkarOfDays) ...{
-                    ZikrListViewTile(
-                        title: day, route: '/home/${azkarDayTitlesToNum[day]}'),
-                  },
-                  AzkarListViewWidget(
-                    titles: collectionTitles,
-                    route: '/home/zikrCollection',
-                    barTitle: 'الأذكار',
-                    scrollable: false,
-                  ),
-                  AzkarListViewWidget(
-                    titles: orphanTitles,
-                    route: '/home/zikr',
-                    barTitle: 'الأذكار',
-                    scrollable: false,
-                  ),
-                } else ...{
-                  // TODO: design empty state
-                  const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('المحفوظات فارغة'),
-                      Icon(Icons.bookmark_remove)
-                    ],
-                  ),
-                }
-              ],
-            ));
-      },
-    );
+    for (var bookmark in bookmarks) {
+      if (azkarDayTitlesToNum.keys.contains(bookmark)) {
+        azkarOfDays.add(bookmark);
+      } else if (bookmark == 'أوراد الأسبوع') {
+        weekAzkarBookmarked = true;
+      } else if (azkarCollections.azkarCategList.keys.contains(bookmark)) {
+        collectionTitles.add(bookmark);
+      } else {
+        orphanTitles.add(bookmark);
+      }
+    }
+
+    return SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            if (weekAzkarBookmarked) ...{
+              const ZikrListViewTile(
+                  title: 'أوراد الأسبوع', route: '/home/weekCollection'),
+            },
+            if (bookmarks.isNotEmpty) ...{
+              for (var day in azkarOfDays) ...{
+                ZikrListViewTile(
+                    title: day, route: '/home/${azkarDayTitlesToNum[day]}'),
+              },
+              AzkarListViewWidget(
+                titles: collectionTitles,
+                route: '/home/zikrCollection',
+                barTitle: 'الأذكار',
+                scrollable: false,
+              ),
+              AzkarListViewWidget(
+                titles: orphanTitles,
+                route: '/home/zikr',
+                barTitle: 'الأذكار',
+                scrollable: false,
+              ),
+            } else ...{
+              // TODO: design empty state
+              const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [Text('المحفوظات فارغة'), Icon(Icons.bookmark_remove)],
+              ),
+            }
+          ],
+        ));
   }
 }

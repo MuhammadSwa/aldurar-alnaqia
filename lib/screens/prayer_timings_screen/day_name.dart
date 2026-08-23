@@ -1,18 +1,19 @@
 // Modified ArabicDayNameWidget with consistent sizing
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 
-class ArabicDayNameWidget extends StatefulWidget {
+class ArabicDayNameWidget extends ConsumerStatefulWidget {
   const ArabicDayNameWidget({super.key});
 
   @override
-  State<ArabicDayNameWidget> createState() => _ArabicDayNameWidgetState();
+  ConsumerState<ArabicDayNameWidget> createState() =>
+      _ArabicDayNameWidgetState();
 }
 
-class _ArabicDayNameWidgetState extends State<ArabicDayNameWidget> {
+class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
   static const Map<int, String> _arabicDayNames = {
     7: 'الأحد',
     1: 'الإثنين',
@@ -25,13 +26,12 @@ class _ArabicDayNameWidgetState extends State<ArabicDayNameWidget> {
 
   String? _currentDayName;
   Timer? _updateTimer;
-  final PrayerTimingsController pc = Get.find<PrayerTimingsController>();
-  late final StreamSubscription _prayerTimesSubscription;
 
   @override
   void initState() {
     super.initState();
-    _prayerTimesSubscription = pc.prayerTimings.listen((_) {
+    // React to prayer-time changes (e.g. user changes location).
+    ref.listenManual(prayerProvider, (_, __) {
       _updateDayAndScheduleNext();
     });
     Future.delayed(const Duration(milliseconds: 50), () {
@@ -44,14 +44,13 @@ class _ArabicDayNameWidgetState extends State<ArabicDayNameWidget> {
   @override
   void dispose() {
     _updateTimer?.cancel();
-    _prayerTimesSubscription.cancel();
     super.dispose();
   }
 
   void _updateDayAndScheduleNext() {
     _updateTimer?.cancel();
     final now = tz.TZDateTime.now(tz.local);
-    final todaysPrayers = pc.prayerTimings.value;
+    final todaysPrayers = ref.read(prayerProvider).prayerTimings;
 
     if (todaysPrayers?.maghrib == null) {
       if (mounted) {

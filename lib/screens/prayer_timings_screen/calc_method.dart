@@ -26,7 +26,7 @@ class _CalcMethodDropDownState extends State<CalcMethodDropDown> {
         border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.calculate),
       ),
-      value: method,
+      initialValue: method,
       hint: Text(
         'طريقة الحساب',
         style: Theme.of(context).textTheme.titleSmall,

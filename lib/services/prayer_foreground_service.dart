@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:flutter/widgets.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -85,14 +84,14 @@ void _onStart(ServiceInstance service) async {
   }
 
   // Ensure foreground mode and show immediately
-  Timer? _ticker;
+  Timer? ticker;
   if (service is AndroidServiceInstance) {
     await service.setAsForegroundService();
   }
 
   // Stop handler: cancel ticker and remove notification by stopping service
   service.on('stopService').listen((event) async {
-    _ticker?.cancel();
+    ticker?.cancel();
     if (service is AndroidServiceInstance) {
       await service.stopSelf();
     }
@@ -107,7 +106,7 @@ void _onStart(ServiceInstance service) async {
   await _pushNotificationUpdate(service);
 
   // Periodically update the foreground notification
-  _ticker = Timer.periodic(const Duration(seconds: 1), (timer) async {
+  ticker = Timer.periodic(const Duration(seconds: 1), (timer) async {
     await _pushNotificationUpdate(service);
   });
 }
@@ -169,7 +168,7 @@ Future<String> _buildNotificationContent() async {
   }
 }
 
-String _toRtl(String s) => '\u202B' + s + '\u202C';
+String _toRtl(String s) => '\u202B$s\u202C';
 
 Future<void> _pushNotificationUpdate(ServiceInstance service) async {
   final content = _toRtl(await _buildNotificationContent());
@@ -269,12 +268,4 @@ String _arabicPrayerName(String englishName) {
     default:
       return 'الفجر';
   }
-}
-
-String _formatHm(DateTime? dt) {
-  if (dt == null) return '--:--';
-  final tzdt = tz.TZDateTime.from(dt, tz.local);
-  final h = tzdt.hour.toString().padLeft(2, '0');
-  final m = tzdt.minute.toString().padLeft(2, '0');
-  return '$h:$m';
 }

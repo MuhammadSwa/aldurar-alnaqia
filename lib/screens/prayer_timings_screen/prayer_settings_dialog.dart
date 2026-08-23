@@ -1,22 +1,24 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation_method_info.dart';
-import 'package:aldurar_alnaqia/utils/showSnackbar.dart';
+import 'package:aldurar_alnaqia/utils/show_snackbar.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/asr_calc_segmented_button.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/calc_method.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/coordinates_text_input_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_button_widget.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+    show prayerProvider;
 
 // CoordinatesForm
-class PrayerSettingsDialog extends StatefulWidget {
+class PrayerSettingsDialog extends ConsumerStatefulWidget {
   const PrayerSettingsDialog({super.key});
 
   @override
-  State<PrayerSettingsDialog> createState() => _PrayerSettingsDialogState();
+  ConsumerState<PrayerSettingsDialog> createState() =>
+      _PrayerSettingsDialogState();
 }
 
-class _PrayerSettingsDialogState extends State<PrayerSettingsDialog> {
+class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
   final _formKey = GlobalKey<FormState>();
   final _latController = TextEditingController();
   final _lngController = TextEditingController();
@@ -35,14 +37,12 @@ class _PrayerSettingsDialogState extends State<PrayerSettingsDialog> {
   void _saveSettings(BuildContext context) {
     if (!_formKey.currentState!.validate()) return;
 
-    final method = _selectedMethod;
-    final asrCalculation = _selectedAsrCalc;
-    Get.put(PrayerTimingsController()).setPrayerSettings(
-      lat: double.parse(_latController.text),
-      long: double.parse(_lngController.text),
-      method: method,
-      asrCalc: asrCalculation,
-    );
+    ref.read(prayerProvider.notifier).setPrayerSettings(
+          lat: double.parse(_latController.text),
+          long: double.parse(_lngController.text),
+          method: _selectedMethod,
+          asrCalc: _selectedAsrCalc,
+        );
 
     Navigator.of(context).pop();
     showSnackBar(context, 'تم حفظ إعدادات مواقيت الصلاة بنجاح');

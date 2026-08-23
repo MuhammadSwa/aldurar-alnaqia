@@ -1,36 +1,40 @@
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:aldurar_alnaqia/services/storage_service.dart';
-import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
-// Assuming these imports are correct for your project structure
-// import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/pdfViewer/markers_view.dart';
+import 'package:aldurar_alnaqia/services/storage_service.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 
-class PdfViewerGetxController extends GetxController {
-  // Constructor to receive the book title
+/// Owns the state of one open PDF viewer (per book title).
+/// Plain [ChangeNotifier] so it stays framework-independent; the owning
+/// widget listens via [ListenableBuilder] and disposes it on close.
+class BookViewerController extends ChangeNotifier {
+  BookViewerController({required this.title, required StorageService storage})
+      : _storage = storage {
+    openDocument();
+  }
+
   final String title;
-  PdfViewerGetxController({required this.title});
+  final StorageService _storage;
 
   // --- Controllers from packages ---
   final pdfController = PdfViewerController();
 
-  // --- Reactive State Variables ---
-  final documentRef = Rxn<PdfDocumentRef>();
-  final showSidePane = false.obs;
-  final outline = Rxn<List<PdfOutlineNode>>();
-  final textSearcher = Rxn<PdfTextSearcher>();
-  final isViewerReady = false.obs;
-  final markers = <int, List<Marker>>{}.obs;
-  // Emits the page number we resumed from (if any) when the viewer restores
-  final resumedFromPage = Rxn<int>();
+  // --- Observable State ---
+  PdfDocumentRef? documentRef;
+  bool showSidePane = false;
+  List<PdfOutlineNode>? outline;
+  PdfTextSearcher? textSearcher;
+  bool isViewerReady = false;
+  final Map<int, List<Marker>> markers = {};
+  // The page number we resumed from (if any) when the viewer restores
+  int? resumedFromPage;
 
-  // --- Non-reactive State ---
+  // --- Non-observable State ---
   // Used to temporarily hold the current text selection from the viewer
   List<PdfTextRanges>? textSelections;
 
@@ -39,16 +43,9 @@ class PdfViewerGetxController extends GetxController {
   int? _lastKnownPage;
 
   @override
-  void onInit() {
-    super.onInit();
-    openDocument();
-  // Restore last page after controller ready (handled in onViewerReady)
-  }
-
-  @override
-  void onClose() {
+  void dispose() {
     // Dispose all controllers and notifiers to prevent memory leaks.
-    textSearcher.value?.dispose();
+    textSearcher?.dispose();
     // Detach page change listener to avoid duplicate callbacks on next open
     if (_pageListenerAttached) {
       pdfController.removeListener(_onPdfControllerChanged);
@@ -60,47 +57,51 @@ class PdfViewerGetxController extends GetxController {
     if (page != null) {
       SharedPreferencesService.setPdfLastPage(title, page);
     }
-    super.onClose();
+    super.dispose();
   }
 
-  // --- Logic and Handlers ---
+  void toggleSidePane() {
+    showSidePane = !showSidePane;
+    notifyListeners();
+  }
 
   /// Opens the PDF document from a local file or a remote URL.
   Future<void> openDocument() async {
-  final storage = Get.find<StorageService>();
-  final fileExists = await storage.exists(DownloadType.books, title);
-  if (fileExists) {
-      final filePath = storage.pathFor(DownloadType.books, title);
-      documentRef.value = PdfDocumentRefFile(filePath);
+    final fileExists = await _storage.exists(DownloadType.books, title);
+    if (fileExists) {
+      documentRef =
+          PdfDocumentRefFile(_storage.pathFor(DownloadType.books, title));
     } else {
       final url = booksTitles[title];
       if (url != null) {
-        documentRef.value = PdfDocumentRefUri(Uri.parse(url));
+        documentRef = PdfDocumentRefUri(Uri.parse(url));
       }
     }
+    notifyListeners();
   }
 
   /// Callback when a new document is loaded into the viewer.
   void onDocumentChanged(PdfDocument? document) {
-    isViewerReady.value = false; // Reset ready state
+    isViewerReady = false; // Reset ready state
     if (document == null) {
-      textSearcher.value?.dispose();
-      textSearcher.value = null;
-      outline.value = null;
+      textSearcher?.dispose();
+      textSearcher = null;
+      outline = null;
       textSelections = null;
       markers.clear();
     }
+    notifyListeners();
   }
 
   /// Callback when the viewer has finished loading and is ready for interaction.
   Future<void> onViewerReady(
       PdfDocument document, PdfViewerController controller) async {
-    outline.value = await document.loadOutline();
-    textSearcher.value = PdfTextSearcher(controller);
+    outline = await document.loadOutline();
+    textSearcher = PdfTextSearcher(controller);
     // Setting this to true will enable UI elements like navigation buttons
-    isViewerReady.value = true;
+    isViewerReady = true;
 
-  // Jump to last visited page if available
+    // Jump to last visited page if available
     final last = SharedPreferencesService.getPdfLastPage(title);
     if (last != null && last >= 1 && last <= controller.pageCount) {
       // Use post-frame to ensure viewport/layout ready
@@ -108,15 +109,15 @@ class PdfViewerGetxController extends GetxController {
         controller.goToPage(pageNumber: last);
       });
       _lastKnownPage = last;
-  // Notify UI to optionally show a resume hint
-  resumedFromPage.value = last;
+      // Notify UI to optionally show a resume hint
+      resumedFromPage = last;
     }
     // Start listening for page changes to persist
     _attachPageChangeListener();
+    notifyListeners();
   }
 
   void _attachPageChangeListener() {
-    // PdfViewerController exposes pageNumber; poll via listener on changes
     if (!_pageListenerAttached) {
       pdfController.addListener(_onPdfControllerChanged);
       _pageListenerAttached = true;
@@ -145,21 +146,24 @@ class PdfViewerGetxController extends GetxController {
     if (pdfController.isReady && textSelections != null) {
       for (final selection in textSelections!) {
         // Get the list for the page, or create it if it doesn't exist
-        final pageMarkers = markers.putIfAbsent(selection.pageNumber, () => []);
+        final pageMarkers =
+            markers.putIfAbsent(selection.pageNumber, () => []);
         pageMarkers.add(Marker(color, selection));
-
-        // Use a temporary variable and reassign to trigger RxMap update
-        final updatedMarkers = Map<int, List<Marker>>.from(markers);
-        updatedMarkers[selection.pageNumber] = pageMarkers;
-        markers.assignAll(updatedMarkers);
       }
       textSelections = null; // Clear selection after marking
+      notifyListeners();
     }
   }
 
+  /// Removes a marker.
+  void removeMarker(Marker marker) {
+    markers[marker.ranges.pageNumber]?.remove(marker);
+    notifyListeners();
+  }
+
   /// Shows a confirmation dialog before navigating to an external URL.
-  Future<void> showUrlNavigateDialog(Uri url) async {
-    final context = Get.context!;
+  Future<void> showUrlNavigateDialog(
+      BuildContext context, Uri url) async {
     final shouldLaunch = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -171,7 +175,8 @@ class PdfViewerGetxController extends GetxController {
               TextSpan(
                 text: url.toString(),
                 style: const TextStyle(
-                    color: Colors.blue, decoration: TextDecoration.underline),
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline),
               ),
             ],
           ),

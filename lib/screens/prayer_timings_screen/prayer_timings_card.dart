@@ -1,32 +1,29 @@
 import 'package:intl/intl.dart' as intl;
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:text_responsive/text_responsive.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-class PrayerTimingsCard extends StatelessWidget {
+class PrayerTimingsCard extends ConsumerWidget {
   const PrayerTimingsCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Get the controller once outside the reactive builder.
-    final PrayerTimingsController controller =
-        Get.find<PrayerTimingsController>();
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       elevation: 4,
-      child: Obx(() {
-        // 1. Read the observable for the prayer times list.
-        // This only changes once a day or on settings change.
-        final prayerTimings = controller.prayerTimings.value;
+      child: Consumer(builder: (context, ref, _) {
+        // 1. Read the prayer times. This only changes once a day or on
+        //    settings change.
+        final prayerTimings = ref.watch(
+            prayerProvider.select((state) => state.prayerTimings));
         if (prayerTimings == null) {
           return _buildPlaceholderTable(context);
         }
 
-        // 2. Read the observable for the next prayer name.
-        // This changes frequently, but we only use it for a simple comparison.
-        final nextPrayerName = controller.nextPrayerInfo.value.$2;
+        // 2. Read the next prayer name (changes rarely).
+        final nextPrayerName =
+            ref.watch(prayerProvider.select((s) => s.nextPrayerInfo.$2));
 
         // --- OPTIMIZATION: Expensive calculations are done here.
         // This block only runs when `prayerTimings` changes, NOT every second.

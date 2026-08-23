@@ -1,7 +1,6 @@
 // router/app_router.dart
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
@@ -13,12 +12,21 @@ import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/azkarListView_widget.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
 import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+    show islamicWeekdayNow;
+
+/// Provides the app-wide [GoRouter]. [initialLocation] comes from a
+/// notification-tap hint persisted before cold start.
+final appRouterProvider =
+    Provider.family<GoRouter, String?>((ref, initialLocation) {
+  return AppRouter.createRouter(initialLocation: initialLocation);
+});
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -119,7 +127,7 @@ class AppRouter {
         GoRoute(
           path: RoutePaths.awrad,
           name: RouteNames.awrad,
-          builder: (context, state) => AwradListScreen(),
+          builder: (context, state) => const AwradListScreen(),
           routes: [
             _createWeekCollectionRoute('awrad'),
             _createZikrCollectionRoute('awrad'),
@@ -148,18 +156,13 @@ class AppRouter {
 
   // Nested routes
   static GoRoute _createTodayZikrRoute() {
-    // Ensure controller exists (test environments may not run main() DI first)
-    if (!Get.isRegistered<PrayerTimingsController>()) {
-      Get.put(PrayerTimingsController(), permanent: true);
-    }
-    final controller = Get.find<PrayerTimingsController>();
     return GoRoute(
       path: 'todaysZikr',
       name: RouteNames.todayZikr,
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
           DayAzkarList(
-            dayNum: controller.islamicWeekday.value,
+            dayNum: islamicWeekdayNow(),
             route: '${_getCurrentPath(state)}/zikr',
           ),
         );
@@ -218,13 +221,14 @@ class AppRouter {
     );
   }
 
-// TODO: get extra titles here
+  // TODO: get extra titles here
   static GoRoute _createZikrPageRoute(String prefix) {
     return GoRoute(
       path: 'zikr/:zikr',
       name: '${prefix}ZikrPage',
       pageBuilder: (context, state) {
-        final zikr = state.pathParameters['zikr']!;
+        // Path parameters may be percent-encoded (e.g. from free-text search)
+        final zikr = Uri.decodeComponent(state.pathParameters['zikr']!);
 
         // Typed route extras parsing
         final (titles, index) = _parseZikrExtras(state.extra);

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikrListViewTile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
 
 class AzkarListViewWidget extends StatelessWidget {
   const AzkarListViewWidget({

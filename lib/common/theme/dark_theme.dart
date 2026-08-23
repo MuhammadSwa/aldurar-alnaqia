@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:get/instance_manager.dart';
-import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 abstract class BaseTheme {
+  // Themes are built once at startup; the live font size is applied
+  // per-widget via fontSizeProvider where it matters.
   static final double bodyMediumFontSize =
-      Get.put(FontController()).fontSize.value;
+      SharedPreferencesService.getFontSize();
   static const double bodyMediumHeight = 1.8;
 
   static const double bodySmallFontSize = 14;
@@ -18,7 +19,7 @@ final darkTheme = ThemeData(
   textTheme: TextTheme(
     // for main non-bolded text in ZikrPage.
     bodyMedium: TextStyle(
-      fontSize: Get.put(FontController().fontSize.value),
+      fontSize: BaseTheme.bodyMediumFontSize,
       height: BaseTheme.bodyMediumHeight,
     ),
     // fot footer and [^3], notes
@@ -144,7 +145,7 @@ final lightTheme = ThemeData(
       // for main non-bolded text in ZikrPage.
       bodyMedium: TextStyle(
         color: Colors.black,
-        fontSize: Get.put(FontController().fontSize.value),
+        fontSize: BaseTheme.bodyMediumFontSize,
         height: 1.8,
       ),
       // fot footer, notes

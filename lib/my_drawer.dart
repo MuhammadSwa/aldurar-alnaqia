@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
-import 'package:aldurar_alnaqia/screens/settings_screen/toggleThemeBtn_widget.dart';
-import 'package:aldurar_alnaqia/screens/settings_screen/yousriaBeginningDayDropdown_widget.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/toggle_theme_btn_widget.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';

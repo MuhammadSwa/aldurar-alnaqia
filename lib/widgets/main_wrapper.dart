@@ -1,83 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:aldurar_alnaqia/audioPlayer/audioPlayer.dart';
+import 'package:aldurar_alnaqia/audioPlayer/audio_player.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 
-class GlobalDrawerController extends GetxController {
-  final List<GlobalKey<ScaffoldState>> _scaffoldKeys = [];
-
-  // Register a scaffold key
-  void registerScaffoldKey(GlobalKey<ScaffoldState> key) {
-    if (!_scaffoldKeys.contains(key)) {
-      _scaffoldKeys.add(key);
-    }
-  }
-
-  // Unregister a scaffold key
-  void unregisterScaffoldKey(GlobalKey<ScaffoldState> key) {
-    _scaffoldKeys.remove(key);
-  }
-
-  bool get hasOpenDrawer {
-    for (final key in _scaffoldKeys) {
-      if (key.currentState?.isDrawerOpen == true) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // Close all open drawers
-  void closeAllDrawers() {
-    for (final key in _scaffoldKeys) {
-      if (key.currentState?.isDrawerOpen == true) {
-        Navigator.of(key.currentContext!).pop();
-      }
-    }
-
-    // for (final key in _scaffoldKeys) {
-    //   if (key.currentState?.isDrawerOpen == true) {
-    //     key.currentState?.closeDrawer();
-    //   }
-    // }
-  }
-
-  @override
-  void onClose() {
-    _scaffoldKeys.clear();
-    super.onClose();
-  }
-}
-
-class MainWrapper extends StatefulWidget {
+class MainWrapper extends ConsumerStatefulWidget {
   const MainWrapper({
     required this.navigationShell,
     super.key,
   });
   final StatefulNavigationShell navigationShell;
   @override
-  State<MainWrapper> createState() => _MainWrapperState();
+  ConsumerState<MainWrapper> createState() => _MainWrapperState();
 }
 
-class _MainWrapperState extends State<MainWrapper> {
-  @override
-  void initState() {
-    super.initState();
-    // GlobalDrawerController is registered in main.dart
-  }
-
+class _MainWrapperState extends ConsumerState<MainWrapper> {
   void _goBranch(int index) async {
-    // Get the drawer controller and close all drawers before navigating
+    // Close all drawers before navigating
     try {
-      final drawerController = Get.find<GlobalDrawerController>();
+      final drawerRegistry = ref.read(drawerRegistryProvider);
 
-      if (drawerController.hasOpenDrawer) {
+      if (drawerRegistry.hasOpenDrawer) {
         // Close instantly without animation to avoid flickering
-        drawerController.closeAllDrawers();
+        drawerRegistry.closeAllDrawers();
         await Future.delayed(const Duration(milliseconds: 300));
       }
-    } catch (e) {
-      // Controller not available; ignore
+    } catch (_) {
+      // Registry not available; ignore
     }
 
     widget.navigationShell.goBranch(
@@ -88,7 +37,7 @@ class _MainWrapperState extends State<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.find<Controller>();
+    final audioService = ref.watch(audioPlayerProvider);
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
@@ -102,13 +51,16 @@ class _MainWrapperState extends State<MainWrapper> {
                     Expanded(
                       child: widget.navigationShell,
                     ),
-                    Obx(() {
-                      if (c.url.value.isNotEmpty) {
-                        return const AudioControllerWidget();
-                      } else {
-                        return Container();
-                      }
-                    }),
+                    ValueListenableBuilder<String>(
+                      valueListenable: audioService.urlNotifier,
+                      builder: (context, url, _) {
+                        if (url.isNotEmpty) {
+                          return const AudioControllerWidget();
+                        } else {
+                          return Container();
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),

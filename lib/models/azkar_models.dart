@@ -10,7 +10,7 @@ import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/tareeqa_bios_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/ibn_ataAllah.dart';
+import 'package:aldurar_alnaqia/models/consts/ibn_ata_allah.dart';
 
 class Zikr {
   final String title;

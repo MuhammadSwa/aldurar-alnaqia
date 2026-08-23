@@ -1,24 +1,42 @@
-import 'package:aldurar_alnaqia/utils/showSnackbar.dart';
+import 'package:aldurar_alnaqia/utils/show_snackbar.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/get_state_manager.dart';
-import 'package:get/instance_manager.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hijri/hijri_calendar.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
-import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 
-class AdjustHijriDayDialogbox extends StatefulWidget {
+/// Returns today's Hijri date adjusted by [offset] days, taking the
+/// Maghrib-based Islamic day boundary into account when prayer times exist.
+HijriCalendar? hijriDayWithOffset(int offset) {
+  HijriCalendar.setLocal('ar');
+  final adjustedDate = DateTime.now().add(Duration(days: offset));
+
+  final now = DateTime.now();
+  final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
+  if (maghrib == null) {
+    // when timings aren't set, return hijriday without considering maghrib,
+    return HijriCalendar.fromDate(adjustedDate);
+  }
+
+  // if maghrib timing available return hijriday considering maghrib
+  if (now.isAfter(maghrib)) {
+    return HijriCalendar.fromDate(adjustedDate.add(const Duration(days: 1)));
+  }
+
+  return HijriCalendar.fromDate(adjustedDate);
+}
+
+class AdjustHijriDayDialogbox extends ConsumerStatefulWidget {
   const AdjustHijriDayDialogbox({super.key});
 
   @override
-  State<AdjustHijriDayDialogbox> createState() =>
+  ConsumerState<AdjustHijriDayDialogbox> createState() =>
       _AdjustHijriDayDialogboxState();
 }
 
-class _AdjustHijriDayDialogboxState extends State<AdjustHijriDayDialogbox> {
-  final hc = Get.put(HijriOffsetController());
-
-  var _selectedOffset = Get.put(HijriOffsetController()).offset.value;
+class _AdjustHijriDayDialogboxState
+    extends ConsumerState<AdjustHijriDayDialogbox> {
+  late int _selectedOffset = ref.read(hijriOffsetProvider);
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +76,7 @@ class _AdjustHijriDayDialogboxState extends State<AdjustHijriDayDialogbox> {
           ),
           ElevatedButton(
             onPressed: () {
-              hc.setHiJriDayOffset(_selectedOffset);
+              ref.read(hijriOffsetProvider.notifier).set(_selectedOffset);
               Navigator.of(context).pop();
 
               showSnackBar(context, 'تم تعديل اليوم الهجري بنجاح.');
@@ -66,40 +84,5 @@ class _AdjustHijriDayDialogboxState extends State<AdjustHijriDayDialogbox> {
             child: const Text('حفظ'),
           ),
         ]);
-  }
-}
-
-class HijriOffsetController extends GetxController {
-  var offset = SharedPreferencesService.getHijriDayOffset().obs;
-
-  HijriCalendar? getHijriDayByoffest() {
-    HijriCalendar.setLocal('ar');
-    final adjustedDate = DateTime.now().add(Duration(days: offset.value));
-
-    final now = DateTime.now();
-    final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
-    if (maghrib == null) {
-      // when timings aren't set, return hijriday without considering maghrib,
-      return HijriCalendar.fromDate(adjustedDate);
-    }
-
-// if maghrib timing available return hijriday considering maghrib
-    if (now.isAfter(maghrib)) {
-      return HijriCalendar.fromDate(adjustedDate.add(const Duration(days: 1)));
-    }
-
-    return HijriCalendar.fromDate(adjustedDate);
-  }
-
-  HijriCalendar nextDayHijriDay() {
-    HijriCalendar.setLocal('ar');
-    final adjustedDate = DateTime.now().add(Duration(days: offset.value + 1));
-    return HijriCalendar.fromDate(adjustedDate);
-  }
-
-  setHiJriDayOffset(int i) {
-    offset.value = i;
-    SharedPreferencesService.setHijriDayOffset(i);
-    update();
   }
 }

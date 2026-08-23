@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:aldurar_alnaqia/screens/zikr_screen/playAudio_btn_zikr_page.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';

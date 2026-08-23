@@ -1,43 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/get_state_manager.dart';
-import 'package:get/instance_manager.dart';
-import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 
-class FontController extends GetxController {
-  var fontSize = SharedPreferencesService.getFontSize().obs;
-  var fontFamily = SharedPreferencesService.getQuranFontFamily().obs;
-
-  changeSize(double newSize) {
-    fontSize.value = newSize;
-    SharedPreferencesService.setFontSize(newSize);
-  }
-
-  changeFamily(String newFamily) {
-    fontFamily.value = newFamily;
-    SharedPreferencesService.setQuranFontFamily(newFamily);
-  }
-}
-
-class FontFamilySettingsWidget extends StatefulWidget {
+class FontFamilySettingsWidget extends ConsumerStatefulWidget {
   const FontFamilySettingsWidget({super.key});
 
   @override
-  State<FontFamilySettingsWidget> createState() =>
+  ConsumerState<FontFamilySettingsWidget> createState() =>
       _FontFamilySettingsWidgetState();
 }
 
-class _FontFamilySettingsWidgetState extends State<FontFamilySettingsWidget> {
-  String araFontFamily() {
-    final fc = Get.find<FontController>();
-    final eng = fc.fontFamily.value;
+class _FontFamilySettingsWidgetState
+    extends ConsumerState<FontFamilySettingsWidget> {
+  String araFontFamily(String eng) {
     return eng == 'Amiri' ? 'عثماني' : 'عثماني ملون';
   }
 
-  final fc = Get.find<FontController>();
   @override
   Widget build(BuildContext context) {
-  String fontFamily = araFontFamily();
+    final fontFamily = ref.watch(fontFamilyProvider);
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -46,13 +28,11 @@ class _FontFamilySettingsWidgetState extends State<FontFamilySettingsWidget> {
           style: TextStyle(fontSize: 20),
         ),
         DropdownButton(
-          // value: 0,
-          hint: Text(fontFamily),
+          hint: Text(araFontFamily(fontFamily)),
           onChanged: (font) {
-            setState(() {
-              fc.changeFamily(font!);
-              fontFamily = araFontFamily();
-            });
+            if (font != null) {
+              ref.read(fontFamilyProvider.notifier).change(font);
+            }
           },
           items: const <DropdownMenuItem<String>>[
             DropdownMenuItem(
@@ -72,13 +52,11 @@ class _FontFamilySettingsWidgetState extends State<FontFamilySettingsWidget> {
   }
 }
 
-class FontSizeSettingsWidget extends StatelessWidget {
+class FontSizeSettingsWidget extends ConsumerWidget {
   const FontSizeSettingsWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final fc = Get.find<FontController>();
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -86,14 +64,13 @@ class FontSizeSettingsWidget extends StatelessWidget {
         children: [
           const Text(
             'حجم الخط',
-            // TODO: change using font theme
             style: TextStyle(fontSize: 20),
           ),
           IconButton(
               onPressed: () {
                 showDialog(
                     context: context,
-                    builder: (context) {
+                    builder: (dialogContext) {
                       return AlertDialog(
                         title: const Text(
                           'حجم الخط',
@@ -101,15 +78,18 @@ class FontSizeSettingsWidget extends StatelessWidget {
                         ),
                         content: SizedBox(
                           height: 80,
-                          child: Obx(
-                            () {
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final size = ref.watch(fontSizeProvider);
                               return Slider(
-                                label: fc.fontSize.value.round().toString(),
+                                label: size.round().toString(),
                                 divisions: 15,
                                 min: 16,
                                 max: 40,
-                                value: fc.fontSize.value,
-                                onChanged: fc.changeSize,
+                                value: size,
+                                onChanged: ref
+                                    .read(fontSizeProvider.notifier)
+                                    .change,
                               );
                             },
                           ),

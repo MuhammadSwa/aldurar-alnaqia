@@ -1,12 +1,14 @@
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NextPrayerCountdown extends StatelessWidget {
+class NextPrayerCountdown extends ConsumerWidget {
   const NextPrayerCountdown({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(prayerProvider);
+
     return SizedBox(
       height: 100, // Fixed height
       child: Card(
@@ -14,51 +16,49 @@ class NextPrayerCountdown extends StatelessWidget {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            child: GetX<PrayerTimingsController>(
-              builder: (controller) {
-                if (!controller.isInitialized.value) {
-                  return const Column(
+            child: !state.isInitialized
+                ? const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       CircularProgressIndicator(),
                       SizedBox(height: 8),
                       Text('جاري تحميل أوقات الصلاة...'),
                     ],
-                  );
-                }
+                  )
+                : Builder(builder: (context) {
+                    final timeLeft = state.timeLeft;
+                    final prayerName = state.nextPrayerInfo.$2;
 
-                final timeLeft = controller.timeLeft.value;
-                final prayerName = controller.nextPrayerInfo.value.$2;
+                    if (prayerName.isEmpty) {
+                      return const Text(
+                        'خطأ في حساب أوقات الصلاة',
+                        style: TextStyle(fontSize: 16),
+                        textAlign: TextAlign.center,
+                      );
+                    }
 
-                if (prayerName.isEmpty) {
-                  return const Text(
-                    'خطأ في حساب أوقات الصلاة',
-                    style: TextStyle(fontSize: 16),
-                    textAlign: TextAlign.center,
-                  );
-                }
-
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      prayerName,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'بعد ${_formatDuration(timeLeft)}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                );
-              },
-            ),
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          prayerName,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'بعد ${_formatDuration(timeLeft)}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    );
+                  }),
           ),
         ),
       ),

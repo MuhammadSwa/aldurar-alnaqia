@@ -1,35 +1,30 @@
 // lib/widgets/hijri_date_widget.dart
 
 import 'dart:async';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialogBox.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayerTimingsController.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialog_box.dart'
+    show hijriDayWithOffset;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hijri/hijri_calendar.dart';
 // Make sure to import your other controllers and utility classes
 import 'package:timezone/timezone.dart' as tz;
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 // TODO: make it truely reactive(change after maghrib)
-class HijriDateWidget extends StatefulWidget {
+class HijriDateWidget extends ConsumerStatefulWidget {
   const HijriDateWidget({super.key});
 
   @override
-  State<HijriDateWidget> createState() => _HijriDateWidgetState();
+  ConsumerState<HijriDateWidget> createState() => _HijriDateWidgetState();
 }
 
-class _HijriDateWidgetState extends State<HijriDateWidget> {
+class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
   // Timer for scheduling the update at Maghrib.
   Timer? _maghribTimer;
   // The currently displayed Hijri date.
   HijriCalendar? _hijriDate;
-
-  // GetX controllers.
-  final HijriOffsetController hc = Get.find<HijriOffsetController>();
-  final PrayerTimingsController pc = Get.find<PrayerTimingsController>();
-
-  // A subscription to listen to GetX controller changes.
-  late final StreamSubscription _prayerTimesSubscription;
 
   @override
   void initState() {
@@ -40,12 +35,12 @@ class _HijriDateWidgetState extends State<HijriDateWidget> {
 
     // 2. Listen for any changes in prayer timings (e.g., user changes location).
     //    When they change, reset and reschedule our timer.
-    _prayerTimesSubscription = pc.prayerTimings.listen((_) {
+    ref.listenManual(prayerProvider, (_, __) {
       _resetAndScheduleUpdate();
     });
 
     // 3. Listen for changes in the manual Hijri offset.
-    ever(hc.offset, (_) => _updateHijriDate());
+    ref.listenManual(hijriOffsetProvider, (_, __) => _updateHijriDate());
 
     // 4. Schedule the first update for the next Maghrib.
     // We add a small delay to ensure the prayer times have been initialized.
@@ -60,15 +55,14 @@ class _HijriDateWidgetState extends State<HijriDateWidget> {
   void dispose() {
     // Clean up to prevent memory leaks.
     _maghribTimer?.cancel();
-    _prayerTimesSubscription.cancel();
     super.dispose();
   }
 
-  /// Updates the displayed Hijri date based on the offset controller.
+  /// Updates the displayed Hijri date based on the offset provider.
   void _updateHijriDate() {
     if (mounted) {
       setState(() {
-        _hijriDate = hc.getHijriDayByoffest();
+        _hijriDate = hijriDayWithOffset(ref.read(hijriOffsetProvider));
       });
     }
   }
@@ -79,8 +73,8 @@ class _HijriDateWidgetState extends State<HijriDateWidget> {
     // Cancel any existing timer before creating a new one.
     _maghribTimer?.cancel();
 
-    // Get today's prayer times from the controller.
-    final todaysPrayers = pc.prayerTimings.value;
+    // Get today's prayer times from the provider.
+    final todaysPrayers = ref.read(prayerProvider).prayerTimings;
       if (todaysPrayers?.maghrib == null) {
         logWarn("HijriDateWidget: Maghrib time not available. Cannot schedule update.");
       return; // Can't schedule if we don't have the time.
@@ -121,9 +115,6 @@ class _HijriDateWidgetState extends State<HijriDateWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // We use Obx to react to changes in the HijriOffsetController,
-    // although the internal setState also handles updates.
-    // This provides a fallback if setState is missed.
     if (_hijriDate == null) {
       return const SizedBox.shrink();
     }

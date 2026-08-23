@@ -1,65 +1,50 @@
 import 'dart:async';
+
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/get_state_manager.dart';
-import 'package:get/instance_manager.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
-import 'package:audio_service/audio_service.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
+
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 // call initPlayer then stop => works fine
 // call initplayer after initPlayer => works fine
-// classing intPlayer twice then stop => problem
-// done with the help of this great article :( but with get_rx.
+// calling initPlayer twice then stop => problem
+// Based on:
 // https://suragch.medium.com/steaming-audio-in-flutter-with-just-audio-7435fcf672bf
-class Controller extends GetxController {
-  var url = ''.obs;
-  var speed = RxDouble(1);
-  var title = ''.obs;
 
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
-  final progressBarState = ProgressBarState(
-    current: Duration.zero,
-    buffered: Duration.zero,
-    total: Duration.zero,
-  ).obs;
-
-  var buttonState = _ButtonState.loading.obs;
-
-  // Subscriptions to avoid adding multiple listeners across re-inits
-  StreamSubscription<PlayerState>? _playerStateSub;
-  StreamSubscription<Duration>? _positionSub;
-  StreamSubscription<Duration>? _bufferedSub;
-  StreamSubscription<Duration?>? _durationSub;
-
-  @override
-  void onInit() {
-    super.onInit();
-
-    // Ensure backend is initialized once on controller creation
+/// Framework-agnostic audio playback service.
+///
+/// Exposes [ValueListenable]s so widgets can rebuild efficiently with
+/// [ValueListenableBuilder] without depending on any state-management package.
+class AudioPlayerService {
+  AudioPlayerService({required StorageService storage}) : _storage = storage {
+    // Ensure the media_kit backend is initialized once on service creation
+    // (needed for Linux/desktop playback).
     JustAudioMediaKit.ensureInitialized();
 
-    // Attach listeners once; update reactive state for UI
     _playerStateSub = _audioPlayer.playerStateStream.listen((playerState) {
       final isPlaying = playerState.playing;
       final processingState = playerState.processingState;
       if (processingState == ProcessingState.loading ||
           processingState == ProcessingState.buffering) {
-        buttonState.value = _ButtonState.loading;
+        buttonState.value = ButtonState.loading;
       } else if (!isPlaying) {
-        buttonState.value = _ButtonState.paused;
+        buttonState.value = ButtonState.paused;
       } else if (processingState != ProcessingState.completed) {
-        buttonState.value = _ButtonState.playing;
+        buttonState.value = ButtonState.playing;
       } else {
         // Playback completed: reset position and pause to allow replay
         _audioPlayer.seek(Duration.zero);
         _audioPlayer.pause();
-        buttonState.value = _ButtonState.paused;
+        buttonState.value = ButtonState.paused;
       }
     });
 
@@ -72,12 +57,11 @@ class Controller extends GetxController {
       );
     });
 
-    _bufferedSub =
-        _audioPlayer.bufferedPositionStream.listen((bufferedPosition) {
+    _bufferedSub = _audioPlayer.bufferedPositionStream.listen((buffered) {
       final oldState = progressBarState.value;
       progressBarState.value = ProgressBarState(
         current: oldState.current,
-        buffered: bufferedPosition,
+        buffered: buffered,
         total: oldState.total,
       );
     });
@@ -92,53 +76,86 @@ class Controller extends GetxController {
     });
   }
 
-  initPlayer(String newUrl, String newTitle, bool fileExists,
+  final StorageService _storage;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  // Subscriptions to avoid adding multiple listeners across re-inits
+  StreamSubscription<PlayerState>? _playerStateSub;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration>? _bufferedSub;
+  StreamSubscription<Duration?>? _durationSub;
+
+  /// The (remote) URL currently loaded, or '' when stopped.
+  /// Widgets use this both for visibility of the mini-player bar and for
+  /// comparing against a specific zikr's URL.
+  final ValueNotifier<String> urlNotifier = ValueNotifier<String>('');
+  final ValueNotifier<String> titleNotifier = ValueNotifier<String>('');
+  final ValueNotifier<double> speedNotifier = ValueNotifier<double>(1);
+  final ValueNotifier<ButtonState> buttonState =
+      ValueNotifier<ButtonState>(ButtonState.loading);
+  final ValueNotifier<ProgressBarState> progressBarState =
+      ValueNotifier<ProgressBarState>(ProgressBarState(
+    current: Duration.zero,
+    buffered: Duration.zero,
+    total: Duration.zero,
+  ));
+
+  Future<void> initPlayer(String newUrl, String newTitle, bool fileExists,
       {String? localId}) async {
     // Keep the original (remote) URL in state so UI logic can compare against it
-    url.value = newUrl;
-    title.value = newTitle;
-    buttonState.value = _ButtonState.loading;
+    urlNotifier.value = newUrl;
+    titleNotifier.value = newTitle;
+    buttonState.value = ButtonState.loading;
+    progressBarState.value = ProgressBarState(
+      current: Duration.zero,
+      buffered: Duration.zero,
+      total: Duration.zero,
+    );
 
-    // Reset current playback before setting new source
-    await _audioPlayer.stop();
+    try {
+      // Reset current playback before setting new source
+      await _audioPlayer.stop();
 
-    final art = Uri.parse('asset:///assets/imgs/social_png.png');
-    if (fileExists) {
-      final storage = Get.find<StorageService>();
-      final id = localId ?? newTitle; // prefer explicit id when provided
-      final path = storage.pathFor(DownloadType.narrations, id);
-      await _audioPlayer.setAudioSource(
-        AudioSource.uri(
-          Uri.file(path),
-          tag: MediaItem(
-            id: id,
-            title: newTitle,
-            album: 'الطريقة اليسرية',
-            artUri: art,
+      final art = Uri.parse('asset:///assets/imgs/social_png.png');
+      if (fileExists) {
+        final id = localId ?? newTitle; // prefer explicit id when provided
+        final path = _storage.pathFor(DownloadType.narrations, id);
+        await _audioPlayer.setAudioSource(
+          AudioSource.uri(
+            Uri.file(path),
+            tag: MediaItem(
+              id: id,
+              title: newTitle,
+              album: 'الطريقة اليسرية',
+              artUri: art,
+            ),
           ),
-        ),
-      );
-    } else {
-      await _audioPlayer.setAudioSource(
-        AudioSource.uri(
-          Uri.parse(url.value),
-          tag: MediaItem(
-            id: localId ?? newTitle,
-            title: newTitle,
-            album: 'الطريقة اليسرية',
-            artUri: art,
+        );
+      } else {
+        await _audioPlayer.setAudioSource(
+          AudioSource.uri(
+            Uri.parse(newUrl),
+            tag: MediaItem(
+              id: localId ?? newTitle,
+              title: newTitle,
+              album: 'الطريقة اليسرية',
+              artUri: art,
+            ),
           ),
-        ),
-      );
+        );
+      }
+
+      // Apply current speed and start playing
+      await _audioPlayer.setSpeed(speedNotifier.value);
+      await _audioPlayer.play();
+    } catch (e, st) {
+      logError('Failed to load audio source', e, st);
+      buttonState.value = ButtonState.error;
     }
-
-    // Apply current speed and start playing
-    await _audioPlayer.setSpeed(speed.value);
-    await _audioPlayer.play();
   }
 
   void stopPlayer() {
-    url.value = '';
+    urlNotifier.value = '';
     // Stop and reset the player gracefully
     _audioPlayer.stop();
     _audioPlayer.seek(Duration.zero);
@@ -147,36 +164,35 @@ class Controller extends GetxController {
       buffered: Duration.zero,
       total: Duration.zero,
     );
-    buttonState.value = _ButtonState.paused;
-    title.value = '';
+    buttonState.value = ButtonState.paused;
+    titleNotifier.value = '';
   }
 
-  void play() {
-    _audioPlayer.play();
-  }
+  void play() => _audioPlayer.play();
 
-  void pause() {
-    _audioPlayer.pause();
-  }
+  void pause() => _audioPlayer.pause();
 
-  void seek(Duration position) {
-    _audioPlayer.seek(position);
-  }
+  void seek(Duration position) => _audioPlayer.seek(position);
 
   void setSpeed(double s) {
-    speed.value = s;
+    speedNotifier.value = s;
     _audioPlayer.setSpeed(s);
   }
 
-  @override
-  void onClose() {
-    // Dispose the underlying player to free native resources
+  double get currentSpeed => _audioPlayer.speed;
+  Stream<double> get speedStream => _audioPlayer.speedStream;
+
+  void dispose() {
     _playerStateSub?.cancel();
     _positionSub?.cancel();
     _bufferedSub?.cancel();
     _durationSub?.cancel();
     _audioPlayer.dispose();
-    super.onClose();
+    urlNotifier.dispose();
+    titleNotifier.dispose();
+    speedNotifier.dispose();
+    buttonState.dispose();
+    progressBarState.dispose();
   }
 }
 
@@ -191,16 +207,14 @@ class ProgressBarState {
   final Duration total;
 }
 
-//
-enum _ButtonState { paused, playing, loading }
+enum ButtonState { paused, playing, loading, error }
 
-class AudioControllerWidget extends StatelessWidget {
+class AudioControllerWidget extends ConsumerWidget {
   const AudioControllerWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Use the singleton instance registered at app start
-    final c = Get.find<Controller>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = ref.watch(audioPlayerProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -220,20 +234,24 @@ class AudioControllerWidget extends StatelessWidget {
               ),
               Align(
                 alignment: Alignment.center,
-                child: Obx(() {
-                  return Text(c.title.value);
-                }),
+                child: ValueListenableBuilder<String>(
+                  valueListenable: c.titleNotifier,
+                  builder: (context, title, _) => Text(title),
+                ),
               )
             ],
           ),
-          Obx(() {
-            return ProgressBar(
-              progress: c.progressBarState.value.current,
-              buffered: c.progressBarState.value.buffered,
-              total: c.progressBarState.value.total,
-              onSeek: c.seek,
-            );
-          }),
+          ValueListenableBuilder<ProgressBarState>(
+            valueListenable: c.progressBarState,
+            builder: (context, progress, _) {
+              return ProgressBar(
+                progress: progress.current,
+                buffered: progress.buffered,
+                total: progress.total,
+                onSeek: c.seek,
+              );
+            },
+          ),
           Stack(
             alignment: Alignment.center,
             children: [
@@ -241,29 +259,32 @@ class AudioControllerWidget extends StatelessWidget {
                   alignment: Alignment.topRight, child: SpeedSliderWidget()),
               Align(
                 alignment: Alignment.topCenter,
-                child: Obx(
-                  () {
-                    if (c.buttonState.value == _ButtonState.paused) {
+                child: ValueListenableBuilder<ButtonState>(
+                  valueListenable: c.buttonState,
+                  builder: (context, state, _) {
+                    if (state == ButtonState.paused ||
+                        state == ButtonState.error) {
                       return IconButton(
                         onPressed: () {
                           c.play();
                         },
                         icon: const Icon(Icons.play_arrow),
                       );
-                    } else if (c.buttonState.value == _ButtonState.playing) {
+                    } else if (state == ButtonState.playing) {
                       return IconButton(
                         onPressed: () {
                           c.pause();
                         },
                         icon: const Icon(Icons.pause),
                       );
-                    } else {
+                    } else if (state == ButtonState.loading) {
                       return const SizedBox(
                         width: 20.0,
                         height: 20.0,
                         child: CircularProgressIndicator(),
                       );
                     }
+                    return const SizedBox.shrink();
                   },
                 ),
               )
@@ -282,7 +303,6 @@ void showSliderDialog({
   required double min,
   required double max,
   String valueSuffix = '',
-  // TODO: Replace these two by ValueStream.
   required double value,
   required Stream<double> stream,
   required ValueChanged<double> onChanged,
@@ -317,19 +337,19 @@ void showSliderDialog({
   );
 }
 
-class SpeedSliderWidget extends StatelessWidget {
+class SpeedSliderWidget extends ConsumerWidget {
   const SpeedSliderWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Use the singleton instance registered at app start
-    final c = Get.find<Controller>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = ref.watch(audioPlayerProvider);
 
     return IconButton(
-      icon: Obx(() {
-        return Text("${c.speed.value}x",
-            style: const TextStyle(fontWeight: FontWeight.bold));
-      }),
+      icon: ValueListenableBuilder<double>(
+        valueListenable: c.speedNotifier,
+        builder: (context, speed, _) => Text("$speed x",
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+      ),
       onPressed: () {
         showSliderDialog(
           context: context,
@@ -337,8 +357,8 @@ class SpeedSliderWidget extends StatelessWidget {
           divisions: 10,
           min: 0.5,
           max: 1.5,
-          value: c._audioPlayer.speed,
-          stream: c._audioPlayer.speedStream,
+          value: c.currentSpeed,
+          stream: c.speedStream,
           onChanged: c.setSpeed,
         );
       },

@@ -1,16 +1,16 @@
-import 'package:aldurar_alnaqia/MyDrawer.dart';
+import 'package:aldurar_alnaqia/my_drawer.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
-import 'library_controller.dart';
 
 // This map can stay here as it's static data
 const booksTitles = <String, String>{
   'الدرر النقية في أوراد الطريقة اليسرية الصديقية الشاذلية':
       'https://archive.org/download/dorar_app_book/dorar_awrad.pdf',
-  'الأنوار الجلية في الجمع بين دلائل الخيرات والصلوات اليسرية':
+  'الأنوار الجلية في الجمع بين دلائل الخيرات والصلوات اليسرية':
       'https://archive.org/download/dorar_app_book/anwar_galia.pdf',
   'الحضرة اليسرية الصديقية الشاذلية':
       'https://archive.org/download/dorar_app_book/dorar_alhadra.pdf',
@@ -22,71 +22,110 @@ const booksTitles = <String, String>{
       "https://archive.org/download/dorar_app_book/sharh_salawat_alawlia_ealaa_khatam_alanbia.pdf"
 };
 
-class LibraryScreen extends StatelessWidget {
+class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
   @override
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  late final List<DownloadItem> bookItems = booksTitles.entries.map((entry) {
+    return DownloadItem(
+      // Use the book title as the unique and consistent ID
+      id: entry.key,
+      title: entry.key,
+      url: entry.value,
+      type: DownloadType.books,
+    );
+  }).toList();
+
+  Future<void> _refreshBookStatuses() async {
+    final downloader = ref.read(downloaderProvider);
+    await Future.wait(
+      bookItems.map((item) => downloader.refreshFileStatus(item.id, item.type)),
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم تحديث حالة الكتب.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-  // Use globally registered controllers
-  final controller = Get.put(LibraryController());
+    ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
 
     return Scaffold(
-      key: controller.scaffoldKey,
+      key: _scaffoldKey,
       drawer: const MyDrawer(),
       appBar: AppBar(
         title: const Text('المكتبة'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: controller.openDrawer,
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
+        actions: [
+          IconButton(
+            tooltip: 'تحديث الحالة',
+            onPressed: _refreshBookStatuses,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
       ),
-      body: Obx(
-        () => ListView.builder(
-          itemCount: controller.bookItems.length,
-          itemBuilder: (context, index) {
-            final bookItem = controller.bookItems[index];
-            return _BookListTile(item: bookItem);
-          },
-        ),
+      body: ListView.builder(
+        itemCount: bookItems.length,
+        itemBuilder: (context, index) {
+          final bookItem = bookItems[index];
+          return _BookListTile(item: bookItem);
+        },
       ),
     );
   }
 }
 
-class _BookListTile extends StatelessWidget {
+class _BookListTile extends ConsumerWidget {
   const _BookListTile({required this.item});
 
   final DownloadItem item;
 
   @override
-  Widget build(BuildContext context) {
-  final downloader = Get.find<DownloaderController>();
-  // Trigger a coalesced status check outside reactive build updates
-  downloader.ensureKnown(item.id, item.type);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final downloader = ref.watch(downloaderProvider);
+    // Trigger a coalesced status check outside reactive build updates
+    downloader.ensureKnown(item.id, item.type);
 
-    return Obx(() {
-      final isDownloading = downloader.isDownloading(item.id);
-      final isDownloaded = downloader.fileStatusCache[item.id] ?? false;
+    return ValueListenableBuilder<int>(
+      valueListenable: downloader.statusRevision,
+      builder: (context, _, __) {
+        final isDownloading = downloader.isDownloading(item.id);
+        final isDownloaded = downloader.cachedStatus(item.id) ?? false;
 
-      return ListTile(
-        title: Text(item.title,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-  // === CHANGE IS HERE: Passing the cancel callback ===
-        leading: _buildLeadingIcon(
-          isDownloading: isDownloading,
-          isDownloaded: isDownloaded,
-          progressNotifier: downloader.downloadProgress[item.id],
-          onCancel: () => downloader.cancelDownload(item.id),
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => _handleTap(context, isDownloaded, downloader),
-      );
-    });
+        return ListTile(
+          title: Text(item.title,
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          leading: _buildLeadingIcon(
+            context: context,
+            isDownloading: isDownloading,
+            isDownloaded: isDownloaded,
+            progressNotifier: downloader.progressNotifierFor(item.id),
+            onCancel: () => downloader.cancelDownload(item.id),
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _handleTap(context, ref, isDownloaded),
+        );
+      },
+    );
   }
 
-  // === CHANGE IS HERE: Added onCancel parameter and updated the Stack ===
   Widget _buildLeadingIcon({
+    required BuildContext context,
     required bool isDownloading,
     required bool isDownloaded,
     required ValueNotifier<double>? progressNotifier,
@@ -104,7 +143,6 @@ class _BookListTile extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(value: progress, strokeWidth: 2.5),
-                // Replaced Text with IconButton for cancellation
                 IconButton(
                   padding: EdgeInsets.zero,
                   icon: const Icon(Icons.close, size: 18),
@@ -120,35 +158,31 @@ class _BookListTile extends StatelessWidget {
 
     return Icon(
       isDownloaded ? Icons.menu_book_sharp : Icons.cloud_outlined,
-      // color:
-      //     isDownloaded ? Get.theme.colorScheme.primary : Colors.grey.shade600,
       size: 30,
     );
   }
 
-  void _handleTap(BuildContext context, bool isDownloaded,
-      DownloaderController downloader) async {
+  void _handleTap(BuildContext context, WidgetRef ref, bool isDownloaded) {
     if (isDownloaded) {
-  // Open viewer; it will auto-restore last page.
-  context.push('/library/pdfViewer/${item.title}');
+      // Open viewer; it will auto-restore last page.
+      context.push('/library/pdfViewer/${Uri.encodeComponent(item.title)}');
     } else {
-      _showDownloadOptionsDialog(context, downloader);
+      _showDownloadOptionsDialog(context, ref);
     }
   }
 
-  void _showDownloadOptionsDialog(
-      BuildContext context, DownloaderController downloader) {
+  void _showDownloadOptionsDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (dialogContext) => StreamOrDownloadDialog(
         item: item,
         onStream: () {
           Navigator.of(dialogContext).pop();
-          context.go('/library/pdfViewer/${item.title}');
+          context.go('/library/pdfViewer/${Uri.encodeComponent(item.title)}');
         },
         onDownload: () {
           Navigator.of(dialogContext).pop();
-          downloader.startDownload(item);
+          ref.read(downloaderProvider).startDownload(item);
         },
         onManageDownloads: () {
           Navigator.of(dialogContext).pop();
