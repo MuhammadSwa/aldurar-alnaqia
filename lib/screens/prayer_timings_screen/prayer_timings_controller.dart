@@ -66,7 +66,8 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     tz.initializeTimeZones();
 
     try {
-      final String localTimezoneName = await FlutterTimezone.getLocalTimezone();
+      final localTimezone = await FlutterTimezone.getLocalTimezone();
+      final String localTimezoneName = localTimezone.identifier;
       if (!ref.mounted) return;
       tz.setLocalLocation(tz.getLocation(localTimezoneName));
       SharedPreferencesService.setTimezone(localTimezoneName);
@@ -110,25 +111,20 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
       state = state.copyWith(nextPrayerInfo: (null, ''));
       return;
     }
+    String nextPrayerNameString = prayers.nextPrayer().name;
+    DateTime nextPrayerDateTime = prayers.timeForPrayer(prayers.nextPrayer());
 
-    String nextPrayerNameString = prayers.nextPrayer();
-    DateTime? nextPrayerDateTime = prayers.timeForPrayer(nextPrayerNameString);
-
-    // The library returns 'fajrafter' for tomorrow's Fajr. We use that.
-    if (nextPrayerNameString == 'fajrafter') {
-      nextPrayerDateTime = prayers.fajrafter;
+    // The library returns 'fajrAfter' for tomorrow's Fajr. We use that.
+    if (nextPrayerNameString == 'fajrAfter') {
+      nextPrayerDateTime = prayers.fajrAfter;
       nextPrayerNameString = 'fajr'; // Standardize the name
     }
 
-    if (nextPrayerDateTime != null) {
-      final tz.TZDateTime localNextPrayerTime =
-          tz.TZDateTime.from(nextPrayerDateTime, tz.local);
-      state = state.copyWith(
-        nextPrayerInfo: (localNextPrayerTime, arabicPrayerName(nextPrayerNameString)),
-      );
-    } else {
-      state = state.copyWith(nextPrayerInfo: (null, ''));
-    }
+    final tz.TZDateTime localNextPrayerTime =
+        tz.TZDateTime.from(nextPrayerDateTime, tz.local);
+    state = state.copyWith(
+      nextPrayerInfo: (localNextPrayerTime, arabicPrayerName(nextPrayerNameString)),
+    );
   }
 
   void _startCountdownTimer() {
@@ -176,12 +172,12 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     final now = tz.TZDateTime.now(tz.local);
     final prayers = state.prayerTimings;
 
-    if (prayers?.maghrib == null) {
+    if (prayers == null) {
       state = state.copyWith(islamicWeekday: now.weekday); // Fallback
       return;
     }
 
-    final maghribTime = tz.TZDateTime.from(prayers!.maghrib!, tz.local);
+    final maghribTime = tz.TZDateTime.from(prayers.maghrib, tz.local);
     DateTime effectiveDate = now;
     if (now.isAfter(maghribTime)) {
       effectiveDate = now.add(const Duration(days: 1));
@@ -195,16 +191,16 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     _dayChangeTimer?.cancel();
 
     final prayers = state.prayerTimings;
-    if (prayers?.maghrib == null) return;
+    if (prayers == null) return;
 
     final now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime nextMaghrib = tz.TZDateTime.from(prayers!.maghrib!, tz.local);
+    tz.TZDateTime nextMaghrib = tz.TZDateTime.from(prayers.maghrib, tz.local);
 
     if (now.isAfter(nextMaghrib)) {
       final tomorrowsPrayers = PrayerTimeings.getPrayersTimings(
           forDate: now.add(const Duration(days: 1)));
-      if (tomorrowsPrayers?.maghrib != null) {
-        nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers!.maghrib!, tz.local);
+      if (tomorrowsPrayers != null) {
+        nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers.maghrib, tz.local);
       } else {
         return;
       }
@@ -227,10 +223,10 @@ final prayerProvider =
 
 /// Maps English prayer names from the library to Arabic.
 String arabicPrayerName(String englishName) {
-  switch (englishName.toLowerCase()) {
-    case 'fajr':
-    case 'fajrafter':
-      return 'الفجر';
+    switch (englishName.toLowerCase()) {
+      case 'fajr':
+      case 'fajrafter':
+        return 'الفجر';
     case 'sunrise':
       return 'الشروق';
     case 'dhuhr':
@@ -283,43 +279,43 @@ class PrayerTimeings {
       final CalculationParameters params;
       switch (method) {
         case 'egyptian':
-          params = CalculationMethod.egyptian();
+          params = CalculationMethodParameters.egyptian();
           break;
         case 'karachi':
-          params = CalculationMethod.karachi();
+          params = CalculationMethodParameters.karachi();
           break;
         case 'muslim_world_league':
-          params = CalculationMethod.muslimWorldLeague();
+          params = CalculationMethodParameters.muslimWorldLeague();
           break;
         case 'dubai':
-          params = CalculationMethod.dubai();
+          params = CalculationMethodParameters.dubai();
           break;
         case 'qatar':
-          params = CalculationMethod.qatar();
+          params = CalculationMethodParameters.qatar();
           break;
         case 'kuwait':
-          params = CalculationMethod.kuwait();
+          params = CalculationMethodParameters.kuwait();
           break;
         case 'turkey':
-          params = CalculationMethod.turkiye();
+          params = CalculationMethodParameters.turkiye();
           break;
         case 'tehran':
-          params = CalculationMethod.tehran();
+          params = CalculationMethodParameters.tehran();
           break;
         case 'singapore':
-          params = CalculationMethod.singapore();
+          params = CalculationMethodParameters.singapore();
           break;
         case 'umm_al_qura':
-          params = CalculationMethod.ummAlQura();
+          params = CalculationMethodParameters.ummAlQura();
           break;
         case 'north_america':
-          params = CalculationMethod.northAmerica();
+          params = CalculationMethodParameters.northAmerica();
           break;
         case 'moon_sighting_committee':
-          params = CalculationMethod.moonsightingCommittee();
+          params = CalculationMethodParameters.moonsightingCommittee();
           break;
         default:
-          params = CalculationMethod.other();
+          params = CalculationMethodParameters.other();
           break;
       }
 
@@ -371,16 +367,14 @@ class PrayerTimeings {
     try {
       final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
 
-      String nextPrayer = prayerTimes.nextPrayer();
-      DateTime? nextPrayerTime = prayerTimes.timeForPrayer(nextPrayer);
+      final nextPrayer = prayerTimes.nextPrayer();
+      String nextPrayerName = nextPrayer.name;
+      DateTime nextPrayerTime = prayerTimes.timeForPrayer(nextPrayer);
 
       // Handle case when next prayer is tomorrow's Fajr
-      if (nextPrayer == 'fajrafter') {
-        nextPrayerTime = prayerTimes.fajrafter;
-      }
-
-      if (nextPrayerTime == null) {
-        return (const Duration(hours: 0, minutes: 0, seconds: 0), '');
+      if (nextPrayer == Prayer.fajrAfter) {
+        nextPrayerTime = prayerTimes.fajrAfter;
+        nextPrayerName = 'fajr';
       }
 
       // Convert to local timezone
@@ -388,7 +382,7 @@ class PrayerTimeings {
           tz.TZDateTime.from(nextPrayerTime, tz.local);
       final timeLeft = localNextPrayerTime.difference(now);
 
-      return (timeLeft, arabicPrayerName(nextPrayer));
+      return (timeLeft, arabicPrayerName(nextPrayerName));
     } catch (e) {
       logError('Error calculating time left for next prayer', e);
       return (const Duration(hours: 0, minutes: 0, seconds: 0), '');
@@ -402,7 +396,7 @@ class PrayerTimeings {
 
     try {
       final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-      return prayerTimes.currentPrayer(date: now);
+      return prayerTimes.currentPrayer(date: now).name;
     } catch (e) {
       logError('Error getting current prayer', e);
       return null;
@@ -419,12 +413,12 @@ class PrayerTimeings {
       final timezone = tz.local;
 
       return {
-        'fajr': tz.TZDateTime.from(prayerTimes.fajr!, timezone),
-        'sunrise': tz.TZDateTime.from(prayerTimes.sunrise!, timezone),
-        'dhuhr': tz.TZDateTime.from(prayerTimes.dhuhr!, timezone),
-        'asr': tz.TZDateTime.from(prayerTimes.asr!, timezone),
-        'maghrib': tz.TZDateTime.from(prayerTimes.maghrib!, timezone),
-        'isha': tz.TZDateTime.from(prayerTimes.isha!, timezone),
+        'fajr': tz.TZDateTime.from(prayerTimes.fajr, timezone),
+        'sunrise': tz.TZDateTime.from(prayerTimes.sunrise, timezone),
+        'dhuhr': tz.TZDateTime.from(prayerTimes.dhuhr, timezone),
+        'asr': tz.TZDateTime.from(prayerTimes.asr, timezone),
+        'maghrib': tz.TZDateTime.from(prayerTimes.maghrib, timezone),
+        'isha': tz.TZDateTime.from(prayerTimes.isha, timezone),
       };
     } catch (e) {
       logError('Error getting prayer times', e);
@@ -516,8 +510,8 @@ class PrayerTimeings {
     try {
       final timezone = tz.local;
 
-      final fajr = tz.TZDateTime.from(prayerTimes.fajr!, timezone);
-      final isha = tz.TZDateTime.from(prayerTimes.isha!, timezone);
+      final fajr = tz.TZDateTime.from(prayerTimes.fajr, timezone);
+      final isha = tz.TZDateTime.from(prayerTimes.isha, timezone);
       final timeDiff = isha.difference(fajr);
 
       bool hasIssues = false;

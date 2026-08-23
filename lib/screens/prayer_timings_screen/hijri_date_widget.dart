@@ -82,7 +82,7 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
 
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime maghribTime =
-        tz.TZDateTime.from(todaysPrayers!.maghrib!, tz.local);
+        tz.TZDateTime.from(todaysPrayers!.maghrib, tz.local);
 
     // Check if today's Maghrib has already passed.
     if (maghribTime.isBefore(now)) {
@@ -94,7 +94,7 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
           logWarn("HijriDateWidget: Could not calculate tomorrow's Maghrib time.");
         return;
       }
-      maghribTime = tz.TZDateTime.from(tomorrowsPrayers!.maghrib!, tz.local);
+      maghribTime = tz.TZDateTime.from(tomorrowsPrayers!.maghrib, tz.local);
     }
 
     // Calculate the duration until the next Maghrib.

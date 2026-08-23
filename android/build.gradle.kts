@@ -14,6 +14,19 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    if (!project.state.executed) {
+        project.afterEvaluate {
+            val androidExt = project.extensions.findByName("android")
+            if (androidExt is com.android.build.gradle.BaseExtension) {
+                androidExt.ndkVersion = "27.1.12297006"
+            }
+        }
+    } else {
+        val androidExt = project.extensions.findByName("android")
+        if (androidExt is com.android.build.gradle.BaseExtension) {
+            androidExt.ndkVersion = "27.1.12297006"
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

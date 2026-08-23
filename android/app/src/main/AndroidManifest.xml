@@ -1,28 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:tools="http://schemas.android.com/tools">
 
+  <!-- Geolocator: manual coordinates via device location -->
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
   <uses-permission android:name="android.permission.INTERNET" />
 
-  <!-- Permissions for notifications and background work -->
+  <!-- Media playback foreground service (just_audio_background / audio_service) -->
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+  <!-- Persistent prayer-timings notification service (flutter_background_service) -->
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-  <!-- Android 13+ runtime notification permission -->
+  <!-- Runtime notification permission on Android 13+ -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-  <!-- Optional exact alarm for future expansion (if we schedule exact adhan) -->
-  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-  <!-- Allow restart after boot -->
-  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-  <!-- Optional: Ignore battery optimizations to keep service responsive -->
-  <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-
-  <!-- For Android 14+ background work -->
-  <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" /> -->
 
   <application
     android:label="الدرر النقية"
@@ -41,8 +35,7 @@
       <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
-
+                 to determine the Window background of the Activity. -->
       <meta-data
         android:name="io.flutter.embedding.android.NormalTheme"
         android:resource="@style/NormalTheme"
@@ -51,17 +44,9 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
-
-      <!-- Handle notification taps via VIEW action with app-specific scheme -->
-      <intent-filter>
-        <action android:name="android.intent.action.VIEW" />
-        <category android:name="android.intent.category.DEFAULT" />
-        <category android:name="android.intent.category.BROWSABLE" />
-        <data android:scheme="aldurar" android:host="open" />
-      </intent-filter>
     </activity>
 
-    <!-- Media playback service used by audio_service / just_audio_background -->
+    <!-- Media playback service used by just_audio_background -->
     <service android:name="com.ryanheise.audioservice.AudioService"
         android:foregroundServiceType="mediaPlayback"
         android:exported="true" tools:ignore="Instantiatable">
@@ -77,38 +62,12 @@
       </intent-filter>
     </receiver>
 
-    <!-- Background Service for prayer notifications (managed by flutter_background_service) -->
+    <!-- Foreground service for prayer timings notifications (user-toggleable) -->
     <service
       android:name="id.flutter.flutter_background_service.BackgroundService"
       android:exported="true"
       android:foregroundServiceType="dataSync"
       tools:replace="android:exported" />
-    <!---->
-    <!-- WorkManager for backup tasks -->
-    <!-- <provider -->
-    <!--   android:name="androidx.startup.InitializationProvider" -->
-    <!--   android:authorities="${applicationId}.androidx-startup" -->
-    <!--   android:exported="false"> -->
-    <!--tools:node="merge"> -->
-    <!--   <meta-data -->
-    <!--     android:name="androidx.work.WorkManagerInitializer" -->
-    <!--     android:value="androidx.startup" /> -->
-    <!-- </provider> -->
-    <!---->
-    <!-- Boot receiver removed; service is user-toggled from the app -->
-    <!---->
-    <!-- Flutter Local Notifications -->
-    <!-- <receiver android:exported="false" -->
-    <!--   android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" /> -->
-    <!-- <receiver android:exported="false" -->
-    <!--   android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"> -->
-    <!--   <intent-filter> -->
-    <!--     <action android:name="android.intent.action.BOOT_COMPLETED" /> -->
-    <!--     <action android:name="android.intent.action.MY_PACKAGE_REPLACED" /> -->
-    <!--     <action android:name="android.intent.action.QUICKBOOT_POWERON" /> -->
-    <!--     <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" /> -->
-    <!--   </intent-filter> -->
-    <!-- </receiver> -->
 
     <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
@@ -116,6 +75,7 @@
       android:name="flutterEmbedding"
       android:value="2" />
   </application>
+
   <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.

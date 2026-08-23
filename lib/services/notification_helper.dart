@@ -22,7 +22,7 @@ class NotificationHelper {
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidInit);
-    await _fln.initialize(initSettings);
+    await _fln.initialize(settings: initSettings);
 
     // Create the channel
     final android = _fln.resolvePlatformSpecificImplementation<

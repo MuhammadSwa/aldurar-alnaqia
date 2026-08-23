@@ -143,24 +143,23 @@ Future<String> _buildNotificationContent() async {
     // 'فجر ${_formatHm(prayers.fajr)} • شروق ${_formatHm(prayers.sunrise)} • ظهر ${_formatHm(prayers.dhuhr)} • عصر ${_formatHm(prayers.asr)} • مغرب ${_formatHm(prayers.maghrib)} • عشاء ${_formatHm(prayers.isha)}');
 
     // Next prayer
-    String nextName = prayers.nextPrayer();
-    DateTime? nextTime = prayers.timeForPrayer(nextName);
-    if (nextName == 'fajrafter') {
-      nextTime = prayers.fajrafter;
+    final nextPrayer = prayers.nextPrayer();
+    String nextName = nextPrayer.name;
+    DateTime nextTime = prayers.timeForPrayer(nextPrayer);
+    if (nextPrayer == Prayer.fajrAfter) {
+      nextTime = prayers.fajrAfter;
       nextName = 'fajr';
     }
 
-    if (nextTime != null) {
-      final localNext = tz.TZDateTime.from(nextTime, tz.local);
-      final diff = localNext.difference(now);
-      final visible = diff.isNegative ? Duration.zero : diff;
-      final h = visible.inHours.toString().padLeft(2, '0');
-      final m = (visible.inMinutes % 60).toString().padLeft(2, '0');
-      final s = (visible.inSeconds % 60).toString().padLeft(2, '0');
+    final localNext = tz.TZDateTime.from(nextTime, tz.local);
+    final diff = localNext.difference(now);
+    final visible = diff.isNegative ? Duration.zero : diff;
+    final h = visible.inHours.toString().padLeft(2, '0');
+    final m = (visible.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (visible.inSeconds % 60).toString().padLeft(2, '0');
 
-      final arName = _arabicPrayerName(nextName);
-      buffer.write('$arName بعد $h:$m:$s');
-    }
+    final arName = _arabicPrayerName(nextName);
+    buffer.write('$arName بعد $h:$m:$s');
 
     return buffer.toString();
   } catch (_) {
@@ -189,43 +188,43 @@ CalculationParameters _buildCalcParams(
   CalculationParameters params;
   switch (method) {
     case 'egyptian':
-      params = CalculationMethod.egyptian();
+      params = CalculationMethodParameters.egyptian();
       break;
     case 'karachi':
-      params = CalculationMethod.karachi();
+      params = CalculationMethodParameters.karachi();
       break;
     case 'muslim_world_league':
-      params = CalculationMethod.muslimWorldLeague();
+      params = CalculationMethodParameters.muslimWorldLeague();
       break;
     case 'dubai':
-      params = CalculationMethod.dubai();
+      params = CalculationMethodParameters.dubai();
       break;
     case 'qatar':
-      params = CalculationMethod.qatar();
+      params = CalculationMethodParameters.qatar();
       break;
     case 'kuwait':
-      params = CalculationMethod.kuwait();
+      params = CalculationMethodParameters.kuwait();
       break;
     case 'turkey':
-      params = CalculationMethod.turkiye();
+      params = CalculationMethodParameters.turkiye();
       break;
     case 'tehran':
-      params = CalculationMethod.tehran();
+      params = CalculationMethodParameters.tehran();
       break;
     case 'singapore':
-      params = CalculationMethod.singapore();
+      params = CalculationMethodParameters.singapore();
       break;
     case 'umm_al_qura':
-      params = CalculationMethod.ummAlQura();
+      params = CalculationMethodParameters.ummAlQura();
       break;
     case 'north_america':
-      params = CalculationMethod.northAmerica();
+      params = CalculationMethodParameters.northAmerica();
       break;
     case 'moon_sighting_committee':
-      params = CalculationMethod.moonsightingCommittee();
+      params = CalculationMethodParameters.moonsightingCommittee();
       break;
     default:
-      params = CalculationMethod.other();
+      params = CalculationMethodParameters.other();
       break;
   }
 

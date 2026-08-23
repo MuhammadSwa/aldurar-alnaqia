@@ -62,7 +62,7 @@ class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
     }
 
     DateTime effectiveDate = now;
-    final maghribTime = tz.TZDateTime.from(todaysPrayers!.maghrib!, tz.local);
+    final maghribTime = tz.TZDateTime.from(todaysPrayers!.maghrib, tz.local);
 
     if (now.isAfter(maghribTime)) {
       effectiveDate = now.add(const Duration(days: 1));
@@ -79,7 +79,7 @@ class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
       final tomorrowsPrayers = PrayerTimeings.getPrayersTimings(
           forDate: now.add(const Duration(days: 1)));
       if (tomorrowsPrayers?.maghrib != null) {
-        nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers!.maghrib!, tz.local);
+        nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers!.maghrib, tz.local);
       } else {
         return;
       }
