@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:aldurar_alnaqia/audioPlayer/audio_player.dart';
+import 'package:aldurar_alnaqia/audio/widgets/audio_mini_player.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/audio/audio_controller.dart' show audioProvider;
 
 class MainWrapper extends ConsumerStatefulWidget {
   const MainWrapper({
@@ -37,7 +38,8 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    final audioService = ref.watch(audioPlayerProvider);
+    final showAudioBar =
+        ref.watch(audioProvider.select((state) => state.isVisible));
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
@@ -51,16 +53,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
                     Expanded(
                       child: widget.navigationShell,
                     ),
-                    ValueListenableBuilder<String>(
-                      valueListenable: audioService.urlNotifier,
-                      builder: (context, url, _) {
-                        if (url.isNotEmpty) {
-                          return const AudioControllerWidget();
-                        } else {
-                          return Container();
-                        }
-                      },
-                    ),
+                    if (showAudioBar) const AudioMiniPlayer(),
                   ],
                 ),
               ),

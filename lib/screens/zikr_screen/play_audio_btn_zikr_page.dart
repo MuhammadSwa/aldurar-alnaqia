@@ -1,3 +1,5 @@
+import 'package:aldurar_alnaqia/audio/audio_controller.dart';
+import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,8 +21,10 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final audioController = ref.watch(audioPlayerProvider);
     final downloader = ref.watch(downloaderProvider);
+    final audio = ref.watch(audioProvider.select((s) => (
+          playingId: s.isPlayingThisTrack ? s.track?.id : null,
+        )));
 
     // Trigger a coalesced status check (safe to call on every build).
     downloader.ensureKnown(id, DownloadType.narrations);
@@ -29,45 +33,47 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
       // Rebuild on download-state changes (started / completed / deleted).
       valueListenable: downloader.statusRevision,
       builder: (context, _, __) {
-        return ValueListenableBuilder<String>(
-          // Rebuild when playback starts/stops so the button hides while
-          // this zikr is playing (the mini player bar takes over).
-          valueListenable: audioController.urlNotifier,
-          builder: (context, playingUrl, _) {
-            final isPlayingThisUrl = playingUrl == url;
-            final isFileDownloaded = downloader.cachedStatus(id) ?? false;
-            final isDownloading = downloader.isDownloading(id);
+        final isPlayingThisUrl = audio.playingId == id;
+        final isFileDownloaded = downloader.cachedStatus(id) ?? false;
+        final isDownloading = downloader.isDownloading(id);
 
-            if (url == null || isPlayingThisUrl) {
-              return Container();
-            }
+        if (url == null || isPlayingThisUrl) {
+          return Container();
+        }
 
-            if (isDownloading) {
-              final progressNotifier = downloader.progressNotifierFor(id);
-              return progressNotifier != null
-                  ? _buildProgressIndicator(
-                      progressNotifier, () => downloader.cancelDownload(id))
-                  : const SizedBox.shrink();
-            }
+        if (isDownloading) {
+          final progressNotifier = downloader.progressNotifierFor(id);
+          return progressNotifier != null
+              ? _buildProgressIndicator(
+                  progressNotifier, () => downloader.cancelDownload(id))
+              : const SizedBox.shrink();
+        }
 
-            if (isFileDownloaded) {
-              return IconButton(
-                onPressed: () =>
-                    audioController.initPlayer(url!, title, true, localId: id),
-                icon: const Icon(Icons.volume_up),
-                tooltip: 'تشغيل الصوت (محلي)',
-              );
-            }
+        if (isFileDownloaded) {
+          return IconButton(
+            onPressed: () => _playLocally(ref),
+            icon: const Icon(Icons.volume_up),
+            tooltip: 'تشغيل الصوت (محلي)',
+          );
+        }
 
-            return IconButton(
-              onPressed: () => _showStreamDownloadDialog(context, ref),
-              icon: const Icon(Icons.volume_up),
-              tooltip: 'استماع أو تحميل الصوت',
-            );
-          },
+        return IconButton(
+          onPressed: () => _showStreamDownloadDialog(context, ref),
+          icon: const Icon(Icons.volume_up),
+          tooltip: 'استماع أو تحميل الصوت',
         );
       },
     );
+  }
+
+  void _playLocally(WidgetRef ref) {
+    ref.read(audioProvider.notifier).playTrack(
+          AudioTrack(
+            id: id,
+            title: title,
+            remoteUrl: url!,
+          ),
+        );
   }
 
   void _showStreamDownloadDialog(BuildContext context, WidgetRef ref) {
@@ -85,9 +91,9 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
           item: downloadItem,
           onStream: () {
             Navigator.of(dialogContext).pop();
-            ref
-                .read(audioPlayerProvider)
-                .initPlayer(url!, title, false, localId: id);
+            ref.read(audioProvider.notifier).playTrack(
+                  AudioTrack(id: id, title: title, remoteUrl: url!),
+                );
           },
           onDownload: () {
             Navigator.of(dialogContext).pop();

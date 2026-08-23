@@ -41,7 +41,6 @@ dependencies:
   adaptive_theme: ^3.6.0
   easy_rich_text: ^2.1.0
   just_audio: ^0.9.38
-  audio_service: ^0.18.18
   just_audio_background: ^0.0.1-beta.17
   media_kit_libs_audio: any
   media_kit_libs_linux: any

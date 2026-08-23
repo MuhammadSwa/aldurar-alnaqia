@@ -4,19 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
-import 'package:aldurar_alnaqia/audioPlayer/audio_player.dart';
 
 /// Initialized in main() before runApp and injected via ProviderScope
 /// overrides, because it requires an async [StorageService.init].
 final storageProvider = Provider<StorageService>((ref) {
   throw UnimplementedError('storageProvider must be overridden in main()');
-});
-
-/// App-wide audio playback service. Created lazily on first access.
-final audioPlayerProvider = Provider<AudioPlayerService>((ref) {
-  final service = AudioPlayerService(storage: ref.watch(storageProvider));
-  ref.onDispose(service.dispose);
-  return service;
 });
 
 /// Download manager service. Created lazily on first access.
