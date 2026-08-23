@@ -62,7 +62,7 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
               barTitle: 'الأذكار',
               scrollable: false,
             ),
-            // TODO: A HACK asrGomma should be on top of taragm, util i rethink of better implementation
+            // TODO: hack asrGomma should be on top of taragm, util i rethink of better implementation
             AzkarListViewWidget(
               titles: [asrGomaa.title],
               route: '/awradScreen/zikr',
@@ -77,20 +77,15 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
               scrollable: false,
             ),
 
-            // for (var zikr in azkarTitles) {
-            //   return ListTile(
-            //
-            //   )
-            //   }
             // TODO: hack
+            // AzkarListViewWidget appends the title, producing
+            // '/awradScreen/zikrCollection/تراجم رجال الطريقة'.
             const AzkarListViewWidget(
-              // titles: [...tareeqaBiosCollection.map((e) => e.title)],
               titles: ['تراجم رجال الطريقة'],
               route: '/awradScreen/zikrCollection',
               barTitle: 'الأذكار',
               scrollable: false,
             ),
-            //
           ],
         ),
       ),

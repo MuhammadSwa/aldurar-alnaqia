@@ -26,37 +26,45 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
     downloader.ensureKnown(id, DownloadType.narrations);
 
     return ValueListenableBuilder<int>(
+      // Rebuild on download-state changes (started / completed / deleted).
       valueListenable: downloader.statusRevision,
       builder: (context, _, __) {
-        final isPlayingThisUrl = audioController.urlNotifier.value == url;
-        final isFileDownloaded = downloader.cachedStatus(id) ?? false;
-        final isDownloading = downloader.isDownloading(id);
+        return ValueListenableBuilder<String>(
+          // Rebuild when playback starts/stops so the button hides while
+          // this zikr is playing (the mini player bar takes over).
+          valueListenable: audioController.urlNotifier,
+          builder: (context, playingUrl, _) {
+            final isPlayingThisUrl = playingUrl == url;
+            final isFileDownloaded = downloader.cachedStatus(id) ?? false;
+            final isDownloading = downloader.isDownloading(id);
 
-        if (url == null || isPlayingThisUrl) {
-          return Container();
-        }
+            if (url == null || isPlayingThisUrl) {
+              return Container();
+            }
 
-        if (isDownloading) {
-          final progressNotifier = downloader.progressNotifierFor(id);
-          return progressNotifier != null
-              ? _buildProgressIndicator(
-                  progressNotifier, () => downloader.cancelDownload(id))
-              : const SizedBox.shrink();
-        }
+            if (isDownloading) {
+              final progressNotifier = downloader.progressNotifierFor(id);
+              return progressNotifier != null
+                  ? _buildProgressIndicator(
+                      progressNotifier, () => downloader.cancelDownload(id))
+                  : const SizedBox.shrink();
+            }
 
-        if (isFileDownloaded) {
-          return IconButton(
-            onPressed: () =>
-                audioController.initPlayer(url!, title, true, localId: id),
-            icon: const Icon(Icons.volume_up),
-            tooltip: 'تشغيل الصوت (محلي)',
-          );
-        }
+            if (isFileDownloaded) {
+              return IconButton(
+                onPressed: () =>
+                    audioController.initPlayer(url!, title, true, localId: id),
+                icon: const Icon(Icons.volume_up),
+                tooltip: 'تشغيل الصوت (محلي)',
+              );
+            }
 
-        return IconButton(
-          onPressed: () => _showStreamDownloadDialog(context, ref),
-          icon: const Icon(Icons.volume_up),
-          tooltip: 'استماع أو تحميل الصوت',
+            return IconButton(
+              onPressed: () => _showStreamDownloadDialog(context, ref),
+              icon: const Icon(Icons.volume_up),
+              tooltip: 'استماع أو تحميل الصوت',
+            );
+          },
         );
       },
     );

@@ -41,9 +41,15 @@ class BookViewerController extends ChangeNotifier {
   // Track listener attachment to avoid duplicates
   bool _pageListenerAttached = false;
   int? _lastKnownPage;
+  bool _disposed = false;
+
+  void _safeNotifyListeners() {
+    if (!_disposed) notifyListeners();
+  }
 
   @override
   void dispose() {
+    _disposed = true;
     // Dispose all controllers and notifiers to prevent memory leaks.
     textSearcher?.dispose();
     // Detach page change listener to avoid duplicate callbacks on next open
@@ -62,7 +68,7 @@ class BookViewerController extends ChangeNotifier {
 
   void toggleSidePane() {
     showSidePane = !showSidePane;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Opens the PDF document from a local file or a remote URL.
@@ -77,7 +83,7 @@ class BookViewerController extends ChangeNotifier {
         documentRef = PdfDocumentRefUri(Uri.parse(url));
       }
     }
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Callback when a new document is loaded into the viewer.
@@ -90,7 +96,7 @@ class BookViewerController extends ChangeNotifier {
       textSelections = null;
       markers.clear();
     }
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Callback when the viewer has finished loading and is ready for interaction.
@@ -114,7 +120,7 @@ class BookViewerController extends ChangeNotifier {
     }
     // Start listening for page changes to persist
     _attachPageChangeListener();
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void _attachPageChangeListener() {
@@ -151,14 +157,14 @@ class BookViewerController extends ChangeNotifier {
         pageMarkers.add(Marker(color, selection));
       }
       textSelections = null; // Clear selection after marking
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
   /// Removes a marker.
   void removeMarker(Marker marker) {
     markers[marker.ranges.pageNumber]?.remove(marker);
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   /// Shows a confirmation dialog before navigating to an external URL.

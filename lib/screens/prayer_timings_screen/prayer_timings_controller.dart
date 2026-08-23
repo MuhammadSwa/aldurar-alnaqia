@@ -67,6 +67,7 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
 
     try {
       final String localTimezoneName = await FlutterTimezone.getLocalTimezone();
+      if (!ref.mounted) return;
       tz.setLocalLocation(tz.getLocation(localTimezoneName));
       SharedPreferencesService.setTimezone(localTimezoneName);
       logInfo("Device timezone set to: ${tz.local.name}");
@@ -133,6 +134,10 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
   void _startCountdownTimer() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!ref.mounted) {
+        timer.cancel();
+        return;
+      }
       final nextPrayerTime = state.nextPrayerInfo.$1;
 
       if (nextPrayerTime == null) return;
@@ -209,7 +214,9 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
 
     _dayChangeTimer = Timer(timeUntilNextMaghrib, () {
       // Once Maghrib hits, recalculate everything for the new Islamic day.
-      _recalculateAllPrayerData();
+      if (ref.mounted) {
+        _recalculateAllPrayerData();
+      }
     });
   }
 }

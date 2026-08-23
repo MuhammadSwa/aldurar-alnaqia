@@ -45,6 +45,10 @@ class DownloaderService {
   // Download progress tracking (one stable notifier per task)
   final Map<String, ValueNotifier<double>> _downloadProgress = {};
 
+  // Completed/canceled notifiers kept alive until service disposal, because
+  // mounted widgets may still listen to them (see [_retireProgressNotifier]).
+  final List<ValueNotifier<double>> _retiredProgressNotifiers = [];
+
   // File status cache to avoid repeated file system checks.
   // Mutations are followed by a [statusRevision] bump.
   final Map<String, bool> _fileStatusCache = {};
@@ -83,25 +87,54 @@ class DownloaderService {
     final taskId = update.task.taskId;
     var changed = false;
 
-    if (update.status == TaskStatus.complete) {
-      _downloadProgress.remove(taskId)?.dispose();
-      _fileStatusCache[taskId] = true;
-      changed = true;
-    } else if (update.status == TaskStatus.canceled ||
-        update.status == TaskStatus.failed ||
-        update.status == TaskStatus.notFound) {
-      _downloadProgress.remove(taskId)?.dispose();
-      _fileStatusCache[taskId] = false;
-      changed = true;
+    switch (update.status) {
+      case TaskStatus.complete:
+        _retireProgressNotifier(taskId);
+        _fileStatusCache[taskId] = true;
+        changed = true;
+        break;
+      case TaskStatus.canceled:
+      case TaskStatus.failed:
+      case TaskStatus.notFound:
+        _retireProgressNotifier(taskId);
+        _fileStatusCache[taskId] = false;
+        changed = true;
+        break;
+      case TaskStatus.enqueued:
+      case TaskStatus.running:
+      case TaskStatus.paused:
+        // A task became active: make sure the UI switches to the
+        // progress state (GetX relied on its observable map for this).
+        if (!_downloadProgress.containsKey(taskId)) {
+          _downloadProgress[taskId] = ValueNotifier<double>(0);
+          changed = true;
+        }
+        break;
+      default:
+        break;
     }
 
     if (changed) _bumpStatusRevision();
   }
 
   void _handleProgressUpdate(TaskProgressUpdate update) {
+    final taskId = update.task.taskId;
+    final isNew = !_downloadProgress.containsKey(taskId);
     // Reuse a single notifier per task instead of allocating per tick.
-    (_downloadProgress[update.task.taskId] ??= ValueNotifier<double>(0))
-        .value = update.progress;
+    (_downloadProgress[taskId] ??= ValueNotifier<double>(0)).value =
+        update.progress;
+    // First activity for this task: notify listeners so widgets that
+    // showed a download button rebuild into the progress state.
+    if (isNew) _bumpStatusRevision();
+  }
+
+  /// Removes a notifier from the active map without disposing it.
+  /// Mounted [ValueListenableBuilder]s may still hold a reference and will
+  /// unsubscribe during their next build/unmount; disposing eagerly would
+  /// hit "used after disposed" assertions.
+  void _retireProgressNotifier(String taskId) {
+    final notifier = _downloadProgress.remove(taskId);
+    if (notifier != null) _retiredProgressNotifiers.add(notifier);
   }
 
   Future<void> _initializeFileStatusCache() async {
@@ -147,7 +180,8 @@ class DownloaderService {
     } catch (e, st) {
       logError('Failed to cancel download "$id"', e, st);
     }
-    _downloadProgress.remove(id)?.dispose();
+    _retireProgressNotifier(id);
+    _fileStatusCache[id] = false;
     _bumpStatusRevision();
   }
 
@@ -206,7 +240,7 @@ class DownloaderService {
       logError('Failed to cancel all downloads', e, st);
     }
     for (final notifier in _downloadProgress.values) {
-      notifier.dispose();
+      _retiredProgressNotifiers.add(notifier);
     }
     _downloadProgress.clear();
     _bumpStatusRevision();
@@ -224,6 +258,14 @@ class DownloaderService {
       notifier.dispose();
     }
     _downloadProgress.clear();
+    // Safe to dispose retired notifiers now: the whole service (and every
+    // widget listening to it) is going away.
+    for (final notifier in _retiredProgressNotifiers) {
+      try {
+        notifier.dispose();
+      } catch (_) {}
+    }
+    _retiredProgressNotifiers.clear();
     statusRevision.dispose();
   }
 }

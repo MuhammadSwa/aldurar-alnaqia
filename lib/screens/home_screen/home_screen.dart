@@ -158,7 +158,8 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
             if (bookmarks.isNotEmpty) ...{
               for (var day in azkarOfDays) ...{
                 ZikrListViewTile(
-                    title: day, route: '/home/${azkarDayTitlesToNum[day]}'),
+                    title: day,
+                    route: '/home/weekCollection/${azkarDayTitlesToNum[day]}'),
               },
               AzkarListViewWidget(
                 titles: collectionTitles,
