@@ -95,7 +95,7 @@ const poemModaria = Zikr(
 تقراً جماعة صباح الجمعة بمسجد الأشراف
   ''',
     url:
-        "https://ia601308.us.archive.org/9/items/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D8%B6%D8%B1%D9%8A%D8%A9.mp3",
+        "https://archive.org/download/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D8%B6%D8%B1%D9%8A%D8%A9.mp3",
     content: '''
 Fيَـا رَبِّ صَلِّ عَلَىٰ الْمُخْتَارِ __ مِن مُّضَـرٍ وَالْأَنبِيَـا وَجَمِيـعِ الرُّسْلِ مَا ذُكِرُواْX
 Fوَصَلِّ رَبِّ عَلَىٰ الْهَادِي وَشِيعَتِــهِ __ وَصَحْبِهِ مَن لِّطَيِّ الدِّينِ قَدْ نَشَـرُواْX
@@ -143,7 +143,7 @@ Fوَاْلآلُ وَالصَّحْبُ وَالْأَتْبَاعُ قَـاط
 const poemMohamadia = Zikr(
     title: 'القصيدة المحمدية',
     url:
-        "https://ia801308.us.archive.org/9/items/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D9%85%D8%AF%D9%8A%D8%A9.mp3",
+        "https://archive.org/download/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D9%85%D8%AF%D9%8A%D8%A9.mp3",
     notes: '''
 القصيدة المحمدية للإمام البوصيري رضي الله عنه
 
@@ -176,7 +176,7 @@ const poemBordaBosiri = Zikr(
 تقرأ جماعةً صباح الخميس
   ''',
     url:
-        'https://ia601308.us.archive.org/9/items/dorar_audio/%D8%A8%D8%B1%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D8%AF%D9%8A%D8%AD.mp3',
+        'https://archive.org/download/dorar_audio/%D8%A8%D8%B1%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D8%AF%D9%8A%D8%AD.mp3',
     content: '''
 ## الفصل الأول (في الغزل وشكوى الغرام)
 Fأَمِـنْ تَــذَكُّرِ جِـيرَانٍ بــِذِي سَـلَمِ __ مَزَجْتَ دَمْعًـا جَـرَىٰ مِنْ مُقلَةٍ بِدَمِX
@@ -366,7 +366,7 @@ const manzoumaAsmaaHosna = Zikr(
 تقرأ الأربعاء صباحًا جماعة بمسجد الأشراف.
   ''',
   url:
-      "https://ia601308.us.archive.org/9/items/dorar_audio/%D9%85%D9%86%D8%B8%D9%88%D9%85%D8%A9%20%D8%A3%D8%B3%D9%85%D8%A7%D8%A1%20%D8%A7%D9%84%D9%84%D9%87%20%D8%A7%D9%84%D8%AD%D8%B3%D9%86%D9%89.mp3",
+      "https://archive.org/download/dorar_audio/%D9%85%D9%86%D8%B8%D9%88%D9%85%D8%A9%20%D8%A3%D8%B3%D9%85%D8%A7%D8%A1%20%D8%A7%D9%84%D9%84%D9%87%20%D8%A7%D9%84%D8%AD%D8%B3%D9%86%D9%89.mp3",
   content: '''
 ﴿وَلِلَّهِ ٱلۡأَسۡمَآءُ ٱلۡحُسۡنَىٰ فَٱدۡعُوهُ بِهَاۖ﴾
 Fتَبَارَكْتَ يَا اللهُ رَبِّي لَكَ الثَّنـَـا __ فَحَمْدًا لِمَوْلَانَــا وَشُكْرًا لِرَبِّنَـاX
@@ -452,7 +452,7 @@ const poemMonfarigaGazali = Zikr(
 تقرأ الأحد صباحًا جماعة بمسجد الأشراف
   ''',
     url:
-        "https://ia601308.us.archive.org/9/items/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D9%86%D9%81%D8%B1%D8%AC%D8%A9%20%D9%84%D9%84%D8%A5%D9%85%D8%A7%D9%85%20%D8%A7%D9%84%D8%BA%D8%B2%D8%A7%D9%84%D9%8A.mp3",
+        "https://archive.org/download/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D9%86%D9%81%D8%B1%D8%AC%D8%A9%20%D9%84%D9%84%D8%A5%D9%85%D8%A7%D9%85%20%D8%A7%D9%84%D8%BA%D8%B2%D8%A7%D9%84%D9%8A.mp3",
     content: '''
 Fالشِّـدَّةُ أَوْدَتْ بِالمُهَـجِ __ يَا رَبِّ فَعَجِّــلْ بِالْفَرَجِX
 Fوَالأَنْفُسُ أَمْسَتْ فِي حَـرَجِ __ وَبِيَدِكَ تَفْرِيـــجُ الْحَـرَجِX
@@ -524,7 +524,7 @@ const poemMonfarigaNahawi = Zikr(
 تقرأ الأحد صباحًا جماعة بمسجد الأشراف
   ''',
     url:
-        "https://ia601308.us.archive.org/9/items/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D9%86%D9%81%D8%B1%D8%AC%D8%A9%20%D9%84%D8%A7%D8%A8%D9%86%20%D8%A7%D9%84%D9%86%D8%AD%D9%88%D9%8A.mp3",
+        "https://archive.org/download/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D9%86%D9%81%D8%B1%D8%AC%D8%A9%20%D9%84%D8%A7%D8%A8%D9%86%20%D8%A7%D9%84%D9%86%D8%AD%D9%88%D9%8A.mp3",
     content: '''
 Fاشْتَــدِّي أَزْمَــةُ تَنْفَــِرجِــي __ قَـدْ آذَنَ لَيْلُــكِ بِـالْبَلَـجِX
 Fوَظََـلَامُ اللَّيْلِ لَــهُ سُــرُجٌ __ حَتَّـى يَغْشَــاهُ أَبُــو السُّـرُجِX
@@ -584,7 +584,7 @@ const poemBanatSuad = Zikr(
 تقرأ الأحد صباحًا جماعة بمسجد الأشراف
   ''',
     url:
-        'https://ia601308.us.archive.org/9/items/dorar_audio/%D8%A8%D8%A7%D9%86%D8%AA%20%D8%B3%D8%B9%D8%A7%D8%AF.mp3',
+        'https://archive.org/download/dorar_audio/%D8%A8%D8%A7%D9%86%D8%AA%20%D8%B3%D8%B9%D8%A7%D8%AF.mp3',
     footer: '''
 1.
 • بانت: فارقت
@@ -897,7 +897,7 @@ const duaaEstighatha = Zikr(
 تقرأ مع الوظيفة يوم الجمعة
   ''',
   url:
-      "https://ia600908.us.archive.org/16/items/hadra_yousria/%D8%AF%D8%B9%D8%A7%D8%A1%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D8%BA%D8%A7%D8%AB%D8%A9%20%D8%A7%D9%84%D8%AD%D8%B6%D8%B1%D8%A9.mp3",
+      "https://archive.org/download/hadra_yousria/%D8%AF%D8%B9%D8%A7%D8%A1%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D8%BA%D8%A7%D8%AB%D8%A9%20%D8%A7%D9%84%D8%AD%D8%B6%D8%B1%D8%A9.mp3",
   content: '''
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ. ﴿إِذۡ تَسۡتَغِيثُونَ رَبَّكُمۡ فَٱسۡتَجَابَ لَكُمۡ﴾
 

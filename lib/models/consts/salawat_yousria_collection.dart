@@ -16,7 +16,7 @@ const salawatYousriaCollection = [
 const day1Yousria = Zikr(
     title: 'صلوات اليوم الأول',
     url:
-        'https://ia804602.us.archive.org/10/items/alsalawat_alyosriah_4/alsalawat_alyosriah_1.mp3',
+        'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_1.mp3',
     footer: '''
 [1]: وسلامًا من ربوبيته أي من تجلي الربوبية فيه ومنه بالرحمة للعالمين.
 [2]: متفق عليه، البخاري (12/195) برقم (3477)، ومسلم (12/108) برقم (4747)، واللفظ للبخاري.
@@ -69,7 +69,7 @@ const day1Yousria = Zikr(
 const day2Yousria = Zikr(
     title: 'صلوات اليوم الثاني',
     url:
-        'https://ia804602.us.archive.org/10/items/alsalawat_alyosriah_4/alsalawat_alyosriah_2.mp3',
+        'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_2.mp3',
     footer: '''
 [1]: أصله متفق عليه، ولم يَرِدْ فِي البخاري لفظ «أخشاكم» بل ورد «أتقاكم»، ورواية البخاري: «إِنَّ أَتْقَاكُمْ وَأَعْلَمَكُمْ بِاللهِ أَنَا» (1/13) برقم (20)، ومسلم: «وَاللهِ إِنِّي لأَرْجُو أَنْ أَكُونَ أَخْشَاكُمْ لِلهِ وَأَعْلَمَكُمْ بِمَا أَتَّقِي» (7/142) برقم (2649)
 [2]: متفق عليه، البخاري فِي غير موضع أولها (4/398) برقم (1130)، مسلم (18/135) برقم (7302)
@@ -124,7 +124,7 @@ const day2Yousria = Zikr(
 const day3Yousria = Zikr(
     title: 'صلوات اليوم الثالث',
     url:
-        'https://ia804602.us.archive.org/10/items/alsalawat_alyosriah_4/alsalawat_alyosriah_3.mp3',
+        'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_3.mp3',
     footer: '''
 [1]: جمع مدلهمة، وهي كل أمرٍ مُلْتَبس غامض.
 [2]: أخرجه البيهقي (2/104) برقم (13776) وقال: مرسل حسن.
@@ -166,7 +166,7 @@ const day3Yousria = Zikr(
 const day4Yousria = Zikr(
     title: 'صلوات اليوم الرابع',
     url:
-        'https://ia804602.us.archive.org/10/items/alsalawat_alyosriah_4/alsalawat_alyosriah_4.mp3',
+        'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_4.mp3',
     footer: '''
 [1]: أخرجه أبو يعلى (12/110) برقم (5722).
 [2]: أخرجه البخاري (8/54) برقم (2125).
@@ -228,7 +228,7 @@ const day4Yousria = Zikr(
 const day5Yousria = Zikr(
     title: 'صلوات اليوم الخامس',
     url:
-        'https://ia804602.us.archive.org/10/items/alsalawat_alyosriah_4/alsalawat_alyosriah_5.mp3',
+        'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_5.mp3',
     footer: '''
 [1]: أخرجه مسلم (17/352) برقم (7064).
 [2]: أخرجه مسلم (12/207) برقم (4826).
@@ -283,7 +283,7 @@ const day5Yousria = Zikr(
 const day6Yousria = Zikr(
     title: 'صلوات اليوم السادس',
     url:
-        'https://ia804602.us.archive.org/10/items/alsalawat_alyosriah_4/alsalawat_alyosriah_6.mp3',
+        'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_6.mp3',
     footer: '''
 [1]: أخرجه البخاري (11/218) برقم (3117).
 [2]: متفق عليه، البخاري (12/195) برقم (3477)، ومسلم (12/108) برقم (4747)، واللفظ للبخاري.
@@ -369,7 +369,7 @@ const salawatYousria = Zikr(
     title: 'الصلوات اليسرية على خير البرية',
     notes: 'تُقرأ يوميًّا',
     url:
-        "https://ia600908.us.archive.org/16/items/hadra_yousria/%D8%A7%D9%84%D8%B5%D9%84%D9%88%D8%A7%D8%AA%20%D8%A7%D9%84%D9%8A%D8%B3%D8%B1%D9%8A%D8%A9%20%D8%A7%D9%84%D8%AD%D8%B6%D8%B1%D8%A9.mp3",
+        "https://archive.org/download/hadra_yousria/%D8%A7%D9%84%D8%B5%D9%84%D9%88%D8%A7%D8%AA%20%D8%A7%D9%84%D9%8A%D8%B3%D8%B1%D9%8A%D8%A9%20%D8%A7%D9%84%D8%AD%D8%B6%D8%B1%D8%A9.mp3",
     footer: '''
 [1]: ألهمنيها ربي بين المغرب والعشاء بالمسجد النبوي الشريف على يمين المنبر في شعبان 1432ه.
 [2]: ألهمنيها ربي في الطريق من مكة إلى التَّنْعِيم لأداء عمرةٍ منذورة في النصف الثاني من شعبان 1432ه.
