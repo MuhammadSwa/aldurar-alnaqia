@@ -7,8 +7,11 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:desktop_window/desktop_window.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:just_audio_background/just_audio_background.dart';
+import 'package:aldurar_alnaqia/audio/audio_controller.dart';
+import 'package:aldurar_alnaqia/audio/audio_engine.dart';
+import 'package:aldurar_alnaqia/audio/audio_handler.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
@@ -22,14 +25,24 @@ Future setDesktopWindow() async {
 Future<ProviderContainer> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Enable background audio playback + media notification controls.
-  // Note: Requires Android manifest service/receiver entries and iOS background mode.
-  await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.example.aldurar_alnaqia.channel.audio',
-    androidNotificationChannelName: 'تشغيل الصوت',
-    // Keep the service foreground while playing; allow swipe-to-dismiss when paused.
-    androidNotificationOngoing: true,
-  );
+  // Media notification + background audio (mobile). Requires the
+  // audio_service entries in AndroidManifest.xml and the iOS audio
+  // background mode.
+  NarrationAudioHandler? audioHandler;
+  if (UniversalPlatform.isAndroid || UniversalPlatform.isIOS) {
+    audioHandler = await AudioService.init(
+      builder: () => NarrationAudioHandler(),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId:
+            'com.example.aldurar_alnaqia.channel.audio',
+        androidNotificationChannelName: 'تشغيل الصوت',
+        androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
+        androidNotificationOngoing: true,
+        androidStopForegroundOnPause: true,
+      ),
+    );
+    await NarrationAudioHandler.configureAudioSession();
+  }
 
   if (UniversalPlatform.isWindows ||
       UniversalPlatform.isLinux ||
@@ -41,6 +54,10 @@ Future<ProviderContainer> _bootstrap() async {
 
   final container = ProviderContainer(overrides: [
     storageProvider.overrideWithValue(await StorageService().init()),
+    if (audioHandler != null)
+      audioEngineProvider.overrideWithValue(
+        JustAudioEngine(notifications: audioHandler),
+      ),
   ]);
 
   // Create notification channel and request permission (Android 13+)

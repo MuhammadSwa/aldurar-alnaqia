@@ -1,10 +1,11 @@
 import 'dart:async';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
+import 'package:aldurar_alnaqia/audio/audio_handler.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 /// Raw playback state reported by the engine, before the controller applies
@@ -85,9 +86,14 @@ abstract class AudioEngine {
 }
 
 class JustAudioEngine implements AudioEngine {
-  JustAudioEngine() {
+  /// Optional media-notification bridge; null on platforms without
+  /// notification support (desktop) where playback runs bare.
+  JustAudioEngine({NarrationAudioHandler? notifications})
+      : _notifications = notifications {
     // media_kit backend for Linux/desktop playback (no-op elsewhere).
     JustAudioMediaKit.ensureInitialized();
+
+    _notifications?.attach(_player);
 
     _subscriptions.add(_player.playerStateStream.listen((playerState) {
       final processing = playerState.processingState;
@@ -139,6 +145,7 @@ class JustAudioEngine implements AudioEngine {
 
   double _currentSpeed = 1.0;
 
+  final NarrationAudioHandler? _notifications;
   final AudioPlayer _player = AudioPlayer();
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   final StreamController<EngineEvent> _events =
@@ -156,6 +163,7 @@ class JustAudioEngine implements AudioEngine {
       id: request.trackId,
       title: request.title,
       album: 'الطريقة اليسرية',
+      artist: 'الدرر النقية',
       artUri: Uri.parse('asset:///assets/imgs/social_png.png'),
     );
   }
@@ -166,25 +174,20 @@ class JustAudioEngine implements AudioEngine {
 
     final AudioSource source;
     if (request.isLocal) {
-      source = AudioSource.file(
-        request.uri,
-        tag: _mediaItemFor(request),
-      );
+      source = AudioSource.file(request.uri);
     } else if (request.cacheRemote) {
       // Experimental just_audio API: streams into a cache file while
       // playing, so network drops don't interrupt long plays and replays
       // are served from disk.
       // ignore: experimental_member_use
-      source = LockCachingAudioSource(
-        Uri.parse(request.uri),
-        tag: _mediaItemFor(request),
-      );
+      source = LockCachingAudioSource(Uri.parse(request.uri));
     } else {
-      source = AudioSource.uri(
-        Uri.parse(request.uri),
-        tag: _mediaItemFor(request),
-      );
+      source = AudioSource.uri(Uri.parse(request.uri));
     }
+
+    // Publish metadata first so the notification shows the new track
+    // immediately while the source is still loading.
+    _notifications?.setTrackMetadata(_mediaItemFor(request));
 
     await _player.setAudioSource(source);
     await _player.setSpeed(_currentSpeed);
@@ -210,6 +213,8 @@ class JustAudioEngine implements AudioEngine {
   Future<void> stop() async {
     await _player.stop();
     await _player.seek(Duration.zero);
+    // Removes the media notification as well.
+    await _notifications?.stop();
   }
 
   @override
@@ -219,6 +224,7 @@ class JustAudioEngine implements AudioEngine {
     }
     _subscriptions.clear();
     await _events.close();
+    await _notifications?.detach();
     await _player.dispose();
   }
 }

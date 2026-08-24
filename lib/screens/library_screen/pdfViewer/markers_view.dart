@@ -4,7 +4,7 @@ import 'package:pdfrx/pdfrx.dart';
 class Marker {
   Marker(this.color, this.ranges);
   final Color color;
-  final PdfTextRanges ranges;
+  final PdfPageTextRange ranges;
 }
 
 class MarkersView extends StatefulWidget {

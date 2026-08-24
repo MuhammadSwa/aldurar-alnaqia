@@ -36,7 +36,7 @@ class BookViewerController extends ChangeNotifier {
 
   // --- Non-observable State ---
   // Used to temporarily hold the current text selection from the viewer
-  List<PdfTextRanges>? textSelections;
+  List<PdfPageTextRange>? textSelections;
 
   // Track listener attachment to avoid duplicates
   bool _pageListenerAttached = false;
@@ -149,8 +149,9 @@ class BookViewerController extends ChangeNotifier {
 
   /// Adds the currently selected text to the list of markers.
   void addCurrentSelectionToMarkers(Color color) {
-    if (pdfController.isReady && textSelections != null) {
-      for (final selection in textSelections!) {
+    final selections = textSelections;
+    if (pdfController.isReady && selections != null && selections.isNotEmpty) {
+      for (final selection in selections) {
         // Get the list for the page, or create it if it doesn't exist
         final pageMarkers =
             markers.putIfAbsent(selection.pageNumber, () => []);

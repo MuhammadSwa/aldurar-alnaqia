@@ -31,7 +31,7 @@ class AllAzkar {
   final Map<String, Zikr> azkarCategMap;
   const AllAzkar({required this.azkarCategMap});
 
-  get allAzkar => azkarCategMap;
+  Map<String, Zikr> get allAzkar => azkarCategMap;
 
   List<String> getTitles() {
     List<String> titles = [];

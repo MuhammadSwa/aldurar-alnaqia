@@ -146,7 +146,7 @@ class _PdfviewerWidgetState extends ConsumerState<PdfviewerWidget>
       title: ListenableBuilder(
         listenable: controller,
         builder: (context, _) => Text(
-          _fileName(controller.documentRef?.sourceName) ?? 'عارض الكتب',
+          _fileName(controller.documentRef?.key.sourceName) ?? 'عارض الكتب',
           overflow: TextOverflow.ellipsis,
         ),
       ),
@@ -299,12 +299,18 @@ class _PdfviewerWidgetState extends ConsumerState<PdfviewerWidget>
             docRef,
             controller: controller.pdfController,
             params: PdfViewerParams(
-              enableTextSelection: true,
-              maxScale: 8.0,
+              textSelectionParams: PdfTextSelectionParams(
+                enabled: true,
+                onTextSelectionChange: (selection) async {
+                  controller.textSelections = selection.hasSelectedText
+                      ? await selection.getSelectedTextRanges()
+                      : null;
+                },
+              ),
+              sizeDelegateProvider:
+                  const PdfViewerSizeDelegateProviderLegacy(maxScale: 8.0),
               onDocumentChanged: controller.onDocumentChanged,
               onViewerReady: controller.onViewerReady,
-              onTextSelectionChange: (selections) =>
-                  controller.textSelections = selections,
               pagePaintCallbacks: [
                 if (controller.textSearcher != null)
                   controller.textSearcher!.pageTextMatchPaintCallback,
@@ -373,19 +379,10 @@ class _PdfviewerWidgetState extends ConsumerState<PdfviewerWidget>
     final paint = Paint()..style = PaintingStyle.fill;
     for (final marker in markersOnPage) {
       paint.color = marker.color.withAlpha(100);
-      for (final range in marker.ranges.ranges) {
-        final fragment = PdfTextRangeWithFragments.fromTextRange(
-          marker.ranges.pageText,
-          range.start,
-          range.end,
-        );
-        if (fragment != null) {
-          canvas.drawRect(
-            fragment.bounds.toRectInPageRect(page: page, pageRect: pageRect),
-            paint,
-          );
-        }
-      }
+      final rect = marker.ranges.bounds
+          .toRect(page: page, scaledPageSize: pageRect.size)
+          .translate(pageRect.left, pageRect.top);
+      canvas.drawRect(rect, paint);
     }
   }
 
