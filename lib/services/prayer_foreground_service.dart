@@ -1,17 +1,29 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter/widgets.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:adhan_dart/adhan_dart.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
-// Initializes and starts the foreground service that shows a persistent
-// notification with prayer timings and a live countdown for the next prayer.
+// ---------------------------------------------------------------------------
+// Public API (main isolate)
+// ---------------------------------------------------------------------------
+
 const _kPrayerServiceEnabledKey = 'prayer_foreground_enabled';
+const _kNotificationId = 988;
+const _kChannelId = 'prayer_timing_channel';
+const _kRouteHintKey = 'initial_route_hint';
 
+/// Initializes and starts the foreground service that shows a persistent
+/// notification with prayer timings and a live countdown for the next prayer.
+///
+/// Battery notes: the countdown itself is rendered natively by Android
+/// (chronometer) so no timers run while idle; Dart code wakes up only at
+/// prayer boundaries / midnight (~7 times a day).
 Future<void> initializePrayerForegroundService() async {
   if (!Platform.isAndroid) return; // Only Android supports a foreground service
 
@@ -25,11 +37,13 @@ Future<void> initializePrayerForegroundService() async {
     androidConfiguration: AndroidConfiguration(
       onStart: _onStart,
       isForegroundMode: true,
+      // Plugin's BootReceiver restarts us after reboot (RECEIVE_BOOT_COMPLETED
+      // is merged from the plugin manifest).
       autoStart: true,
-      notificationChannelId: 'prayer_timing_channel',
+      notificationChannelId: _kChannelId,
       initialNotificationTitle: 'مواقيت الصلاة',
-      initialNotificationContent: 'جارٍ التحميل...',
-      foregroundServiceNotificationId: 988,
+      initialNotificationContent: 'جارٍ التحديث...',
+      foregroundServiceNotificationId: _kNotificationId,
     ),
     iosConfiguration: IosConfiguration(
       autoStart: false,
@@ -65,122 +79,291 @@ Future<bool> isPrayerForegroundEnabled() async {
   return prefs.getBool(_kPrayerServiceEnabledKey) ?? false;
 }
 
-// Entry point for the background isolate. Keep it TOP-LEVEL or STATIC.
+/// Re-computes and re-posts the persistent notification (location/method/
+/// timezone settings changed). No-op while the service isn't running.
+Future<void> refreshPrayerNotification() async {
+  if (!Platform.isAndroid) return;
+  try {
+    FlutterBackgroundService().invoke('refresh');
+  } catch (_) {
+    // Not running; nothing to refresh.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Service isolate
+// ---------------------------------------------------------------------------
+
+final FlutterLocalNotificationsPlugin _fln = FlutterLocalNotificationsPlugin();
+Timer? _updateTimer;
+
+/// Entry point for the background isolate. Keep it TOP-LEVEL or STATIC.
 @pragma('vm:entry-point')
 void _onStart(ServiceInstance service) async {
-  // Initialize flutter binding for background isolate
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Timezone setup: use stored timezone if available, fallback to local or UTC
-  try {
-    tz.initializeTimeZones();
-    final prefs = await SharedPreferences.getInstance();
-    final storedTz = prefs.getString('timezone') ?? '';
-    if (storedTz.isNotEmpty) {
-      tz.setLocalLocation(tz.getLocation(storedTz));
-    }
-  } catch (_) {
-    // ignore and use default
-  }
+  _initTimezone();
 
-  // Ensure foreground mode and show immediately
-  Timer? ticker;
   if (service is AndroidServiceInstance) {
     await service.setAsForegroundService();
   }
 
-  // Stop handler: cancel ticker and remove notification by stopping service
+  // Stop handler: cancel pending work and remove the notification.
   service.on('stopService').listen((event) async {
-    ticker?.cancel();
+    _updateTimer?.cancel();
     if (service is AndroidServiceInstance) {
       await service.stopSelf();
     }
   });
 
-  // Manual refresh handler
-  service.on('refresh').listen((event) async {
-    await _pushNotificationUpdate(service);
-  });
+  // Manual refresh (settings changed, timezone changed, ...)
+  service.on('refresh').listen((event) => _refresh(service));
 
-  // Immediate notification update
-  await _pushNotificationUpdate(service);
+  // Persist the tap-navigation hint ONCE here instead of on every update
+  // tick (the old implementation wrote this pref every second!).
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kRouteHintKey, '/timings');
+  } catch (_) {}
 
-  // Periodically update the foreground notification
-  ticker = Timer.periodic(const Duration(seconds: 1), (timer) async {
-    await _pushNotificationUpdate(service);
-  });
+  await _ensureChannel();
+  await _refresh(service);
 }
 
-Future<String> _buildNotificationContent() async {
-  final prefs = await SharedPreferences.getInstance();
+void _initTimezone() {
+  try {
+    tz_data.initializeTimeZones();
+    SharedPreferences.getInstance().then((prefs) {
+      final storedTz = prefs.getString('timezone') ?? '';
+      if (storedTz.isNotEmpty) {
+        tz.setLocalLocation(tz.getLocation(storedTz));
+        // Location/timezone arrived after startup -> redraw once ready.
+        FlutterBackgroundService().invoke('refresh');
+      }
+    }).catchError((_) {});
+  } catch (_) {
+    // ignore and use default
+  }
+}
 
+Future<void> _ensureChannel() async {
+  const channel = AndroidNotificationChannel(
+    _kChannelId,
+    'مواقيت الصلاة',
+    description: 'إشعار دائم يعرض مواقيت الصلاة والعد التنازلي للصلاة التالية',
+    importance: Importance.low, // Persistent, non-intrusive
+    playSound: false,
+    enableVibration: false,
+    showBadge: false,
+  );
+
+  const initSettings = InitializationSettings(
+    android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+  );
+  try {
+    await _fln.initialize(settings: initSettings);
+    await _fln
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  } catch (_) {
+    // Notification rendering is best-effort; the FGS keeps its own basic
+    // notification as fallback.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Computation
+// ---------------------------------------------------------------------------
+
+class _DayPlan {
+  _DayPlan(this.rows, this.nextName, this.nextAt);
+
+  /// Formatted "name time" rows for all prayers of the day.
+  final List<String> rows;
+
+  /// Arabic name of the upcoming prayer.
+  final String nextName;
+
+  /// Absolute local time of the upcoming prayer.
+  final DateTime nextAt;
+}
+
+/// Computes today's schedule; returns null when location isn't configured.
+Future<_DayPlan?> _computePlanAsync() async {
+  final prefs = await SharedPreferences.getInstance();
   final lat = prefs.getDouble('latitude') ?? 0.0;
   final lng = prefs.getDouble('longitude') ?? 0.0;
+  if (lat == 0.0 || lng == 0.0) return null;
+
   final method = prefs.getString('method') ?? 'egyptian';
   final asrCalc = prefs.getString('asrCalculation') ?? 'shafi';
   final highLatitudeRule =
       prefs.getString('highLatitudeRule') ?? 'middle_of_night';
 
-  final buffer = StringBuffer();
+  final coordinates = Coordinates(lat, lng);
+  final params =
+      _buildCalcParams(method, asrCalc, highLatitudeRule, lat);
+  final now = tz.TZDateTime.now(tz.local);
+  final prayers = PrayerTimes(
+    coordinates: coordinates,
+    date: now,
+    calculationParameters: params,
+    precision: true,
+  );
 
-  if (lat == 0.0 || lng == 0.0) {
-    buffer.write('الرجاء ضبط الموقع لحساب المواقيت');
-    return buffer.toString();
-  }
+  final entries = <(String, DateTime)>[
+    ('الفجر', prayers.fajr),
+    ('الشروق', prayers.sunrise),
+    ('الظهر', prayers.dhuhr),
+    ('العصر', prayers.asr),
+    ('المغرب', prayers.maghrib),
+    ('العشاء', prayers.isha),
+  ];
 
-  try {
-    final coordinates = Coordinates(lat, lng);
-    final params = _buildCalcParams(method, asrCalc, highLatitudeRule, lat);
-    final now = tz.TZDateTime.now(tz.local);
-    final prayers = PrayerTimes(
-      coordinates: coordinates,
-      date: now,
-      calculationParameters: params,
-      precision: true,
-    );
+  final nextPrayer = prayers.nextPrayer();
+  var nextName = nextPrayer.name;
+  var nextTime = prayers.timeForPrayer(nextPrayer);
+  if (nextPrayer == Prayer.fajrAfter) nextName = 'fajr';
 
-    // buffer.write(
-    // 'فجر ${_formatHm(prayers.fajr)} • شروق ${_formatHm(prayers.sunrise)} • ظهر ${_formatHm(prayers.dhuhr)} • عصر ${_formatHm(prayers.asr)} • مغرب ${_formatHm(prayers.maghrib)} • عشاء ${_formatHm(prayers.isha)}');
+  final nextLocal = tz.TZDateTime.from(nextTime, tz.local);
+  final nextArabic = _arabicPrayerName(nextName);
 
-    // Next prayer
-    final nextPrayer = prayers.nextPrayer();
-    String nextName = nextPrayer.name;
-    DateTime nextTime = prayers.timeForPrayer(nextPrayer);
-    if (nextPrayer == Prayer.fajrAfter) {
-      nextTime = prayers.fajrAfter;
-      nextName = 'fajr';
-    }
+  // Expanded view: all six times, upcoming one highlighted.
+  final highlighted = <String>[
+    for (final (name, time) in entries)
+      name == nextArabic
+          ? '<b><font color="#2e7d32">$name ${_formatHm(time)}</font></b>'
+          : '$name ${_formatHm(time)}',
+  ];
 
-    final localNext = tz.TZDateTime.from(nextTime, tz.local);
-    final diff = localNext.difference(now);
-    final visible = diff.isNegative ? Duration.zero : diff;
-    final h = visible.inHours.toString().padLeft(2, '0');
-    final m = (visible.inMinutes % 60).toString().padLeft(2, '0');
-    final s = (visible.inSeconds % 60).toString().padLeft(2, '0');
-
-    final arName = _arabicPrayerName(nextName);
-    buffer.write('$arName بعد $h:$m:$s');
-
-    return buffer.toString();
-  } catch (_) {
-    return 'تعذّر حساب المواقيت';
-  }
+  return _DayPlan(highlighted, nextArabic, nextLocal);
 }
 
-String _toRtl(String s) => '\u202B$s\u202C';
-
-Future<void> _pushNotificationUpdate(ServiceInstance service) async {
-  final content = _toRtl(await _buildNotificationContent());
-  if (service is AndroidServiceInstance) {
-    // Many launchers open the app on notification tap by default.
-    // To support direct navigation, we also store a hint flag.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('initial_route_hint', '/timings');
-    await service.setForegroundNotificationInfo(
-      title: _toRtl('مواقيت الصلاة'),
-      content: content,
-    );
+/// When should Dart next wake up?
+///
+///  * Just after the next prayer time (advance the countdown target), or
+///  * just after local midnight (the displayed day schedule goes stale).
+///
+/// Either way it's a handful of wakeups per day. The visible countdown
+/// itself keeps ticking accurately through Doze because the chronometer
+/// counts down to an absolute timestamp rendered by the system.
+DateTime _nextWakeUp(DateTime now, DateTime nextPrayerAt) {
+  final midnight =
+      DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+  if (nextPrayerAt.isAfter(midnight)) {
+    return midnight.add(const Duration(seconds: 5));
   }
+  final fire = nextPrayerAt.add(const Duration(seconds: 2));
+  return fire.isAfter(now) ? fire : now.add(const Duration(seconds: 2));
+}
+
+// ---------------------------------------------------------------------------
+// Notification posting
+// ---------------------------------------------------------------------------
+
+Future<void> _refresh(ServiceInstance service) async {
+  _updateTimer?.cancel();
+  final now = tz.TZDateTime.now(tz.local);
+
+  _DayPlan? plan;
+  try {
+    plan = await _computePlanAsync();
+  } catch (_) {
+    plan = null;
+  }
+
+  if (plan == null) {
+    await _post(
+      content: 'الرجاء ضبط الموقع لحساب المواقيت',
+      bigTextHtml: 'الرجاء ضبط الموقع لحساب المواقيت',
+      countdownTarget: null,
+    );
+    // Check again later (cheap one-shot; user probably hasn't set location yet).
+    _updateTimer = Timer(
+      const Duration(minutes: 15),
+      () => _refresh(service),
+    );
+    return;
+  }
+
+  final diff = plan.nextAt.difference(now);
+  await _post(
+    content: 'الصلاة القادمة: ${plan.nextName}',
+    bigTextHtml: '${plan.rows.join('<br>')}'
+        '<br><b>${plan.nextName} بعد '
+        '${_formatCountdown(diff.isNegative ? Duration.zero : diff)}</b>',
+    countdownTarget: plan.nextAt.millisecondsSinceEpoch,
+  );
+
+  _updateTimer = Timer(
+    _nextWakeUp(now, plan.nextAt).difference(now),
+    () => _refresh(service),
+  );
+}
+
+Future<void> _post({
+  required String content,
+  required String bigTextHtml,
+  required int? countdownTarget,
+}) async {
+  final details = AndroidNotificationDetails(
+    _kChannelId,
+    'مواقيت الصلاة',
+    channelDescription:
+        'إشعار دائم يعرض مواقيت الصلاة والعد التنازلي للصلاة التالية',
+    importance: Importance.low,
+    priority: Priority.low,
+    ongoing: true,
+    autoCancel: false,
+    onlyAlertOnce: true,
+    playSound: false,
+    enableVibration: false,
+    channelShowBadge: false,
+    icon: 'ic_stat_prayer',
+    color: const Color(0xFF2E7D32),
+    // Native countdown: SystemUI ticks this itself, no app wakeups needed.
+    when: countdownTarget,
+    usesChronometer: countdownTarget != null,
+    chronometerCountDown: true,
+    styleInformation: BigTextStyleInformation(
+      '\u202B$bigTextHtml\u202C',
+      htmlFormatBigText: true,
+      contentTitle: '\u202Bمواقيت الصلاة\u202C',
+      summaryText: '\u202B$content\u202C',
+    ),
+  );
+
+  try {
+    await _fln.show(
+      id: _kNotificationId,
+      title: '\u202Bمواقيت الصلاة\u202C',
+      body: '\u202B$content\u202C',
+      notificationDetails: NotificationDetails(android: details),
+    );
+  } catch (_) {}
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/// "4:05 ص" / "12:30 م"
+String _formatHm(DateTime time) {
+  final local = tz.TZDateTime.from(time, tz.local);
+  final hourRaw = local.hour;
+  final suffix = hourRaw < 12 ? 'ص' : 'م';
+  final h = hourRaw % 12 == 0 ? 12 : hourRaw % 12;
+  final m = local.minute.toString().padLeft(2, '0');
+  return '$h:$m $suffix';
+}
+
+/// "01:23:45" / "23:45" style remaining duration.
+String _formatCountdown(Duration d) {
+  final h = d.inHours.toString().padLeft(2, '0');
+  final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+  final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+  return h == '00' ? '$m:$s' : '$h:$m:$s';
 }
 
 CalculationParameters _buildCalcParams(

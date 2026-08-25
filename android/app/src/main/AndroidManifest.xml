@@ -12,8 +12,10 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
-  <!-- Persistent prayer-timings notification service (flutter_background_service) -->
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+  <!-- Persistent prayer-timings notification service (flutter_background_service).
+       specialUse (not dataSync): Android 15 kills dataSync FGS after 6h/day,
+       which would kill the all-day prayer countdown. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
   <!-- Runtime notification permission on Android 13+ -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -66,8 +68,12 @@
     <service
       android:name="id.flutter.flutter_background_service.BackgroundService"
       android:exported="true"
-      android:foregroundServiceType="dataSync"
-      tools:replace="android:exported" />
+      android:foregroundServiceType="specialUse"
+      tools:replace="android:exported,android:foregroundServiceType">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Persistent prayer-times countdown notification continuously displayed to the user" />
+    </service>
 
     <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

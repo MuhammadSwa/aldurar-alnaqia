@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
 
 class SharedPreferencesService {
   static final SharedPreferencesService _instance =
@@ -22,14 +25,17 @@ class SharedPreferencesService {
 
   static void setLatitude(double lat) {
   _sharedPreferences?.setDouble('latitude', lat);
+  unawaited(refreshPrayerNotification());
   }
 
   static void setLongitude(double long) {
   _sharedPreferences?.setDouble('longitude', long);
+  unawaited(refreshPrayerNotification());
   }
 
   static void setMethod(String method) {
   _sharedPreferences?.setString('method', method);
+  unawaited(refreshPrayerNotification());
   }
 
   static String getMethod() {
@@ -38,6 +44,7 @@ class SharedPreferencesService {
 
   static void setAsrCalculation(String asrCalculation) {
   _sharedPreferences?.setString('asrCalculation', asrCalculation);
+  unawaited(refreshPrayerNotification());
   }
 
   static String getAsrCalculation() {
@@ -46,6 +53,7 @@ class SharedPreferencesService {
 
   static void setHighLatitudeRule(String rule) {
   _sharedPreferences?.setString('highLatitudeRule', rule);
+  unawaited(refreshPrayerNotification());
     // Store the high latitude rule
   }
 
@@ -58,6 +66,7 @@ class SharedPreferencesService {
   static void setTimezone(String timezone) {
     // Store the timezone string
   _sharedPreferences?.setString('timezone', timezone);
+  unawaited(refreshPrayerNotification());
   }
 
   static String getTimezone() {
