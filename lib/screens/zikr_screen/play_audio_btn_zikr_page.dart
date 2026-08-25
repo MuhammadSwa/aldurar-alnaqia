@@ -34,7 +34,8 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
       valueListenable: downloader.statusRevision,
       builder: (context, _, __) {
         final isPlayingThisUrl = audio.playingId == id;
-        final isFileDownloaded = downloader.cachedStatus(id) ?? false;
+        final isFileDownloaded =
+            downloader.cachedStatus(id, DownloadType.narrations) ?? false;
         final isDownloading = downloader.isDownloading(id);
 
         if (url == null || isPlayingThisUrl) {
@@ -45,7 +46,8 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
           final progressNotifier = downloader.progressNotifierFor(id);
           return progressNotifier != null
               ? _buildProgressIndicator(
-                  progressNotifier, () => downloader.cancelDownload(id))
+                  progressNotifier,
+                  () => downloader.cancelDownload(id, DownloadType.narrations))
               : const SizedBox.shrink();
         }
 

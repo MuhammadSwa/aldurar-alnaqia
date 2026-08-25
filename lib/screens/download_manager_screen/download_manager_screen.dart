@@ -31,12 +31,13 @@ class DownloadManagerTile extends ConsumerWidget {
           valueListenable: downloader.statusRevision,
           builder: (context, _, __) {
             final isDownloading = downloader.isDownloading(item.id);
-            final isDownloaded = downloader.cachedStatus(item.id) ?? false;
+            final isDownloaded =
+                downloader.cachedStatus(item.id, item.type) ?? false;
 
             if (isDownloading) {
               return _DownloadProgressIndicator(
                 id: item.id,
-                onCancel: () => downloader.cancelDownload(item.id),
+                onCancel: () => downloader.cancelDownload(item.id, item.type),
               );
             } else if (isDownloaded) {
               return _DeleteButton(

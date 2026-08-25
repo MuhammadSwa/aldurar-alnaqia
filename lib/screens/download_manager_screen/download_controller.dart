@@ -51,13 +51,25 @@ class DownloaderService {
 
   // File status cache to avoid repeated file system checks.
   // Mutations are followed by a [statusRevision] bump.
+  // Keys are namespaced by type ('books/<id>' / 'narrations/<id>') so a book
+  // and a narration sharing an id never corrupt each other's status.
   final Map<String, bool> _fileStatusCache = {};
+
+  // In-flight status checks (same keying as [_fileStatusCache]).
+  final Map<String, Future<bool>> _statusFutures = {};
+
+  static String _statusKey(String id, DownloadType type) =>
+      '${type.name}/$id';
+
+  static DownloadType? _typeFromDirectoryName(String? directory) {
+    for (final type in DownloadType.values) {
+      if (type.directoryName == directory) return type;
+    }
+    return null;
+  }
 
   /// Increments on every file-status change; widgets listen to rebuild.
   final ValueNotifier<int> statusRevision = ValueNotifier<int>(0);
-
-  // In-flight status checks to coalesce queries
-  final Map<String, Future<bool>> _statusFutures = {};
 
   StreamSubscription<TaskUpdate>? _updatesSub;
 
@@ -85,19 +97,20 @@ class DownloaderService {
 
   void _handleStatusUpdate(TaskStatusUpdate update) {
     final taskId = update.task.taskId;
+    final type = _typeFromDirectoryName(update.task.directory);
     var changed = false;
 
     switch (update.status) {
       case TaskStatus.complete:
         _retireProgressNotifier(taskId);
-        _fileStatusCache[taskId] = true;
+        if (type != null) _fileStatusCache[_statusKey(taskId, type)] = true;
         changed = true;
         break;
       case TaskStatus.canceled:
       case TaskStatus.failed:
       case TaskStatus.notFound:
         _retireProgressNotifier(taskId);
-        _fileStatusCache[taskId] = false;
+        if (type != null) _fileStatusCache[_statusKey(taskId, type)] = false;
         changed = true;
         break;
       case TaskStatus.enqueued:
@@ -152,7 +165,8 @@ class DownloaderService {
 
   double? getDownloadProgress(String id) => _downloadProgress[id]?.value;
 
-  bool? cachedStatus(String id) => _fileStatusCache[id];
+  bool? cachedStatus(String id, DownloadType type) =>
+      _fileStatusCache[_statusKey(id, type)];
 
   Future<void> startDownload(DownloadItem item) async {
     if (isDownloading(item.id)) return;
@@ -174,14 +188,14 @@ class DownloaderService {
     }
   }
 
-  Future<void> cancelDownload(String id) async {
+  Future<void> cancelDownload(String id, DownloadType type) async {
     try {
       await FileDownloader().cancelTaskWithId(id);
     } catch (e, st) {
       logError('Failed to cancel download "$id"', e, st);
     }
     _retireProgressNotifier(id);
-    _fileStatusCache[id] = false;
+    _fileStatusCache[_statusKey(id, type)] = false;
     _bumpStatusRevision();
   }
 
@@ -194,7 +208,7 @@ class DownloaderService {
         await file.delete();
       }
 
-      _fileStatusCache[id] = false;
+      _fileStatusCache[_statusKey(id, type)] = false;
       _bumpStatusRevision();
     } catch (e, st) {
       logError('Error deleting file', e, st);
@@ -203,7 +217,7 @@ class DownloaderService {
 
   Future<bool> isFileDownloaded(String id, DownloadType type) async {
     // Check cache first
-    final cached = _fileStatusCache[id];
+    final cached = cachedStatus(id, type);
     if (cached != null) return cached;
 
     // Check file system
@@ -211,7 +225,7 @@ class DownloaderService {
       final exists = await _storage.exists(type, id);
 
       // Update cache
-      _fileStatusCache[id] = exists;
+      _fileStatusCache[_statusKey(id, type)] = exists;
       _bumpStatusRevision();
       return exists;
     } catch (e, st) {
@@ -223,10 +237,11 @@ class DownloaderService {
   /// Ensure we know the status of a file by triggering a single in-flight check
   /// if it's not already cached. Safe to call multiple times.
   Future<bool> ensureKnown(String id, DownloadType type) {
-    final cached = _fileStatusCache[id];
+    final key = _statusKey(id, type);
+    final cached = _fileStatusCache[key];
     if (cached != null) return Future.value(cached);
-    return _statusFutures[id] ??= isFileDownloaded(id, type).whenComplete(() {
-      _statusFutures.remove(id);
+    return _statusFutures[key] ??= isFileDownloaded(id, type).whenComplete(() {
+      _statusFutures.remove(key);
     });
   }
 
@@ -247,7 +262,7 @@ class DownloaderService {
   }
 
   Future<void> refreshFileStatus(String id, DownloadType type) async {
-    _fileStatusCache.remove(id);
+    _fileStatusCache.remove(_statusKey(id, type));
     _bumpStatusRevision();
     await isFileDownloaded(id, type);
   }

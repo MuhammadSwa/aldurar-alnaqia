@@ -105,7 +105,8 @@ class _BookListTile extends ConsumerWidget {
       valueListenable: downloader.statusRevision,
       builder: (context, _, __) {
         final isDownloading = downloader.isDownloading(item.id);
-        final isDownloaded = downloader.cachedStatus(item.id) ?? false;
+        final isDownloaded =
+            downloader.cachedStatus(item.id, item.type) ?? false;
 
         return ListTile(
           title: Text(item.title,
@@ -115,7 +116,7 @@ class _BookListTile extends ConsumerWidget {
             isDownloading: isDownloading,
             isDownloaded: isDownloaded,
             progressNotifier: downloader.progressNotifierFor(item.id),
-            onCancel: () => downloader.cancelDownload(item.id),
+            onCancel: () => downloader.cancelDownload(item.id, item.type),
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => _handleTap(context, ref, isDownloaded),
