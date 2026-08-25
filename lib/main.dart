@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
 import 'package:aldurar_alnaqia/services/notification_helper.dart';
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 Future setDesktopWindow() async {
   await DesktopWindow.setMinWindowSize(const Size(600, 600));
@@ -60,11 +62,6 @@ Future<ProviderContainer> _bootstrap() async {
       ),
   ]);
 
-  // Create notification channel and request permission (Android 13+)
-  await NotificationHelper.initialize();
-  // Start persistent foreground notification with next prayer countdown (Android only)
-  await initializePrayerForegroundService();
-
   return container;
 }
 
@@ -90,6 +87,24 @@ Future<void> main() async {
       child: MyApp(theme: savedThemeMode, initialLocation: initialLocation),
     ),
   );
+
+  // Defer non-critical platform work (notification channel, permission
+  // prompt, foreground service) until after the first frame so the UI
+  // paints immediately instead of showing a white splash on Android.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(_startPlatformServices());
+  });
+}
+
+/// Notification channel + permission (Android 13+) and the persistent
+/// prayer-countdown foreground service (Android only).
+Future<void> _startPlatformServices() async {
+  try {
+    await NotificationHelper.initialize();
+    await initializePrayerForegroundService();
+  } catch (e, st) {
+    logError('Deferred platform service startup failed', e, st);
+  }
 }
 
 class MyApp extends ConsumerWidget {
