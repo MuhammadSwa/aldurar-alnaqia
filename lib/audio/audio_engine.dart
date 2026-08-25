@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:aldurar_alnaqia/audio/audio_handler.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
@@ -158,13 +161,40 @@ class JustAudioEngine implements AudioEngine {
     if (!_events.isClosed) _events.add(event);
   }
 
-  MediaItem _mediaItemFor(EngineLoadRequest request) {
+  /// The bundled cover image, extracted to a real file once.
+  ///
+  /// audio_service's Android artwork loader cannot decode `asset:///` URIs
+  /// (Flutter bundle assets are invisible to the native notification code —
+  /// it silently fails and the notification shows a black square), so we
+  /// materialize the asset on disk and hand the notification a `file://` URI.
+  static const String _coverAsset = 'assets/imgs/social_png.png';
+  Uri? _coverFileUri;
+  bool _coverResolved = false;
+
+  Future<Uri?> _coverArtUri() async {
+    if (_coverResolved) return _coverFileUri;
+    _coverResolved = true;
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/audio_cover.png');
+      if (!await file.exists()) {
+        final data = await rootBundle.load(_coverAsset);
+        await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+      }
+      _coverFileUri = Uri.file(file.path);
+    } catch (e) {
+      logWarn('Failed to materialize audio cover art: $e');
+    }
+    return _coverFileUri;
+  }
+
+  MediaItem _mediaItemFor(EngineLoadRequest request, Uri? artUri) {
     return MediaItem(
       id: request.trackId,
       title: request.title,
       album: 'الطريقة اليسرية',
-      artist: 'الدرر النقية',
-      artUri: Uri.parse('asset:///assets/imgs/social_png.png'),
+      artist: 'د. يوسري جبر',
+      artUri: artUri,
     );
   }
 
@@ -187,7 +217,8 @@ class JustAudioEngine implements AudioEngine {
 
     // Publish metadata first so the notification shows the new track
     // immediately while the source is still loading.
-    _notifications?.setTrackMetadata(_mediaItemFor(request));
+    _notifications?.setTrackMetadata(
+        _mediaItemFor(request, await _coverArtUri()));
 
     await _player.setAudioSource(source);
     await _player.setSpeed(_currentSpeed);
