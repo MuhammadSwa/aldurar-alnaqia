@@ -33,9 +33,9 @@ final GlobalKey<NavigatorState> _rootNavigatorKey =
 class AppRouter {
   AppRouter._();
 
-  static GoRouter createRouter({String? initialLocation}) {
+  static GoRouter createRouter() {
     return GoRouter(
-      initialLocation: initialLocation ?? RoutePaths.home,
+      initialLocation: RoutePaths.home,
       debugLogDiagnostics: true,
       navigatorKey: _rootNavigatorKey,
       routes: [

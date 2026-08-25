@@ -12,7 +12,7 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
-  <!-- Persistent prayer-timings notification service (flutter_background_service).
+  <!-- Persistent prayer-timings notification service (native Kotlin FGS).
        specialUse (not dataSync): Android 15 kills dataSync FGS after 6h/day,
        which would kill the all-day prayer countdown. -->
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />

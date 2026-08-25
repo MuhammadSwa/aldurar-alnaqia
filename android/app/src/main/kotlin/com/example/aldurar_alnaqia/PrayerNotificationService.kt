@@ -21,7 +21,6 @@ import com.batoulapps.adhan2.data.DateComponents
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -56,11 +55,7 @@ class PrayerNotificationService : Service() {
     const val CHANNEL_ID = "prayer_timing_channel"
     const val NOTIFICATION_ID = 988
 
-    const val ACTION_STOP = "${BuildConfig.APPLICATION_ID}.prayer.STOP"
-    const val ACTION_REFRESH = "${BuildConfig.APPLICATION_ID}.prayer.REFRESH"
-
     private const val PREFS_FILE = "FlutterSharedPreferences"
-    private const val KEY_ENABLED = "flutter.prayer_foreground_enabled"
     private const val KEY_CONFIG = "flutter.prayer_native_config"
 
     /** Retry cadence while no location has been configured yet. */
@@ -69,12 +64,18 @@ class PrayerNotificationService : Service() {
     @Volatile
     private var running: PrayerNotificationService? = null
 
+    /** True only once the notification has actually been posted. */
+    @Volatile
+    private var notificationPosted: Boolean = false
+
     /** Re-post the notification with fresh settings; no-op if not running. */
     fun refreshIfRunning() {
       running?.requestRefresh()
     }
 
     fun isRunning(): Boolean = running != null
+
+    fun isNotificationPosted(): Boolean = notificationPosted
 
     fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
@@ -92,16 +93,12 @@ class PrayerNotificationService : Service() {
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-    if (intent?.action == ACTION_STOP) {
-      stopForeground(STOP_FOREGROUND_REMOVE)
-      stopSelf()
-      return START_NOT_STICKY
-    }
     // Post something immediately so startForeground() satisfies its deadline.
     startForeground(
         NOTIFICATION_ID,
         buildNotification(content = "جارٍ التحديث...", bigTextHtml = "جارٍ التحديث...",
             countdownTargetMs = null))
+    notificationPosted = true
     requestRefresh()
     return START_STICKY
   }
@@ -110,6 +107,10 @@ class PrayerNotificationService : Service() {
     updateJob?.cancel()
     scope.cancel()
     if (running === this) running = null
+    notificationPosted = false
+    // Remove the notification too: an in-flight update coroutine may have
+    // posted it again between stopService() and this point.
+    getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
     super.onDestroy()
   }
 
@@ -180,9 +181,12 @@ class PrayerNotificationService : Service() {
   // -------------------------------------------------------------------------
 
   private fun postNotification(content: String, bigTextHtml: String, countdownTargetMs: Long?) {
+    // Never post after the service has been asked to stop.
+    if (running !== this) return
     val nm = getSystemService(NotificationManager::class.java)
     nm?.notify(NOTIFICATION_ID,
         buildNotification(content, bigTextHtml, countdownTargetMs))
+    notificationPosted = true
   }
 
   private fun buildNotification(
@@ -191,7 +195,7 @@ class PrayerNotificationService : Service() {
     countdownTargetMs: Long?
   ): Notification {
     val openIntent = Intent(this, MainActivity::class.java).apply {
-      action = "${BuildConfig.APPLICATION_ID}.OPEN_TIMINGS"
+      action = "$packageName.OPEN_TIMINGS"
       putExtra(MainActivity.EXTRA_ROUTE, "/timings")
       addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
     }
@@ -199,7 +203,10 @@ class PrayerNotificationService : Service() {
         this, 0, openIntent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
-    val html = "\u202B$bigTextHtml\u202C"
+    // \u200F (RLM) makes the first strong character RTL so the text is
+    // right-aligned even on English-locale devices; \u202B...\u202C keeps
+    // mixed Arabic/time runs in visual RTL order.
+    val html = "\u200F\u202B$bigTextHtml\u202C"
 
     return NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_stat_prayer)
@@ -209,13 +216,13 @@ class PrayerNotificationService : Service() {
         .setAutoCancel(false)
         .setSilent(true)
         .setShowWhen(countdownTargetMs != null)
-        .setContentTitle("\u202Bمواقيت الصلاة\u202C")
-        .setContentText("\u202B$content\u202C")
+        .setContentTitle("\u200F\u202Bمواقيت الصلاة\u202C")
+        .setContentText("\u200F\u202B$content\u202C")
         .setStyle(
             NotificationCompat.BigTextStyle()
                 .bigText(android.text.Html.fromHtml(html))
-                .setBigContentTitle("\u202Bمواقيت الصلاة\u202C")
-                .setSummaryText("\u202B$content\u202C"))
+                .setBigContentTitle("\u200F\u202Bمواقيت الصلاة\u202C")
+                .setSummaryText("\u200F\u202B$content\u202C"))
         .apply {
           if (countdownTargetMs != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             setUsesChronometer(true)
@@ -280,7 +287,7 @@ class PrayerNotificationService : Service() {
     val now = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(zone)
 
     val fmt = SimpleDateFormat("h:mm", Locale.US).apply {
-      timeZone = TimeZone.getTimeZone(zone.id)
+      timeZone = java.util.TimeZone.getTimeZone(zone.id)
     }
 
     fun rowsFor(times: List<Pair<String, Long>>, nextName: String): List<String> =
@@ -308,6 +315,16 @@ class PrayerNotificationService : Service() {
 
   private fun hourOf(ms: Long, zone: TimeZone): Int =
       Instant.fromEpochMilliseconds(ms).toLocalDateTime(zone).hour
+
+  /** "01:23:45" / "23:45" style remaining time. */
+  private fun formatCountdown(diffMs: Long): String {
+    val total = (diffMs / 1000).coerceAtLeast(0)
+    val h = total / 3600
+    val m = (total % 3600) / 60
+    val s = total % 60
+    return if (h > 0) String.format(Locale.US, "%02d:%02d:%02d", h, m, s)
+    else String.format(Locale.US, "%02d:%02d", m, s)
+  }
 
   /** Six entries (Arabic name, epoch ms) for the given date, or null on failure. */
   private fun prayerTimesList(

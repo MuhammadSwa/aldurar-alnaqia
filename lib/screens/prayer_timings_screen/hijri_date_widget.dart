@@ -23,6 +23,8 @@ class HijriDateWidget extends ConsumerStatefulWidget {
 class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
   // Timer for scheduling the update at Maghrib.
   Timer? _maghribTimer;
+  // Maghrib time the current timer is scheduled for.
+  tz.TZDateTime? _scheduledFor;
   // The currently displayed Hijri date.
   HijriCalendar? _hijriDate;
 
@@ -70,9 +72,6 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
   /// This is the core logic. It cancels any old timer and schedules a new one
   /// for the next upcoming Maghrib time.
   void _resetAndScheduleUpdate() {
-    // Cancel any existing timer before creating a new one.
-    _maghribTimer?.cancel();
-
     // Get today's prayer times from the provider.
     final todaysPrayers = ref.read(prayerProvider).prayerTimings;
       if (todaysPrayers?.maghrib == null) {
@@ -97,6 +96,15 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
       maghribTime = tz.TZDateTime.from(tomorrowsPrayers!.maghrib, tz.local);
     }
 
+    // prayerProvider ticks every second (countdown); skip if the target
+    // hasn't actually changed, otherwise we reschedule every tick.
+    // (Check BEFORE cancelling — a cancelled timer is no longer active.)
+    if (_scheduledFor == maghribTime && _maghribTimer?.isActive == true) {
+      return;
+    }
+    _scheduledFor = maghribTime;
+    _maghribTimer?.cancel();
+
     // Calculate the duration until the next Maghrib.
     final timeUntilMaghrib = maghribTime.difference(now);
 
@@ -109,6 +117,7 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
       // 1. Update the date on the screen.
       _updateHijriDate();
       // 2. Schedule the *next* update for the following day's Maghrib.
+      _scheduledFor = null;
       _resetAndScheduleUpdate();
     });
   }

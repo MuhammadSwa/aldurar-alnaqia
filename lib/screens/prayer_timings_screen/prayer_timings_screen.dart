@@ -12,8 +12,6 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.
 import 'package:text_responsive/text_responsive.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
-import 'package:go_router/go_router.dart';
-import 'package:aldurar_alnaqia/router/app_routes.dart' show RoutePaths;
 
 class PrayerTimingsScreen extends ConsumerStatefulWidget {
   const PrayerTimingsScreen({super.key});
@@ -26,6 +24,10 @@ class PrayerTimingsScreen extends ConsumerStatefulWidget {
 class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   // The ScaffoldKey should be part of the State, not static.
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // True while the native prayer service is starting/stopping after a bell
+  // tap — shows a spinner until the notification actually appears/disappears.
+  bool _togglingNotification = false;
 
   @override
   Widget build(BuildContext context) {
@@ -48,18 +50,29 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
                   tooltip: enabled
                       ? 'إيقاف إشعار المواقيت'
                       : 'تشغيل إشعار المواقيت',
-                  icon: Icon(
-                    enabled ? Icons.notifications_active : Icons.notifications_off,
-                  ),
-                  onPressed: () async {
-                    final newValue = !enabled;
-                    await setPrayerForegroundEnabled(newValue);
-                    if (!context.mounted) return;
-                    // Refresh icon
-                    setState(() {});
-                    // Navigate to the same screen (as requested)
-                    context.go(RoutePaths.timings);
-                  },
+                  icon: _togglingNotification
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          enabled
+                              ? Icons.notifications_active
+                              : Icons.notifications_off,
+                        ),
+                  onPressed: _togglingNotification
+                      ? null
+                      : () async {
+                          setState(() => _togglingNotification = true);
+                          final newValue = !enabled;
+                          await setPrayerForegroundEnabled(newValue);
+                          // Wait until the service actually started/stopped
+                          // so the spinner reflects the real notification.
+                          await waitUntilPrayerNotificationState(newValue);
+                          if (!mounted) return;
+                          setState(() => _togglingNotification = false);
+                        },
                 );
               },
             ),

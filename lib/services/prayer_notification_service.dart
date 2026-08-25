@@ -79,6 +79,33 @@ Future<bool> isPrayerForegroundEnabled() async {
   return prefs.getBool(_kEnabledKey) ?? false;
 }
 
+/// Whether the native service has actually posted its notification.
+Future<bool> isPrayerNotificationPosted() async {
+  if (!Platform.isAndroid) return false;
+  try {
+    return await _channel.invokeMethod<bool>('isNotificationPosted') ?? false;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Waits until the notification is actually shown/removed so the UI spinner
+/// matches reality. [minDuration] keeps the spinner from flashing (SystemUI
+/// can lag a bit behind the post on some OEMs).
+Future<void> waitUntilPrayerNotificationState(
+  bool target, {
+  Duration timeout = const Duration(seconds: 8),
+  Duration minDuration = const Duration(milliseconds: 800),
+}) async {
+  final sw = Stopwatch()..start();
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    final posted = await isPrayerNotificationPosted();
+    if (posted == target && sw.elapsed >= minDuration) return;
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+}
+
 /// Persists the current settings as JSON for the native service and asks it
 /// to re-post the notification. Cheap no-op when the service isn't running.
 Future<void> refreshPrayerNotification() async {

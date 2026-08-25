@@ -44,6 +44,8 @@ class MainActivity : AudioServiceActivity() {
           PrayerNotificationService.refreshIfRunning()
           result.success(null)
         }
+        "isNotificationPosted" ->
+            result.success(PrayerNotificationService.isNotificationPosted())
         "dartReady" -> {
           pendingRoute?.let { r ->
             pendingRoute = null
@@ -55,13 +57,14 @@ class MainActivity : AudioServiceActivity() {
       }
     }
     channel = ch
-    intent?.getStringExtra(EXTRA_ROUTE)?.let { pendingRoute = it; this.intent = null }
+    // NOTE: never null out `intent` here — FlutterActivity reads it later
+    // (shouldRestoreAndSaveState) and crashes on a null intent.
+    intent?.getStringExtra(EXTRA_ROUTE)?.let { pendingRoute = it }
   }
 
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
     deliverRoute(intent.getStringExtra(EXTRA_ROUTE))
-    setIntent(null)
   }
 
   private fun deliverRoute(route: String?) {
