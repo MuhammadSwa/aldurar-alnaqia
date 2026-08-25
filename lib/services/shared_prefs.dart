@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
+import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 
 class SharedPreferencesService {
   static final SharedPreferencesService _instance =

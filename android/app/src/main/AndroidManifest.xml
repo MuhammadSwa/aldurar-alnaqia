@@ -20,6 +20,9 @@
   <!-- Runtime notification permission on Android 13+ -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+  <!-- Restart the prayer-timings service after device reboot -->
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
   <application
     android:label="الدرر النقية"
     android:name="${applicationName}"
@@ -29,6 +32,7 @@
       android:name=".MainActivity"
       android:exported="true"
       android:launchMode="singleTop"
+      android:clearTaskOnLaunch="true"
       android:taskAffinity=""
       android:theme="@style/LaunchTheme"
       android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -64,16 +68,26 @@
       </intent-filter>
     </receiver>
 
-    <!-- Foreground service for prayer timings notifications (user-toggleable) -->
+    <!-- Native foreground service for prayer timings notifications
+         (user-toggleable, no Flutter engine involved). -->
     <service
-      android:name="id.flutter.flutter_background_service.BackgroundService"
-      android:exported="true"
-      android:foregroundServiceType="specialUse"
-      tools:replace="android:exported,android:foregroundServiceType">
+      android:name=".PrayerNotificationService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
       <property
         android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
         android:value="Persistent prayer-times countdown notification continuously displayed to the user" />
     </service>
+
+    <!-- Restart the prayer service after reboot when enabled -->
+    <receiver
+      android:name=".BootReceiver"
+      android:enabled="true"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+      </intent-filter>
+    </receiver>
 
     <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

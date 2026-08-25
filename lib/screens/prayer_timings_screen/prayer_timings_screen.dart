@@ -11,7 +11,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_di
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
 import 'package:text_responsive/text_responsive.dart';
 import 'package:universal_platform/universal_platform.dart';
-import 'package:aldurar_alnaqia/services/prayer_foreground_service.dart';
+import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart' show RoutePaths;
 

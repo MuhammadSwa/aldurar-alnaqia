@@ -21,11 +21,10 @@ import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
     show islamicWeekdayNow;
 
-/// Provides the app-wide [GoRouter]. [initialLocation] comes from a
-/// notification-tap hint persisted before cold start.
-final appRouterProvider =
-    Provider.family<GoRouter, String?>((ref, initialLocation) {
-  return AppRouter.createRouter(initialLocation: initialLocation);
+/// Provides the app-wide [GoRouter]. The app always starts at home;
+/// notification taps navigate via `go()` after startup.
+final appRouterProvider = Provider<GoRouter>((ref) {
+  return AppRouter.createRouter();
 });
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =

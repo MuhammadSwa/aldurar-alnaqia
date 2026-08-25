@@ -74,4 +74,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Native prayer-time calculation (same algorithm as adhan_dart on Dart).
+    implementation("com.batoulapps.adhan:adhan2:0.0.5")
 }
