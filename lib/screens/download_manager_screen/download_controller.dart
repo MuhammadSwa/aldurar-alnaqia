@@ -245,22 +245,6 @@ class DownloaderService {
     });
   }
 
-  // Batch operations
-  Future<void> cancelAllDownloads() async {
-    try {
-      // Cancels ALL tracked tasks, including ones restored after restart —
-      // not just those in this session's progress map.
-      await FileDownloader().cancelAll();
-    } catch (e, st) {
-      logError('Failed to cancel all downloads', e, st);
-    }
-    for (final notifier in _downloadProgress.values) {
-      _retiredProgressNotifiers.add(notifier);
-    }
-    _downloadProgress.clear();
-    _bumpStatusRevision();
-  }
-
   Future<void> refreshFileStatus(String id, DownloadType type) async {
     _fileStatusCache.remove(_statusKey(id, type));
     _bumpStatusRevision();

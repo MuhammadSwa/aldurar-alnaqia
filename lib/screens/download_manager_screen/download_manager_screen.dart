@@ -207,55 +207,6 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
   late final audioSections = DownloadManagerData.loadAudioSections();
   late final bookItems = DownloadManagerData.loadBookItems();
 
-  Future<void> _cancelAllDownloads() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('تأكيد الإلغاء'),
-        content:
-            const Text('هل أنت متأكد من إلغاء جميع التحميلات الجارية؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('نعم، إلغاء الكل'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    await ref.read(downloaderProvider).cancelAllDownloads();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم إلغاء جميع التحميلات الجارية بنجاح.'),
-      ),
-    );
-  }
-
-  Future<void> _refreshPage() async {
-    final downloader = ref.read(downloaderProvider);
-    final allItems = [
-      ...audioSections.values.expand((list) => list),
-      ...bookItems
-    ];
-
-    await Future.wait(
-      allItems.map((item) => downloader.refreshFileStatus(item.id, item.type)),
-    );
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم تحديث حالة جميع الملفات.')),
-    );
-  }
-
   @override
   void dispose() {
     _tabController.dispose();
@@ -269,18 +220,6 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
       child: Scaffold(
         appBar: AppBar(
           title: const Text('إدارة التحميلات'),
-          actions: [
-            IconButton(
-              tooltip: 'إلغاء كل التحميلات',
-              onPressed: _cancelAllDownloads,
-              icon: const Icon(Icons.cancel_schedule_send),
-            ),
-            IconButton(
-              tooltip: 'تحديث الحالة',
-              onPressed: _refreshPage,
-              icon: const Icon(Icons.refresh),
-            ),
-          ],
           bottom: TabBar(
             controller: _tabController,
             tabs: const [
