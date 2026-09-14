@@ -1,7 +1,6 @@
 // lib/screens/download_manager_screen/download_manager_controller.dart
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart'
-    show booksTitles;
+import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'download_controller.dart';
 
 // NOTE: pure data helpers for the download manager screen, not the downloads

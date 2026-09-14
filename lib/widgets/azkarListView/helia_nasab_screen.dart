@@ -1,10 +1,26 @@
-import 'dart:math';
 import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dart';
 import 'package:flutter/material.dart';
-import 'package:pdfrx/pdfrx.dart';
+import 'package:flutter/services.dart';
+// NOTE: same viewer API as pdfx_lite (PdfDocument / PdfControllerPinch /
+// PdfViewPinch). Switch this import to `package:pdfx_lite/pdfx_lite.dart`
+// once the project upgrades to Flutter >=3.47.
+import 'package:pdfx/pdfx.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
+
+/// Opens a bundled PDF via Flutter's asset bundle instead of
+/// `PdfDocument.openAsset`: pdfx resolves that path with Android's
+/// AssetManager directly, which fails on our Arabic filenames
+/// (PdfRendererException: file not found). Loading the bytes in Dart and
+/// using `openData` writes an ASCII temp file and works reliably.
+Future<PdfDocument> _openBundledPdf(String assetPath) {
+  final bytes = rootBundle.load(assetPath).then(
+        (data) =>
+            data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      );
+  return PdfDocument.openData(bytes);
+}
 
 class HeliaNasabScreen extends StatelessWidget {
   const HeliaNasabScreen({super.key});
@@ -23,9 +39,53 @@ class HeliaNasabScreen extends StatelessWidget {
           ],
           title: Text(title),
         ),
-        body: Center(
-          child: PdfViewer.asset('assets/pdfs/$title.pdf'),
-        ));
+        body: const HeliaNasabContent());
+  }
+}
+
+/// PDF-only body, reusable inside a swipeable [PageView] (no [Scaffold])
+/// so opening Hilya directly still allows sliding to neighbours.
+class HeliaNasabContent extends StatefulWidget {
+  const HeliaNasabContent({super.key});
+
+  @override
+  State<HeliaNasabContent> createState() => _HeliaNasabContentState();
+}
+
+class _HeliaNasabContentState extends State<HeliaNasabContent> {
+  late final PdfControllerPinch _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PdfControllerPinch(
+      document: _openBundledPdf('assets/pdfs/${alhyliaAndNasab.title}.pdf'),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: PdfViewPinch(
+        controller: _controller,
+        scrollDirection: Axis.vertical,
+        builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+          options: const DefaultBuilderOptions(),
+          documentLoaderBuilder: (_) =>
+              const Center(child: CircularProgressIndicator()),
+          pageLoaderBuilder: (_) =>
+              const Center(child: CircularProgressIndicator()),
+          errorBuilder: (_, error) =>
+              Center(child: Text('تعذّر فتح الملف: $error')),
+        ),
+      ),
+    );
   }
 }
 
@@ -38,81 +98,67 @@ class TareeqaSanadScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: _buildBody(title),
+      body: const TareeqaSanadContent(),
+    );
+  }
+}
+
+/// PDF + text body, reusable inside a swipeable [PageView] (no [Scaffold]).
+class TareeqaSanadContent extends StatefulWidget {
+  const TareeqaSanadContent({super.key});
+
+  @override
+  State<TareeqaSanadContent> createState() => _TareeqaSanadContentState();
+}
+
+class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
+  late final PdfControllerPinch _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PdfControllerPinch(
+      document: _openBundledPdf('assets/pdfs/${sanadAltareeqa.title}.pdf'),
     );
   }
 
-  Widget _buildBody(String title) {
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = sanadAltareeqa.title;
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
           child: Column(
             children: [
-              _buildPdfContainer(title, constraints),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: constraints.maxHeight * 0.9,
+                ),
+                child: PdfViewPinch(
+                  controller: _controller,
+                  scrollDirection: Axis.vertical,
+                  builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+                    options: const DefaultBuilderOptions(),
+                    documentLoaderBuilder: (_) =>
+                        const Center(child: CircularProgressIndicator()),
+                    pageLoaderBuilder: (_) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorBuilder: (_, error) =>
+                        Center(child: Text('تعذّر فتح الملف: $error')),
+                  ),
+                ),
+              ),
               ZikrContentWidget(title: title),
             ],
           ),
         );
       },
     );
-  }
-
-  Widget _buildPdfContainer(String title, BoxConstraints constraints) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: constraints.maxHeight * 0.9,
-      ),
-      child: PdfViewer.asset(
-        'assets/pdfs/$title.pdf',
-        params: _createRtlPdfParams(),
-      ),
-    );
-  }
-
-  PdfViewerParams _createRtlPdfParams() {
-    return PdfViewerParams(
-      layoutPages: (pages, params) {
-        return _createRtlPageLayout(pages, params);
-      },
-    );
-  }
-
-  PdfPageLayout _createRtlPageLayout(
-      List<PdfPage> pages, PdfViewerParams params) {
-    final height = _calculateMaxHeight(pages);
-    final pageLayouts = <Rect>[];
-
-    // Calculate total width needed for all pages
-    double totalWidth = _calculateTotalWidth(pages, params);
-    double x = totalWidth - params.margin;
-
-    // Layout pages from right to left
-    for (final page in pages) {
-      x -= page.width;
-      pageLayouts.add(
-        Rect.fromLTWH(
-          x,
-          (height - page.height) / 2, // Center vertically
-          page.width,
-          page.height,
-        ),
-      );
-      x -= params.margin;
-    }
-
-    return PdfPageLayout(
-      pageLayouts: pageLayouts,
-      documentSize: Size(totalWidth, height + params.margin * 2),
-    );
-  }
-
-  double _calculateMaxHeight(List<PdfPage> pages) {
-    return pages.fold(0.0, (maxHeight, page) => max(maxHeight, page.height));
-  }
-
-  double _calculateTotalWidth(List<PdfPage> pages, PdfViewerParams params) {
-    final pagesWidth =
-        pages.fold(0.0, (totalWidth, page) => totalWidth + page.width);
-    return pagesWidth + (params.margin * (pages.length + 1));
   }
 }

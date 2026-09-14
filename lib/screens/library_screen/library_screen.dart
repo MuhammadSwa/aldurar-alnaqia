@@ -1,4 +1,5 @@
 import 'package:aldurar_alnaqia/my_drawer.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
 import 'package:flutter/material.dart';
@@ -6,21 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 
-// This map can stay here as it's static data
-const booksTitles = <String, String>{
-  'الدرر النقية في أوراد الطريقة اليسرية الصديقية الشاذلية':
-      'https://archive.org/download/dorar_app_book/dorar_awrad.pdf',
-  'الأنوار الجلية في الجمع بين دلائل الخيرات والصلوات اليسرية':
-      'https://archive.org/download/dorar_app_book/anwar_galia.pdf',
-  'الحضرة اليسرية الصديقية الشاذلية':
-      'https://archive.org/download/dorar_app_book/dorar_alhadra.pdf',
-  'إرشاد البرية إلى بعض معاني الحكم العطائية':
-      "https://archive.org/download/dorar_app_book/irshad_albariyat_hukm_eatayiya.pdf",
-  'الفتوحات اليسرية في شرح عقائد الأمة المحمدية':
-      "https://archive.org/download/dorar_app_book/alfutuhat_alyasriat_eaqayid_alumat_almuhamadia.pdf",
-  'شرح صلوات الأولياء':
-      "https://archive.org/download/dorar_app_book/sharh_salawat_alawlia_ealaa_khatam_alanbia.pdf"
-};
+// Book catalogue lives in books.dart; the viewer looks the url up itself,
+// so this screen only deals with titles and download state.
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});

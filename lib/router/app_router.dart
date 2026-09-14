@@ -10,7 +10,7 @@ import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
 import 'package:aldurar_alnaqia/screens/award_list_screen/awrad_list_screen.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
-import 'package:aldurar_alnaqia/screens/library_screen/pdf_viewer_widget.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/book_viewer_screen.dart';
 import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
@@ -267,7 +267,7 @@ class AppRouter {
       name: RouteNames.pdfViewer,
       builder: (context, state) {
         final bookTitle = state.pathParameters['bookTitle']!;
-        return PdfviewerWidget(title: bookTitle);
+        return BookViewerScreen(title: bookTitle);
       },
     );
   }
