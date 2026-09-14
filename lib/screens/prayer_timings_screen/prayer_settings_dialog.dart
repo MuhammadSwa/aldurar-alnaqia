@@ -131,7 +131,8 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
                   ),
                   const SizedBox(height: 8),
                   LocationButtonWidget(
-                      onGettingLocation: onGettingLocation),
+                      onGettingLocation: onGettingLocation,
+                      hasLocation: _hasLocation),
                   Align(
                     alignment: Alignment.center,
                     child: TextButton.icon(

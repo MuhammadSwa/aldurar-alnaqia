@@ -46,9 +46,11 @@ Future<Position> determinePosition() async {
 }
 
 class LocationButtonWidget extends StatefulWidget {
-  const LocationButtonWidget({super.key, required this.onGettingLocation});
+  const LocationButtonWidget(
+      {super.key, required this.onGettingLocation, this.hasLocation = false});
   final Function({required String latitude, required String longitude})
       onGettingLocation;
+  final bool hasLocation;
   @override
   State<LocationButtonWidget> createState() => _LocationButtonWidgetState();
 }
@@ -148,8 +150,10 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
               child: CircularProgressIndicator(
                   strokeWidth: 2, color: Colors.white),
             )
-          : const Icon(Icons.location_on),
-      label: const Text('تحديد الموقع تلقائياً'),
+          : Icon(widget.hasLocation ? Icons.check_circle : Icons.location_on),
+      label: Text(widget.hasLocation
+          ? 'تم تحديد الموقع'
+          : 'تحديد الموقع تلقائياً'),
       onPressed: () {
         if (UniversalPlatform.isLinux) {
           showDialog(
