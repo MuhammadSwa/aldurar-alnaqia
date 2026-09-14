@@ -72,6 +72,13 @@ class BookViewerController extends ChangeNotifier {
   }
 
   /// Opens the PDF document from a local file or a remote URL.
+  ///
+  /// Remote files are streamed with HTTP range requests (`preferRangeAccess`)
+  /// so only the needed 1 MB blocks are fetched instead of the whole file,
+  /// and with a generous per-request [timeout] because archive.org needs a
+  /// redirect + several seconds even for the first bytes on slow networks.
+  /// The previous default (5 s, full download) caused
+  /// `TimeoutException: Future not completed` on "فتح مباشر".
   Future<void> openDocument() async {
     final fileExists = await _storage.exists(DownloadType.books, title);
     if (fileExists) {
@@ -80,8 +87,45 @@ class BookViewerController extends ChangeNotifier {
     } else {
       final url = booksTitles[title];
       if (url != null) {
-        documentRef = PdfDocumentRefUri(Uri.parse(url));
+        documentRef = PdfDocumentRefUri(
+          Uri.parse(url),
+          // Range access: fetch only required blocks (crucial for 5-30 MB books).
+          preferRangeAccess: true,
+          // Covers archive.org redirect + slow mobile networks.
+          timeout: const Duration(seconds: 30),
+        );
       }
+    }
+    _safeNotifyListeners();
+  }
+
+  /// Retries loading the current remote document after an error
+  /// (e.g. timeout on "فتح مباشر"). Creates a fresh [PdfDocumentRefUri]
+  /// with a unique key so [PdfViewer] abandons the failed listenable and
+  /// shows the loading banner again instead of staying stuck on the error.
+  int _retrySeed = 0;
+  Future<void> retryLoading() async {
+    final fileExists = await _storage.exists(DownloadType.books, title);
+    if (fileExists) {
+      documentRef =
+          PdfDocumentRefFile(_storage.pathFor(DownloadType.books, title));
+      _safeNotifyListeners();
+      return;
+    }
+    final url = booksTitles[title];
+    if (url == null) return;
+    _retrySeed++;
+    try {
+      documentRef = PdfDocumentRefUri(
+        Uri.parse(url),
+        preferRangeAccess: true,
+        timeout: const Duration(seconds: 30),
+        // Unique key forces a fresh listenable (old error state discarded).
+        key: PdfDocumentRefKey(url, [_retrySeed]),
+      );
+    } catch (_) {
+      // If URI parsing/key creation fails, keep the old ref so the
+      // existing error banner stays visible.
     }
     _safeNotifyListeners();
   }

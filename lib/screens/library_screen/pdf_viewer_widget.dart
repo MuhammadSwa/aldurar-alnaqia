@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/pdf_viewer_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -295,7 +299,12 @@ class _PdfviewerWidgetState extends ConsumerState<PdfviewerWidget>
                 child:
                     Text('لم يتم تحميل أي مستند', style: TextStyle(fontSize: 20)));
           }
+          // Capture the ref key so the error banner's retry creates a fresh
+          // listenable instead of reusing the failed one.
           return PdfViewer(
+            // ignore: avoid-non-null-assertion, PdfViewer needs a stable key
+            // per documentRef so retry (new key) rebuilds the viewer state.
+            key: ValueKey(docRef.key),
             docRef,
             controller: controller.pdfController,
             params: PdfViewerParams(
@@ -316,13 +325,8 @@ class _PdfviewerWidgetState extends ConsumerState<PdfviewerWidget>
                   controller.textSearcher!.pageTextMatchPaintCallback,
                 _paintMarkers,
               ],
-              loadingBannerBuilder: (context, bytesDownloaded, totalBytes) =>
-                  Center(
-                child: CircularProgressIndicator(
-                  value: totalBytes != null ? bytesDownloaded / totalBytes : null,
-                  backgroundColor: Colors.grey,
-                ),
-              ),
+              loadingBannerBuilder: _buildLoadingBanner,
+              errorBannerBuilder: _buildErrorBanner,
               linkHandlerParams: PdfLinkHandlerParams(
                 onLinkTap: (link) {
                   if (link.url != null) {
@@ -337,6 +341,110 @@ class _PdfviewerWidgetState extends ConsumerState<PdfviewerWidget>
         },
       ),
     );
+  }
+
+  Widget _buildLoadingBanner(
+      BuildContext context, int bytesDownloaded, int? totalBytes) {
+    final downloadedMb = (bytesDownloaded / (1024 * 1024)).toStringAsFixed(1);
+    final totalMb = totalBytes != null
+        ? (totalBytes / (1024 * 1024)).toStringAsFixed(1)
+        : null;
+    final progress =
+        totalBytes != null && totalBytes > 0 ? bytesDownloaded / totalBytes : null;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.grey,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            totalMb != null
+                ? 'جاري تحميل الكتاب... $downloadedMb / $totalMb م.ب'
+                : 'جاري تحميل الكتاب... $downloadedMb م.ب',
+            style: const TextStyle(fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'الفتح المباشر يحتاج إنترنت، للقراءة دون إنترنت حمّل الكتاب من المكتبة',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner(BuildContext context, Object error,
+      StackTrace? stackTrace, PdfDocumentRef documentRef) {
+    final isTimeout = error is TimeoutException ||
+        error.toString().contains('TimeoutException') ||
+        error.toString().contains('Future not completed');
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              'تعذّر فتح الكتاب مباشرة',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isTimeout
+                  ? 'انتهت مهلة الاتصال بالإنترنت (الخادم بطيء أو الاتصال ضعيف). حاول مجددًا أو حمّل الكتاب للقراءة دون إنترنت.'
+                  : 'حدث خطأ أثناء تحميل الكتاب. تحقق من الاتصال بالإنترنت وحاول مجددًا.',
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => controller.retryLoading(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('إعادة المحاولة'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _downloadInstead(context),
+                  icon: const Icon(Icons.download_for_offline_outlined),
+                  label: const Text('تحميل للقراءة دون إنترنت'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _downloadInstead(BuildContext context) {
+    final url = booksTitles[widget.title];
+    if (url == null) return;
+    final item = DownloadItem(
+      id: widget.title,
+      title: widget.title,
+      url: url,
+      type: DownloadType.books,
+    );
+    ref.read(downloaderProvider).startDownload(item);
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('بدأ تحميل الكتاب، يمكنك متابعته من إدارة التحميلات'),
+        ),
+      );
   }
 
   // --- Helper Widgets & Methods ---
