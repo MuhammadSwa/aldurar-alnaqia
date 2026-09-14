@@ -32,6 +32,7 @@ class _SearchWidgetState extends State<SearchWidget> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => SearchModal(
         controller: _controller,
@@ -186,6 +187,16 @@ class _SearchModalState extends State<SearchModal> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    // Available height below the status bar. The modal itself already avoids
+    // the top intrusion via `useSafeArea: true`, so size the sheet from what
+    // is left to guarantee it never slides under the status bar.
+    final availableHeight =
+        mediaQuery.size.height - mediaQuery.viewPadding.top;
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final sheetHeight = (availableHeight * 0.9 - keyboardHeight)
+        .clamp(0.0, availableHeight);
+
     Widget suggestionsArea;
 
     if (widget.suggestions != null && widget.suggestions!.isNotEmpty) {
@@ -241,11 +252,21 @@ class _SearchModalState extends State<SearchModal> {
       );
     }
 
-    return BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
-        child: SafeArea(
+    // Outer SafeArea handles the bottom (home indicator); top/left/right are
+    // already handled by `useSafeArea: true` on the modal, so don't apply
+    // them twice. The keyboard padding shrinks the sheet instead of pushing
+    // it up under the status bar.
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      bottom: true,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: keyboardHeight),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
           child: Container(
-            height: MediaQuery.of(context).size.height * 0.9,
+            height: sheetHeight,
             decoration: const BoxDecoration(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
@@ -308,6 +329,8 @@ class _SearchModalState extends State<SearchModal> {
               ],
             ),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }
