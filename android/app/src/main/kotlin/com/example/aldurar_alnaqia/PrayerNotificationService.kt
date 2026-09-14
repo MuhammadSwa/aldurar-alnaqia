@@ -376,14 +376,21 @@ class PrayerNotificationService : Service() {
 
     // When the device is in an RTL locale (Arabic), LinearLayout puts slot 1 (child 0)
     // on the physical RIGHT. When in an LTR locale (English), slot 6 (child 5) is on the physical RIGHT.
-    // We dynamically order prayers so that Fajr is ALWAYS on the physical right and Isha on the physical left.
+    // We dynamically order prayers so that Maghrib is ALWAYS on the physical right and Asr on the physical left
+    // (Islamic day starts at Maghrib).
     val isSystemRtl = android.text.TextUtils.getLayoutDirectionFromLocale(
         Locale.getDefault()) == android.view.View.LAYOUT_DIRECTION_RTL
 
+    // Reorder from Fajr-first [Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha]
+    // to Maghrib-first [Maghrib, Isha, Fajr, Sunrise, Dhuhr, Asr].
+    val maghribFirst = listOf("المغرب", "العشاء", "الفجر", "الشروق", "الظهر", "العصر")
+        .mapNotNull { wanted -> plan.times.firstOrNull { it.first == wanted } }
+        .takeIf { it.size == plan.times.size } ?: plan.times
+
     val orderedPrayers = if (isSystemRtl) {
-      plan.times // Slot 1 (Right) -> Slot 6 (Left): [Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha]
+      maghribFirst // Slot 1 (Right) -> Slot 6 (Left): [Maghrib, Isha, Fajr, Sunrise, Dhuhr, Asr]
     } else {
-      plan.times.reversed() // Slot 1 (Left) -> Slot 6 (Right): [Isha, Maghrib, Asr, Dhuhr, Sunrise, Fajr]
+      maghribFirst.reversed() // Slot 1 (Left) -> Slot 6 (Right): [Asr, Dhuhr, Sunrise, Fajr, Isha, Maghrib]
     }
 
     PRAYER_SLOTS.forEachIndexed { i, (nameId, timeId) ->

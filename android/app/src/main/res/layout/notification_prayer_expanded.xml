@@ -2,8 +2,8 @@
 <!-- Expanded prayer-times notification layout.
      Top row: Chronometer on the left, Hijri date on the right, day name removed.
      Table row: 6 equal columns (prayer1 through prayer6) dynamically bound
-     so that Fajr is ALWAYS on the physical right and Isha is ALWAYS on the physical left,
-     regardless of device locale. -->
+     so that Maghrib is ALWAYS on the physical right and Asr is ALWAYS on the physical left
+     (Islamic day starts at Maghrib), regardless of device locale. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/expanded_root"
     android:layout_width="match_parent"
