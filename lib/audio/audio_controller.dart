@@ -10,8 +10,8 @@ import 'package:aldurar_alnaqia/screens/download_manager_screen/download_control
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 
 /// Orchestrates playback policy on top of [AudioEngine]:
-///  * resolves each track's source (downloaded file first, else a
-///    disk-cached stream),
+///  * resolves each track's source (downloaded file first, else direct
+///    https streaming),
 ///  * recovers automatically from transient errors (seek back + replay,
 ///    exponential backoff, local->remote fallback),
 ///  * exposes one immutable [AudioState] for the whole UI.
@@ -51,7 +51,7 @@ class AudioController extends Notifier<AudioState> {
   // ---------------------------------------------------------------------
 
   /// Plays [track]: prefers the downloaded file when it exists, otherwise
-  /// streams the remote URL into the on-disk cache.
+  /// streams the remote URL directly.
   Future<void> playTrack(AudioTrack track) async {
     _cancelRetry();
     _stoppedIntentionally = false;
@@ -136,7 +136,6 @@ class AudioController extends Notifier<AudioState> {
       trackId: track.id,
       title: track.title,
       isLocal: false,
-      cacheRemote: true,
     );
   }
 
@@ -237,7 +236,6 @@ class AudioController extends Notifier<AudioState> {
           trackId: request.trackId,
           title: request.title,
           isLocal: false,
-          cacheRemote: true,
         );
         _currentRequest = request;
       }

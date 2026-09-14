@@ -50,7 +50,6 @@ class EngineLoadRequest {
     required this.trackId,
     required this.title,
     required this.isLocal,
-    this.cacheRemote = false,
   });
 
   /// File path when [isLocal], else an https URL.
@@ -60,10 +59,6 @@ class EngineLoadRequest {
 
   /// Whether [uri] points at a local file (vs a remote stream).
   final bool isLocal;
-
-  /// For remote streams: buffer progressively into an on-disk cache so
-  /// network hiccups don't kill long plays and replays are instant.
-  final bool cacheRemote;
 }
 
 /// Framework-facing playback engine. Owns the underlying player instance and
@@ -199,18 +194,11 @@ class JustAudioEngine implements AudioEngine {
   Future<void> load(EngineLoadRequest request) async {
     await _player.stop();
 
-    final AudioSource source;
-    if (request.isLocal) {
-      source = AudioSource.file(request.uri);
-    } else if (request.cacheRemote) {
-      // Experimental just_audio API: streams into a cache file while
-      // playing, so network drops don't interrupt long plays and replays
-      // are served from disk.
-      // ignore: experimental_member_use
-      source = LockCachingAudioSource(Uri.parse(request.uri));
-    } else {
-      source = AudioSource.uri(Uri.parse(request.uri));
-    }
+    // Plain progressive streaming: direct https to the server, no localhost
+    // proxy, so it works on Android/iOS with no extra platform config.
+    final AudioSource source = request.isLocal
+        ? AudioSource.file(request.uri)
+        : AudioSource.uri(Uri.parse(request.uri));
 
     // Publish metadata first so the notification shows the new track
     // immediately while the source is still loading.

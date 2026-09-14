@@ -86,7 +86,7 @@ void main() {
     expect(container.read(audioProvider).status, AudioStatus.stopped);
   });
 
-  test('playTrack resolves to cached-stream request and reaches playing',
+  test('playTrack resolves to remote stream request and reaches playing',
       () async {
     final engine = FakeEngine();
     final container = makeContainer(engine);
@@ -97,7 +97,6 @@ void main() {
     expect(engine.loads, hasLength(1));
     final request = engine.loads.single;
     expect(request.isLocal, isFalse, reason: 'FakeStorage has no local file');
-    expect(request.cacheRemote, isTrue);
 
     expect(container.read(audioProvider).status, AudioStatus.loading);
 
