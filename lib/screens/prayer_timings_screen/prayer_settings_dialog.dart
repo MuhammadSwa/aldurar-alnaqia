@@ -29,6 +29,9 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
   /// Manual lat/lng fields are hidden until the user asks for them.
   bool _showManual = false;
 
+  /// Inline validation flag: shown as red text under the location button.
+  bool _showLocationError = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +46,14 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
     // Location fields are intentionally left empty so the dialog always
     // opens cleared: button shows "تحديد الموقع تلقائياً" and manual
     // lat/lng are blank until the user locates or types them.
+    _latController.addListener(_clearLocationError);
+    _lngController.addListener(_clearLocationError);
+  }
+
+  void _clearLocationError() {
+    if (_showLocationError && _hasLocation && mounted) {
+      setState(() => _showLocationError = false);
+    }
   }
 
   @override
@@ -60,7 +71,12 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
       {required String latitude, required String longitude}) {
     _latController.text = latitude;
     _lngController.text = longitude;
-    if (mounted) setState(() => _showManual = false);
+    if (mounted) {
+      setState(() {
+        _showManual = false;
+        _showLocationError = false;
+      });
+    }
   }
 
   bool get _hasLocation =>
@@ -68,10 +84,11 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
       _lngController.text.trim().isNotEmpty;
 
   void _saveSettings(BuildContext context) {
+    if (!_hasLocation) {
+      if (mounted) setState(() => _showLocationError = true);
+      return;
+    }
     if (!_formKey.currentState!.validate()) {
-      // If validation fails because of empty coords, reveal the manual
-      // fields so the user can see what needs fixing.
-      if (!_hasLocation && mounted) setState(() => _showManual = true);
       return;
     }
 
@@ -130,6 +147,19 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
                   LocationButtonWidget(
                       onGettingLocation: onGettingLocation,
                       hasLocation: _hasLocation),
+                  if (_showLocationError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        'برجاء تحديد الموقع أولاً',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: theme.colorScheme.error,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   Align(
                     alignment: Alignment.center,
                     child: TextButton.icon(
