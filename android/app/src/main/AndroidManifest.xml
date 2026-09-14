@@ -23,6 +23,9 @@
   <!-- Restart the prayer-timings service after device reboot -->
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+  <!-- Exact alarm scheduling to wake service precisely at prayer times and midnight -->
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
   <application
     android:label="الدرر النقية"
     android:name="${applicationName}"
@@ -79,13 +82,16 @@
         android:value="Persistent prayer-times countdown notification continuously displayed to the user" />
     </service>
 
-    <!-- Restart the prayer service after reboot when enabled -->
+    <!-- Restart/reschedule the prayer service on boot, time change, and timezone change -->
     <receiver
       android:name=".BootReceiver"
       android:enabled="true"
       android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
       </intent-filter>
     </receiver>
 
