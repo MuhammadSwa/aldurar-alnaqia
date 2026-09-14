@@ -245,12 +245,6 @@ class DownloaderService {
     });
   }
 
-  Future<void> refreshFileStatus(String id, DownloadType type) async {
-    _fileStatusCache.remove(_statusKey(id, type));
-    _bumpStatusRevision();
-    await isFileDownloaded(id, type);
-  }
-
   void dispose() {
     _updatesSub?.cancel();
     for (final notifier in _downloadProgress.values) {
