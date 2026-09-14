@@ -3,35 +3,36 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
 // Native prayer-notification bridge (Android only)
 //
 // The persistent prayer-times notification is implemented fully in native
-// Kotlin (see android/.../PrayerNotificationService.kt). This file is a thin
-// bridge: it persists the toggle + config and forwards start/stop/refresh
-// commands over the `app/prayer_notification` method channel. No Dart code
-// runs while the app UI is closed.
+// Kotlin (see android/.../PrayerNotificationService.kt). This file is the
+// single Dart-side entry point: it requests the notification permission,
+// persists the toggle + config, and forwards start/stop/refresh commands
+// over the `app/prayer_notification` method channel. No Dart code runs
+// while the app UI is closed.
 // ---------------------------------------------------------------------------
 
 const _kEnabledKey = 'prayer_foreground_enabled';
 const _kConfigKey = 'prayer_native_config';
 
-/// Stream of routes requested by tapping the native notification.
-Stream<String> get onNotificationRouteTap =>
-    _routeTaps.stream;
+final MethodChannel _channel = MethodChannel('app/prayer_notification');
 
 final StreamController<String> _routeTaps =
     StreamController<String>.broadcast();
 
-final MethodChannel _channel = MethodChannel('app/prayer_notification');
+/// Stream of routes requested by tapping the native notification.
+Stream<String> get onNotificationRouteTap => _routeTaps.stream;
 
 bool _initialized = false;
 
-/// Registers the channel handler and starts the service when enabled.
-/// Safe to call multiple times.
-Future<void> initializePrayerForegroundService() async {
+/// Requests the notification permission, registers the channel handler and
+/// starts the service when enabled. Safe to call multiple times.
+Future<void> initializePrayerNotifications() async {
   if (!Platform.isAndroid) return;
   if (_initialized) return;
   _initialized = true;
@@ -43,29 +44,30 @@ Future<void> initializePrayerForegroundService() async {
     }
   });
 
-  await refreshPrayerNotification();
-  if (await isPrayerForegroundEnabled()) {
+  final status = await Permission.notification.status;
+  if (!status.isGranted) await Permission.notification.request();
+
+  await _writeConfig();
+  if (await isPrayerNotificationEnabled()) {
     try {
+      // Flush a buffered cold-start notification tap, if any.
       await _channel.invokeMethod<void>('dartReady');
     } catch (_) {}
-    await startPrayerNotification();
+    _startNativeService();
   }
 }
 
-Future<void> startPrayerNotification() async {
-  if (!Platform.isAndroid) return;
-  try {
-    await _channel.invokeMethod<void>('start');
-  } catch (_) {}
+Future<bool> isPrayerNotificationEnabled() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getBool(_kEnabledKey) ?? false;
 }
 
-Future<void> setPrayerForegroundEnabled(bool enabled) async {
-  if (!Platform.isAndroid) return;
+Future<void> setPrayerNotificationEnabled(bool enabled) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool(_kEnabledKey, enabled);
-  await refreshPrayerNotification();
+  await _writeConfig();
   if (enabled) {
-    await startPrayerNotification();
+    _startNativeService();
   } else {
     try {
       await _channel.invokeMethod<void>('stop');
@@ -73,15 +75,36 @@ Future<void> setPrayerForegroundEnabled(bool enabled) async {
   }
 }
 
-Future<bool> isPrayerForegroundEnabled() async {
-  if (!Platform.isAndroid) return false;
+/// Persists the current settings as JSON for the native service and asks it
+/// to re-post the notification. Cheap no-op when the service isn't running.
+Future<void> refreshPrayerNotification() async {
+  await _writeConfig();
+  try {
+    await _channel.invokeMethod<void>('refresh');
+  } catch (_) {}
+}
+
+Future<void> _writeConfig() async {
   final prefs = await SharedPreferences.getInstance();
-  return prefs.getBool(_kEnabledKey) ?? false;
+  await prefs.setString(_kConfigKey, jsonEncode({
+    'lat': prefs.getDouble('latitude') ?? 0.0,
+    'lng': prefs.getDouble('longitude') ?? 0.0,
+    'method': prefs.getString('method') ?? 'egyptian',
+    'asrCalculation': prefs.getString('asrCalculation') ?? 'shafi',
+    'highLatitudeRule':
+        prefs.getString('highLatitudeRule') ?? 'middle_of_night',
+    'timezone': prefs.getString('timezone') ?? '',
+  }));
+}
+
+void _startNativeService() {
+  try {
+    _channel.invokeMethod<void>('start');
+  } catch (_) {}
 }
 
 /// Whether the native service has actually posted its notification.
 Future<bool> isPrayerNotificationPosted() async {
-  if (!Platform.isAndroid) return false;
   try {
     return await _channel.invokeMethod<bool>('isNotificationPosted') ?? false;
   } catch (_) {
@@ -104,23 +127,4 @@ Future<void> waitUntilPrayerNotificationState(
     if (posted == target && sw.elapsed >= minDuration) return;
     await Future.delayed(const Duration(milliseconds: 100));
   }
-}
-
-/// Persists the current settings as JSON for the native service and asks it
-/// to re-post the notification. Cheap no-op when the service isn't running.
-Future<void> refreshPrayerNotification() async {
-  if (!Platform.isAndroid) return;
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kConfigKey, jsonEncode({
-      'lat': prefs.getDouble('latitude') ?? 0.0,
-      'lng': prefs.getDouble('longitude') ?? 0.0,
-      'method': prefs.getString('method') ?? 'egyptian',
-      'asrCalculation': prefs.getString('asrCalculation') ?? 'shafi',
-      'highLatitudeRule': prefs.getString('highLatitudeRule') ??
-          'middle_of_night',
-      'timezone': prefs.getString('timezone') ?? '',
-    }));
-    await _channel.invokeMethod<void>('refresh');
-  } catch (_) {}
 }

@@ -112,9 +112,8 @@ class JustAudioEngine implements AudioEngine {
         // Idle means no source / stopped after error.
         mapped = EnginePlaybackState.idle;
       } else {
-        mapped = playing
-            ? EnginePlaybackState.playing
-            : EnginePlaybackState.paused;
+        mapped =
+            playing ? EnginePlaybackState.playing : EnginePlaybackState.paused;
       }
       _emit(EnginePlaybackChanged(mapped));
     }));
@@ -136,12 +135,10 @@ class JustAudioEngine implements AudioEngine {
           duration: total,
         ));
 
-    _subscriptions.add(_player.positionStream.listen(
-        (p) => pushProgress(p, _player.bufferedPosition,
-            _player.duration ?? Duration.zero)));
-    _subscriptions.add(_player.bufferedPositionStream.listen(
-        (b) => pushProgress(_player.position, b,
-            _player.duration ?? Duration.zero)));
+    _subscriptions.add(_player.positionStream.listen((p) => pushProgress(
+        p, _player.bufferedPosition, _player.duration ?? Duration.zero)));
+    _subscriptions.add(_player.bufferedPositionStream.listen((b) =>
+        pushProgress(_player.position, b, _player.duration ?? Duration.zero)));
     _subscriptions.add(_player.durationStream.listen((d) => pushProgress(
         _player.position, _player.bufferedPosition, d ?? Duration.zero)));
   }
@@ -193,7 +190,7 @@ class JustAudioEngine implements AudioEngine {
       id: request.trackId,
       title: request.title,
       album: 'الطريقة اليسرية',
-      artist: 'د. يوسري جبر',
+      artist: 'د يسري جبر',
       artUri: artUri,
     );
   }
@@ -217,8 +214,8 @@ class JustAudioEngine implements AudioEngine {
 
     // Publish metadata first so the notification shows the new track
     // immediately while the source is still loading.
-    _notifications?.setTrackMetadata(
-        _mediaItemFor(request, await _coverArtUri()));
+    _notifications
+        ?.setTrackMetadata(_mediaItemFor(request, await _coverArtUri()));
 
     await _player.setAudioSource(source);
     await _player.setSpeed(_currentSpeed);

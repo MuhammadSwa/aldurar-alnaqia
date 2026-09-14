@@ -11,6 +11,8 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_di
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
 import 'package:text_responsive/text_responsive.dart';
 import 'package:universal_platform/universal_platform.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+    show prayerProvider;
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 
 class PrayerTimingsScreen extends ConsumerStatefulWidget {
@@ -29,8 +31,46 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   // tap — shows a spinner until the notification actually appears/disappears.
   bool _togglingNotification = false;
 
+  // Ensures the settings dialog auto-opens only once per route visit
+  // when prayer timings can't be calculated (e.g. no location yet).
+  bool _hasAutoShownSettings = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Provider init is async — check after first frame, the ref.listen in
+    // build() covers the case where init finishes after we enter the page.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeAutoShowSettingsDialog();
+    });
+  }
+
+  void _maybeAutoShowSettingsDialog() {
+    if (_hasAutoShownSettings || !mounted) return;
+    final prayerState = ref.read(prayerProvider);
+    if (!prayerState.isInitialized) return;
+    if (prayerState.prayerTimings != null) return;
+    _hasAutoShownSettings = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => const PrayerSettingsDialog(),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Fires when the async provider finishes init (or settings change)
+    // after we've already entered the page.
+    ref.listen(prayerProvider, (previous, next) {
+      if (previous?.isInitialized == next.isInitialized &&
+          previous?.prayerTimings == next.prayerTimings) {
+        return;
+      }
+      _maybeAutoShowSettingsDialog();
+    });
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -43,7 +83,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
         actions: [
           if (UniversalPlatform.isAndroid)
             FutureBuilder<bool>(
-              future: isPrayerForegroundEnabled(),
+              future: isPrayerNotificationEnabled(),
               builder: (context, snapshot) {
                 final enabled = snapshot.data ?? false;
                 return IconButton(
@@ -66,7 +106,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
                       : () async {
                           setState(() => _togglingNotification = true);
                           final newValue = !enabled;
-                          await setPrayerForegroundEnabled(newValue);
+                          await setPrayerNotificationEnabled(newValue);
                           // Wait until the service actually started/stopped
                           // so the spinner reflects the real notification.
                           await waitUntilPrayerNotificationState(newValue);

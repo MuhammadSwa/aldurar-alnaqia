@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import com.batoulapps.adhan2.CalculationMethod
 import com.batoulapps.adhan2.CalculationParameters
@@ -32,7 +33,6 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
-import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.json.JSONObject
 
@@ -203,10 +203,24 @@ class PrayerNotificationService : Service() {
         this, 0, openIntent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
-    // \u200F (RLM) makes the first strong character RTL so the text is
-    // right-aligned even on English-locale devices; \u202B...\u202C keeps
-    // mixed Arabic/time runs in visual RTL order.
-    val html = "\u200F\u202B$bigTextHtml\u202C"
+    val collapsed = RemoteViews(packageName, R.layout.notification_prayer_collapsed)
+    val expanded = RemoteViews(packageName, R.layout.notification_prayer_expanded)
+
+    collapsed.setTextViewText(R.id.text, styledText("\u200F$content"))
+    expanded.setTextViewText(R.id.rows, styledText("\u200F$bigTextHtml"))
+    expanded.setTextViewText(R.id.next_label, styledText("\u200F$content"))
+
+    // Native count-down chronometer rendered by the system — no app wakeups.
+    if (countdownTargetMs != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      val remaining = (countdownTargetMs - System.currentTimeMillis()).coerceAtLeast(0)
+      val base = android.os.SystemClock.elapsedRealtime() + remaining
+      collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+      expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+      collapsed.setChronometer(R.id.chronometer, base, null, true)
+      expanded.setChronometer(R.id.chronometer, base, null, true)
+      collapsed.setChronometerCountDown(R.id.chronometer, true)
+      expanded.setChronometerCountDown(R.id.chronometer, true)
+    }
 
     return NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_stat_prayer)
@@ -215,24 +229,16 @@ class PrayerNotificationService : Service() {
         .setOnlyAlertOnce(true)
         .setAutoCancel(false)
         .setSilent(true)
-        .setShowWhen(countdownTargetMs != null)
-        .setContentTitle("\u200F\u202Bمواقيت الصلاة\u202C")
-        .setContentText("\u200F\u202B$content\u202C")
-        .setStyle(
-            NotificationCompat.BigTextStyle()
-                .bigText(android.text.Html.fromHtml(html))
-                .setBigContentTitle("\u200F\u202Bمواقيت الصلاة\u202C")
-                .setSummaryText("\u200F\u202B$content\u202C"))
-        .apply {
-          if (countdownTargetMs != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            setUsesChronometer(true)
-            setChronometerCountDown(true)
-            setWhen(countdownTargetMs)
-          }
-        }
+        .setShowWhen(false)
+        .setCustomContentView(collapsed)
+        .setCustomBigContentView(expanded)
         .setContentIntent(pendingIntent)
         .build()
   }
+
+  /** Renders the HTML subset (<b>, <font color>) used by the row strings. */
+  private fun styledText(html: String): CharSequence =
+      "\u202B${android.text.Html.fromHtml(html)}\u202C"
 
   private fun ensureChannel() {
     val nm = getSystemService(NotificationManager::class.java) ?: return

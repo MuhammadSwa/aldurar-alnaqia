@@ -16,7 +16,6 @@ import 'package:aldurar_alnaqia/audio/audio_handler.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
-import 'package:aldurar_alnaqia/services/notification_helper.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 Future setDesktopWindow() async {
@@ -85,12 +84,11 @@ Future<void> main() async {
   });
 }
 
-/// Notification channel + permission (Android 13+) and the native
-/// prayer-countdown foreground service bridge (Android only).
+/// Notification permission + the native prayer-countdown foreground service
+/// bridge (Android only).
 Future<void> _startPlatformServices() async {
   try {
-    await NotificationHelper.initialize();
-    await initializePrayerForegroundService();
+    await initializePrayerNotifications();
   } catch (e, st) {
     logError('Deferred platform service startup failed', e, st);
   }
