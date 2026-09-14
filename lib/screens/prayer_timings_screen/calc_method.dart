@@ -2,8 +2,12 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation
 import 'package:flutter/material.dart';
 
 class CalcMethodDropDown extends StatefulWidget {
-  const CalcMethodDropDown({super.key, required this.onSelect});
+  const CalcMethodDropDown(
+      {super.key, required this.onSelect, this.initialMethod});
   final Function(String) onSelect;
+
+  /// Previously saved method key — pre-selects it instead of starting empty.
+  final String? initialMethod;
 
   @override
   State<CalcMethodDropDown> createState() => _CalcMethodDropDownState();
@@ -11,6 +15,21 @@ class CalcMethodDropDown extends StatefulWidget {
 
 class _CalcMethodDropDownState extends State<CalcMethodDropDown> {
   String? method;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialMethod;
+    if (initial != null &&
+        CalculationMethodInfo.methods.any((m) => m.key == initial)) {
+      method = initial;
+      // Report the pre-selected value so saving without touching
+      // the dropdown still keeps the saved method.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onSelect(initial);
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField(
