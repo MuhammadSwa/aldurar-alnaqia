@@ -247,7 +247,6 @@ class PrayerNotificationService : Service() {
             .setSmallIcon(R.drawable.ic_stat_prayer)
             .setColor(NEXT_PRAYER_COLOR)
             .setContentTitle("حان الآن موعد صلاة $name")
-            .setContentText("حيّ على الصلاة • حيّ على الفلاح")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)

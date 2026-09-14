@@ -345,8 +345,8 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
           Text(
             _isDownloading
                 ? (totalMb != null
-                    ? 'جاري تحميل الكتاب... $downloadedMb / $totalMb م.ب'
-                    : 'جاري تحميل الكتاب... $downloadedMb م.ب')
+                    ? '$downloadedMb / $totalMb م.ب'
+                    : '$downloadedMb م.ب')
                 : 'جاري فتح الكتاب...',
             style: const TextStyle(fontSize: 16),
             textAlign: TextAlign.center,
