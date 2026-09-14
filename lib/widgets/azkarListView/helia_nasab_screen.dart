@@ -113,6 +113,7 @@ class TareeqaSanadContent extends StatefulWidget {
 
 class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
   late final PdfControllerPinch _controller;
+  bool _showPdf = false;
 
   @override
   void initState() {
@@ -131,34 +132,63 @@ class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
   @override
   Widget build(BuildContext context) {
     final title = sanadAltareeqa.title;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: Column(
+    // NOTE: PdfViewPinch has its own vertical scrollable. It must NOT be
+    // nested inside a SingleChildScrollView (or under another scrollable
+    // like ZikrContentWidget's) — the outer scroll steals the gestures so
+    // the PDF never scrolls and the whole page moves instead. A toggle
+    // shows one scrollable at a time, each with a bounded height, so both
+    // scroll independently. A SegmentedButton is used instead of a
+    // TabBarView to avoid a horizontal-swipe conflict with the outer
+    // SlidableZikrScreen PageView.
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(
+                value: true,
+                icon: Icon(Icons.picture_as_pdf_outlined),
+                label: Text('المخطوط'),
+              ),
+              ButtonSegment(
+                value: false,
+                icon: Icon(Icons.text_snippet_outlined),
+                label: Text('النص'),
+              ),
+            ],
+            selected: {_showPdf},
+            onSelectionChanged: (selection) {
+              setState(() => _showPdf = selection.first);
+            },
+          ),
+        ),
+        Expanded(
+          // NOTE: IndexedStack (not `if/else`) keeps PdfViewPinch mounted
+          // when switching to text and back. Removing it from the tree
+          // detaches its internal state from PdfControllerPinch, so the
+          // document would not reload on return.
+          child: IndexedStack(
+            index: _showPdf ? 0 : 1,
             children: [
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: constraints.maxHeight * 0.9,
-                ),
-                child: PdfViewPinch(
-                  controller: _controller,
-                  scrollDirection: Axis.vertical,
-                  builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-                    options: const DefaultBuilderOptions(),
-                    documentLoaderBuilder: (_) =>
-                        const Center(child: CircularProgressIndicator()),
-                    pageLoaderBuilder: (_) =>
-                        const Center(child: CircularProgressIndicator()),
-                    errorBuilder: (_, error) =>
-                        Center(child: Text('تعذّر فتح الملف: $error')),
-                  ),
+              PdfViewPinch(
+                controller: _controller,
+                scrollDirection: Axis.vertical,
+                builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+                  options: const DefaultBuilderOptions(),
+                  documentLoaderBuilder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
+                  pageLoaderBuilder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
+                  errorBuilder: (_, error) =>
+                      Center(child: Text('تعذّر فتح الملف: $error')),
                 ),
               ),
               ZikrContentWidget(title: title),
             ],
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
