@@ -73,10 +73,11 @@ class ZikrInlineText extends ConsumerWidget {
           ],
           style: TextStyle(fontFamily: fontFamily, color: base.color),
         ),
-        // Sources like [البقرة: 255] and reader hints.
+        // Sources like [البقرة: 255] / [البقرة: ٢٥٥] and reader hints.
+        // Accepts ASCII, Arabic-Indic (٠-٩) and Eastern (۰-۹) digits.
         EasyRichTextPattern(
           targetString: const [
-            r'\[[\u0600-\u06FF\s]+:[^\]]+[0-9]\]',
+            r'\[[\u0600-\u06FF\s]+:[^\]]+[0-9\u0660-\u0669\u06F0-\u06F9]\]',
             r'\[تقرأ مرة واحدة للمتعجل\]',
           ],
           style: base.copyWith(fontSize: fontSize * .7),
