@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:aldurar_alnaqia/my_drawer.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/day_name.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
@@ -62,6 +63,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
     // Fires when the async provider finishes init (or settings change)
     // after we've already entered the page.
     ref.listen(prayerProvider, (previous, next) {

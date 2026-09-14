@@ -44,11 +44,8 @@ class DrawerRegistry {
 
   void closeAllDrawers() {
     for (final key in _scaffoldKeys) {
-      final context = key.currentContext;
-      if (context != null && context.mounted) {
-        if (key.currentState?.isDrawerOpen == true) {
-          Navigator.of(context).pop();
-        }
+      if (key.currentState?.isDrawerOpen == true) {
+        key.currentState?.closeDrawer();
       }
     }
   }
