@@ -1,4 +1,4 @@
-package com.example.aldurar_alnaqia
+package com.dorar.yosriya
 
 import android.app.AlarmManager
 import android.app.Notification
@@ -23,9 +23,6 @@ import com.batoulapps.adhan2.Madhab
 import com.batoulapps.adhan2.PrayerTimes
 import com.batoulapps.adhan2.data.DateComponents
 import java.text.SimpleDateFormat
-import java.time.Instant as JavaInstant
-import java.time.ZoneId
-import java.time.temporal.ChronoField
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
@@ -64,7 +61,7 @@ class PrayerNotificationService : Service() {
     const val ARRIVAL_NOTIFICATION_ID = 989
 
     private const val ALARM_REQUEST_CODE = 990
-    private const val ACTION_ALARM_TRIGGER = "com.example.aldurar_alnaqia.PRAYER_ALARM_TRIGGER"
+    private const val ACTION_ALARM_TRIGGER = "com.dorar.yosriya.PRAYER_ALARM_TRIGGER"
 
     private const val PREFS_FILE = "FlutterSharedPreferences"
     private const val KEY_CONFIG = "flutter.prayer_native_config"
@@ -534,17 +531,19 @@ class PrayerNotificationService : Service() {
     nowMs: Long,
     maghribMs: Long?
   ): String {
+    // Uses android.icu (built into API 24+, our minSdk) instead of java.time,
+    // so no core-library desugaring is needed.
     return try {
-      val zoneId = try { ZoneId.of(zone.id) } catch (_: Exception) { ZoneId.systemDefault() }
-      var gregorian = JavaInstant.ofEpochMilli(nowMs).atZone(zoneId).toLocalDate()
-      gregorian = gregorian.plusDays(cfg.hijriOffset.toLong())
+      val tz = android.icu.util.TimeZone.getTimeZone(zone.id)
+      val cal = android.icu.util.IslamicCalendar(
+          tz, android.icu.util.ULocale.ENGLISH)
+      cal.timeInMillis = nowMs + cfg.hijriOffset * 86_400_000L
       if (maghribMs != null && nowMs >= maghribMs) {
-        gregorian = gregorian.plusDays(1)
+        cal.add(android.icu.util.Calendar.DAY_OF_MONTH, 1)
       }
-      val hijrah = java.time.chrono.HijrahDate.from(gregorian)
-      val day = hijrah.get(ChronoField.DAY_OF_MONTH)
-      val month = hijrah.get(ChronoField.MONTH_OF_YEAR)
-      val year = hijrah.get(ChronoField.YEAR)
+      val day = cal.get(android.icu.util.Calendar.DAY_OF_MONTH)
+      val month = cal.get(android.icu.util.Calendar.MONTH) + 1 // 0-based
+      val year = cal.get(android.icu.util.Calendar.YEAR)
       "$day ${hijriMonthName(month)} $year"
     } catch (_: Exception) {
       ""

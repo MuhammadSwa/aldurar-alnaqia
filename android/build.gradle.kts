@@ -14,21 +14,6 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
-    // Force plugins (e.g. :jni from pdfrx) to reuse the installed NDK
-    // instead of downloading their own pinned version.
-    if (project.state.executed) {
-        val androidExt = project.extensions.findByName("android")
-        if (androidExt is com.android.build.gradle.BaseExtension) {
-            androidExt.ndkVersion = "27.1.12297006"
-        }
-    } else {
-        project.afterEvaluate {
-            val androidExt = project.extensions.findByName("android")
-            if (androidExt is com.android.build.gradle.BaseExtension) {
-                androidExt.ndkVersion = "27.1.12297006"
-            }
-        }
-    }
 }
 
 tasks.register<Delete>("clean") {

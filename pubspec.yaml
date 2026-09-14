@@ -61,7 +61,7 @@ dependencies:
   adhan_dart: ^2.0.0
   timezone: ^0.11.0
   flutter_timezone: ^5.0.0
-  permission_handler: ^13.0.0
+  permission_handler: 13.0.1
   audio_service: ^0.18.19
   audio_session: ^0.2.4
 
@@ -133,5 +133,6 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
 
 dependency_overrides:
-  # permission_handler_android 14 requires AGP 9; pin to 13 until AGP upgrade.
+  # permission_handler_android 14 requires AGP 9 (ecosystem not migrated yet);
+  # stay on the 13.x line while the project uses AGP 8.
   permission_handler_android: 13.0.1

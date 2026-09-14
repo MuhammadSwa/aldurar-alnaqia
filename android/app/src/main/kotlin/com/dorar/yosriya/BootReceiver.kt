@@ -1,4 +1,4 @@
-package com.example.aldurar_alnaqia
+package com.dorar.yosriya
 
 import android.content.BroadcastReceiver
 import android.content.Context

@@ -236,7 +236,22 @@ class AppRouter {
 
         final (titles, index) = _parseZikrExtras(state.extra);
 
-        // Handle special standalone compositions
+        // When opened from a list with swipe context (titles + index),
+        // always go through the slidable screen — even for special
+        // compositions like Hilya/Sanad — so the user can swipe to
+        // neighbouring azkar. SlidableZikrScreen renders their PDF
+        // content internally.
+        if (titles != null &&
+            index != null &&
+            index >= 0 &&
+            index < titles.length) {
+          return RouteTransitions.slideTransition(
+            ZikrScreen(title: zikr, titles: titles, index: index),
+          );
+        }
+
+        // Handle special standalone compositions (no swipe context,
+        // e.g. opened from search or a deep link).
         if (zikr == alhyliaAndNasab.title) {
           return RouteTransitions.slideTransition(const HeliaNasabScreen());
         }

@@ -1,4 +1,6 @@
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/orphans.dart';
+import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
@@ -7,7 +9,6 @@ import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dar
 import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/bayt_widget.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/zikr_inline_text.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_blocks.dart';
-import 'package:pdfrx/pdfrx.dart';
 
 class SlidableZikrScreen extends StatefulWidget {
   final List<String> allTitles;
@@ -31,8 +32,9 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: widget.initialIndex);
-    _updateCurrentZikr(widget.initialIndex);
+    final safeIndex = widget.initialIndex.clamp(0, widget.allTitles.length - 1);
+    _pageController = PageController(initialPage: safeIndex);
+    _updateCurrentZikr(safeIndex);
   }
 
   void _updateCurrentZikr(int index) {
@@ -70,11 +72,16 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
             _updateCurrentZikr(index);
           });
         },
-        // The builder creates the content widget for each Zikr
+        // The builder creates the content widget for each Zikr.
+        // Special compositions reuse their shared content widgets (no nested
+        // Scaffold) so every page — including the initial one — stays
+        // swipeable inside this outer PageView.
         itemBuilder: (context, index) {
           if (widget.allTitles[index] == alhyliaAndNasab.title) {
-            return PdfViewer.asset(
-                'assets/pdfs/${widget.allTitles[index]}.pdf');
+            return const HeliaNasabContent();
+          }
+          if (widget.allTitles[index] == sanadAltareeqa.title) {
+            return const TareeqaSanadContent();
           }
           return ZikrContentWidget(
             title: widget.allTitles[index],
@@ -99,7 +106,10 @@ class ZikrScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (titles != null && index != null) {
+    if (titles != null &&
+        index != null &&
+        index! >= 0 &&
+        index! < titles!.length) {
       return SlidableZikrScreen(allTitles: titles!, initialIndex: index!);
     }
     // Find the specific Zikr data using the title; show a friendly page
