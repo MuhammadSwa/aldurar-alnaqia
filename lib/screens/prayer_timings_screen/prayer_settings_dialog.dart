@@ -40,12 +40,9 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
     if (!CalculationMethodInfo.methods.any((m) => m.key == _selectedMethod)) {
       _selectedMethod = CalculationMethodInfo.methods.first.key;
     }
-    final lat = SharedPreferencesService.getLatitude();
-    final lng = SharedPreferencesService.getLongitude();
-    if (lat != 0.0 && lng != 0.0) {
-      _latController.text = lat.toString();
-      _lngController.text = lng.toString();
-    }
+    // Location fields are intentionally left empty so the dialog always
+    // opens cleared: button shows "تحديد الموقع تلقائياً" and manual
+    // lat/lng are blank until the user locates or types them.
   }
 
   @override
