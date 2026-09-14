@@ -41,12 +41,16 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     final showAudioBar =
         ref.watch(audioProvider.select((state) => state.isVisible));
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000, maxHeight: 1000),
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: Scaffold(
+              // Keep the bottom NavigationBar pinned: the keyboard overlays
+              // it instead of lifting it above the keyboard.
+              resizeToAvoidBottomInset: false,
               body: Center(
                 child: Column(
                   children: [

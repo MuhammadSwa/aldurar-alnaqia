@@ -191,11 +191,13 @@ class _SearchModalState extends State<SearchModal> {
     // Available height below the status bar. The modal itself already avoids
     // the top intrusion via `useSafeArea: true`, so size the sheet from what
     // is left to guarantee it never slides under the status bar.
-    // Intentionally fixed: the keyboard overlays the sheet instead of
-    // resizing/lifting it.
+    // Shrink the sheet by the keyboard height so the keyboard sits below
+    // the sheet instead of covering it; total height stays at 90%.
     final availableHeight =
         mediaQuery.size.height - mediaQuery.viewPadding.top;
-    final sheetHeight = availableHeight * 0.9;
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
+    final sheetHeight = (availableHeight * 0.9 - keyboardHeight)
+        .clamp(0.0, availableHeight);
 
     Widget suggestionsArea;
 
@@ -254,17 +256,19 @@ class _SearchModalState extends State<SearchModal> {
 
     // Outer SafeArea handles the bottom (home indicator); top/left/right are
     // already handled by `useSafeArea: true` on the modal, so don't apply
-    // them twice. No viewInsets padding here on purpose so the keyboard
-    // floats on top instead of lifting/resizing the sheet.
+    // them twice. Bottom padding lifts the sheet above the keyboard so it
+    // resizes instead of being covered.
     return SafeArea(
       top: false,
       left: false,
       right: false,
       bottom: true,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
-        child: Container(
-          height: sheetHeight,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: keyboardHeight),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
+          child: Container(
+            height: sheetHeight,
             decoration: const BoxDecoration(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
@@ -328,6 +332,7 @@ class _SearchModalState extends State<SearchModal> {
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 }
