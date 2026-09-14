@@ -94,10 +94,7 @@ class PrayerNotificationService : Service() {
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     // Post something immediately so startForeground() satisfies its deadline.
-    startForeground(
-        NOTIFICATION_ID,
-        buildNotification(content = "جارٍ التحديث...", bigTextHtml = "جارٍ التحديث...",
-            countdownTargetMs = null))
+    startForeground(NOTIFICATION_ID, buildLoadingNotification())
     notificationPosted = true
     requestRefresh()
     return START_STICKY
@@ -127,8 +124,7 @@ class PrayerNotificationService : Service() {
     val cfg = readConfig(this)
 
     if (cfg == null || cfg.lat == 0.0 || cfg.lng == 0.0) {
-      postNotification("الرجاء ضبط الموقع لحساب المواقيت",
-          "الرجاء ضبط الموقع لحساب المواقيت", null)
+      postFallback("الرجاء ضبط الموقع لحساب المواقيت")
       scheduleNext(NO_LOCATION_RETRY_MS)
       return
     }
@@ -138,16 +134,13 @@ class PrayerNotificationService : Service() {
     val plan = computePlan(cfg, zone, nowMs)
 
     if (plan == null) {
-      postNotification("تعذّر حساب المواقيت", "تعذّر حساب المواقيت", null)
+      postFallback("تعذّر حساب المواقيت")
       scheduleNext(NO_LOCATION_RETRY_MS)
       return
     }
 
-    postNotification(
-        content = "الصلاة القادمة: ${plan.nextName}",
-        bigTextHtml = plan.rows.joinToString("<br>") +
-            "<br><b>${plan.nextName} بعد ${formatCountdown(plan.nextAtMs - nowMs)}</b>",
-        countdownTargetMs = plan.nextAtMs)
+    val hijri = hijriDateString(cfg, zone, nowMs, plan.maghribMs)
+    postNotification(plan, hijri)
 
     scheduleNext(delayUntilNextWake(nowMs, zone, plan.nextAtMs))
   }
@@ -180,39 +173,90 @@ class PrayerNotificationService : Service() {
   // Notification
   // -------------------------------------------------------------------------
 
-  private fun postNotification(content: String, bigTextHtml: String, countdownTargetMs: Long?) {
+  private fun postFallback(message: String) {
     // Never post after the service has been asked to stop.
     if (running !== this) return
     val nm = getSystemService(NotificationManager::class.java)
-    nm?.notify(NOTIFICATION_ID,
-        buildNotification(content, bigTextHtml, countdownTargetMs))
+    nm?.notify(NOTIFICATION_ID, buildFallbackNotification(message))
     notificationPosted = true
   }
 
-  private fun buildNotification(
-    content: String,
-    bigTextHtml: String,
-    countdownTargetMs: Long?
-  ): Notification {
+  private fun postNotification(plan: DayPlan, hijri: String) {
+    // Never post after the service has been asked to stop.
+    if (running !== this) return
+    val nm = getSystemService(NotificationManager::class.java)
+    nm?.notify(NOTIFICATION_ID, buildNotification(plan, hijri))
+    notificationPosted = true
+  }
+
+  private fun contentIntent(): PendingIntent {
     val openIntent = Intent(this, MainActivity::class.java).apply {
       action = "$packageName.OPEN_TIMINGS"
       putExtra(MainActivity.EXTRA_ROUTE, "/timings")
       addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
     }
-    val pendingIntent = PendingIntent.getActivity(
+    return PendingIntent.getActivity(
         this, 0, openIntent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+  }
 
+  private fun baseBuilder(): NotificationCompat.Builder =
+      NotificationCompat.Builder(this, CHANNEL_ID)
+          .setSmallIcon(R.drawable.ic_stat_prayer)
+          .setColor(0xFF2E7D32.toInt())
+          .setOngoing(true)
+          .setOnlyAlertOnce(true)
+          .setAutoCancel(false)
+          .setSilent(true)
+          .setShowWhen(false)
+          .setContentIntent(contentIntent())
+
+  /** Placeholder shown briefly while the first computation runs. */
+  private fun buildLoadingNotification(): Notification {
     val collapsed = RemoteViews(packageName, R.layout.notification_prayer_collapsed)
     val expanded = RemoteViews(packageName, R.layout.notification_prayer_expanded)
+    enforceLayout(collapsed, expanded)
+    collapsed.setTextViewText(R.id.next_label, "جارٍ التحديث...")
+    collapsed.setViewVisibility(R.id.chronometer, android.view.View.GONE)
+    expanded.setViewVisibility(R.id.chronometer, android.view.View.GONE)
+    expanded.setTextViewText(R.id.hijri_date, "")
+    fillTableNames(expanded, displayNames())
+    for (id in prayerTimeViewIds()) expanded.setTextViewText(id, "--:--")
+    return baseBuilder()
+        .setCustomContentView(collapsed)
+        .setCustomBigContentView(expanded)
+        .build()
+  }
 
-    collapsed.setTextViewText(R.id.text, styledText("\u200F$content"))
-    expanded.setTextViewText(R.id.rows, styledText("\u200F$bigTextHtml"))
-    expanded.setTextViewText(R.id.next_label, styledText("\u200F$content"))
+  /** Error / no-location state: message only, no countdown, no times. */
+  private fun buildFallbackNotification(message: String): Notification {
+    val collapsed = RemoteViews(packageName, R.layout.notification_prayer_collapsed)
+    val expanded = RemoteViews(packageName, R.layout.notification_prayer_expanded)
+    enforceLayout(collapsed, expanded)
+    collapsed.setTextViewText(R.id.next_label, message)
+    collapsed.setViewVisibility(R.id.chronometer, android.view.View.GONE)
+    expanded.setViewVisibility(R.id.chronometer, android.view.View.GONE)
+    expanded.setTextViewText(R.id.hijri_date, "")
+    fillTableNames(expanded, displayNames())
+    for (id in prayerTimeViewIds()) expanded.setTextViewText(id, "--:--")
+    return baseBuilder()
+        .setCustomContentView(collapsed)
+        .setCustomBigContentView(expanded)
+        .build()
+  }
+
+  private fun buildNotification(plan: DayPlan, hijri: String): Notification {
+    val collapsed = RemoteViews(packageName, R.layout.notification_prayer_collapsed)
+    val expanded = RemoteViews(packageName, R.layout.notification_prayer_expanded)
+    enforceLayout(collapsed, expanded)
+
+    val nextLabel = "الصلاة القادمة: ${plan.nextName}"
+    collapsed.setTextViewText(R.id.next_label, nextLabel)
+    expanded.setTextViewText(R.id.hijri_date, hijri)
 
     // Native count-down chronometer rendered by the system — no app wakeups.
-    if (countdownTargetMs != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      val remaining = (countdownTargetMs - System.currentTimeMillis()).coerceAtLeast(0)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      val remaining = (plan.nextAtMs - System.currentTimeMillis()).coerceAtLeast(0)
       val base = android.os.SystemClock.elapsedRealtime() + remaining
       collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
       expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
@@ -220,25 +264,129 @@ class PrayerNotificationService : Service() {
       expanded.setChronometer(R.id.chronometer, base, null, true)
       collapsed.setChronometerCountDown(R.id.chronometer, true)
       expanded.setChronometerCountDown(R.id.chronometer, true)
+    } else {
+      collapsed.setViewVisibility(R.id.chronometer, android.view.View.GONE)
+      expanded.setViewVisibility(R.id.chronometer, android.view.View.GONE)
     }
 
-    return NotificationCompat.Builder(this, CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_stat_prayer)
-        .setColor(0xFF2E7D32.toInt())
-        .setOngoing(true)
-        .setOnlyAlertOnce(true)
-        .setAutoCancel(false)
-        .setSilent(true)
-        .setShowWhen(false)
+    // Horizontal table: slots are filled by position (names too, not just
+    // times) so the visual order stays correct even on hosts that mirror
+    // the layout direction to the system locale.
+    val zone = currentZone()
+    val rows = if (needsReversedSlots()) plan.times.reversed() else plan.times
+    tableSlots().forEachIndexed { i, slot ->
+      val (name, ms) = rows[i]
+      expanded.setTextViewText(slot.nameId, name)
+      expanded.setTextViewText(slot.timeId, formatTime(ms, zone))
+      if (name == plan.nextName) {
+        // Highlight the upcoming prayer; others keep the system default
+        // color so they adapt to light/dark notification backgrounds.
+        expanded.setTextColor(slot.nameId, NEXT_PRAYER_COLOR)
+        expanded.setTextColor(slot.timeId, NEXT_PRAYER_COLOR)
+      }
+    }
+
+    return baseBuilder()
         .setCustomContentView(collapsed)
         .setCustomBigContentView(expanded)
-        .setContentIntent(pendingIntent)
         .build()
   }
 
-  /** Renders the HTML subset (<b>, <font color>) used by the row strings. */
-  private fun styledText(html: String): CharSequence =
-      "\u202B${android.text.Html.fromHtml(html)}\u202C"
+  /**
+   * Forces RTL ordering + text sizes at runtime. Some hosts (MIUI/HyperOS,
+   * Android 12+ decorated templates) reset custom-view layout direction and
+   * text sizes to the system locale at inflation time; RemoteViews actions
+   * run after inflation so these stick. Harmless no-op elsewhere.
+   */
+  private fun enforceLayout(collapsed: RemoteViews, expanded: RemoteViews) {
+    for (id in listOf(R.id.collapsed_root)) {
+      collapsed.setInt(id, "setLayoutDirection", android.view.View.LAYOUT_DIRECTION_RTL)
+    }
+    for (id in listOf(R.id.expanded_root, R.id.top_row, R.id.table_row)) {
+      expanded.setInt(id, "setLayoutDirection", android.view.View.LAYOUT_DIRECTION_RTL)
+    }
+    val names = listOf(R.id.name_fajr, R.id.name_sunrise, R.id.name_dhuhr,
+        R.id.name_asr, R.id.name_maghrib, R.id.name_isha)
+    val times = listOf(R.id.time_fajr, R.id.time_sunrise, R.id.time_dhuhr,
+        R.id.time_asr, R.id.time_maghrib, R.id.time_isha)
+    val seps = listOf(R.id.sep1, R.id.sep2, R.id.sep3, R.id.sep4, R.id.sep5)
+    for (id in names) {
+      expanded.setTextViewTextSize(
+          id, android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+    }
+    for (id in times) {
+      expanded.setTextViewTextSize(
+          id, android.util.TypedValue.COMPLEX_UNIT_SP, 11f)
+    }
+    for (id in seps) {
+      expanded.setTextViewTextSize(
+          id, android.util.TypedValue.COMPLEX_UNIT_SP, 10f)
+    }
+    // Heading: smaller, non-bold (regular Notification style in XML).
+    // NOTE: the expanded view has no next_label (collapsed only).
+    for (id in listOf(R.id.chronometer, R.id.hijri_date)) {
+      expanded.setTextViewTextSize(
+          id, android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
+    }
+    for (id in listOf(R.id.next_label, R.id.chronometer)) {
+      collapsed.setTextViewTextSize(
+          id, android.util.TypedValue.COMPLEX_UNIT_SP, 14f)
+    }
+  }
+
+  private fun currentZone(): TimeZone =
+      try {
+        readConfig(this)?.zone() ?: TimeZone.currentSystemDefault()
+      } catch (_: Exception) {
+        TimeZone.currentSystemDefault()
+      }
+
+  private fun prayerTimeViewIds(): List<Int> = listOf(
+      R.id.time_fajr, R.id.time_sunrise, R.id.time_dhuhr,
+      R.id.time_asr, R.id.time_maghrib, R.id.time_isha)
+
+  private data class TableSlot(val nameId: Int, val timeId: Int)
+
+  /** Table columns in XML source order (Fajr first). */
+  private fun tableSlots(): List<TableSlot> = listOf(
+      TableSlot(R.id.name_fajr, R.id.time_fajr),
+      TableSlot(R.id.name_sunrise, R.id.time_sunrise),
+      TableSlot(R.id.name_dhuhr, R.id.time_dhuhr),
+      TableSlot(R.id.name_asr, R.id.time_asr),
+      TableSlot(R.id.name_maghrib, R.id.time_maghrib),
+      TableSlot(R.id.name_isha, R.id.time_isha))
+
+  private val PRAYER_NAMES =
+      listOf("الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء")
+
+  private val NEXT_PRAYER_COLOR = 0xFF43A047.toInt()
+
+  /** Prayer names in visual slot order (mirrored when slots are reversed). */
+  private fun displayNames(): List<String> =
+      if (needsReversedSlots()) PRAYER_NAMES.reversed() else PRAYER_NAMES
+
+  private fun fillTableNames(expanded: RemoteViews, names: List<String>) {
+    tableSlots().forEachIndexed { i, slot ->
+      expanded.setTextViewText(slot.nameId, names[i])
+    }
+  }
+
+  /**
+   * True when the host renders slot 0 leftmost: MIUI/HyperOS forces custom
+   * notification direction to the system locale *after* RemoteViews actions
+   * are applied. Only matters on LTR-locale devices (on RTL locales the
+   * forced direction is RTL anyway). Everywhere else our explicit RTL is
+   * honored and slots fill in source order.
+   */
+  private fun needsReversedSlots(): Boolean {
+    val systemRtl = android.text.TextUtils.getLayoutDirectionFromLocale(
+        Locale.getDefault()) == android.view.View.LAYOUT_DIRECTION_RTL
+    if (systemRtl) return false
+    val manufacturer = android.os.Build.MANUFACTURER.lowercase(Locale.US)
+    val brand = android.os.Build.BRAND.lowercase(Locale.US)
+    return manufacturer.contains("xiaomi") || brand.contains("xiaomi") ||
+        brand.contains("redmi") || brand.contains("poco")
+  }
 
   private fun ensureChannel() {
     val nm = getSystemService(NotificationManager::class.java) ?: return
@@ -263,7 +411,8 @@ class PrayerNotificationService : Service() {
     val method: String,
     val asrCalculation: String,
     val highLatitudeRule: String,
-    val timezone: String
+    val timezone: String,
+    val hijriOffset: Int
   ) {
     fun zone(): TimeZone =
         try { TimeZone.of(timezone) } catch (_: Exception) { TimeZone.currentSystemDefault() }
@@ -279,58 +428,101 @@ class PrayerNotificationService : Service() {
           method = o.optString("method", "egyptian"),
           asrCalculation = o.optString("asrCalculation", "shafi"),
           highLatitudeRule = o.optString("highLatitudeRule", "middle_of_night"),
-          timezone = o.optString("timezone", ""))
+          timezone = o.optString("timezone", ""),
+          hijriOffset = o.optInt("hijriOffset", 0))
     } catch (_: Exception) {
       null
     }
   }
 
-  private class DayPlan(val rows: List<String>, val nextName: String, val nextAtMs: Long)
+  private class DayPlan(
+    val times: List<Pair<String, Long>>,
+    val nextName: String,
+    val nextAtMs: Long,
+    val maghribMs: Long?
+  )
 
   private fun computePlan(cfg: Config, zone: TimeZone, nowMs: Long): DayPlan? {
     val params = buildParams(cfg.method, cfg.asrCalculation, cfg.highLatitudeRule, cfg.lat)
     val coordinates = Coordinates(cfg.lat, cfg.lng)
     val now = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(zone)
 
-    val fmt = SimpleDateFormat("h:mm", Locale.US).apply {
-      timeZone = java.util.TimeZone.getTimeZone(zone.id)
-    }
-
-    fun rowsFor(times: List<Pair<String, Long>>, nextName: String): List<String> =
-        times.map { (name, ms) ->
-          val formatted = "${fmt.format(Date(ms))} ${if (hourOf(ms, zone) < 12) "ص" else "م"}"
-          if (name == nextName)
-            "<b><font color=\"#2e7d32\">$name $formatted</font></b>"
-          else "$name $formatted"
-        }
-
     val todayTimes = prayerTimesList(coordinates, params, now.date, zone)
         ?: return null
+    val maghribMs = todayTimes.firstOrNull { it.first == "المغرب" }?.second
     val next = todayTimes.firstOrNull { it.second > nowMs }
 
     if (next != null) {
-      return DayPlan(rowsFor(todayTimes, next.first), next.first, next.second)
+      return DayPlan(todayTimes, next.first, next.second, maghribMs)
     }
 
     // After Isha: show tomorrow's Fajr as the upcoming prayer.
     val tomorrow = now.date.plus(1, kotlinx.datetime.DateTimeUnit.DAY)
     val tomorrowFajr = prayerTimesList(coordinates, params, tomorrow, zone)
         ?.firstOrNull()?.second ?: return null
-    return DayPlan(rowsFor(todayTimes, "الفجر"), "الفجر", tomorrowFajr)
+    return DayPlan(todayTimes, "الفجر", tomorrowFajr, maghribMs)
+  }
+
+  /** "05:11 ص" style time, matching the in-app prayer card. */
+  private fun formatTime(ms: Long, zone: TimeZone): String {
+    val fmt = SimpleDateFormat("hh:mm", Locale.US).apply {
+      timeZone = java.util.TimeZone.getTimeZone(zone.id)
+    }
+    val period = if (hourOf(ms, zone) < 12) "ص" else "م"
+    return "${fmt.format(Date(ms))} $period"
+  }
+
+  /**
+   * Hijri date like "3 ربيع الآخر 1448", honoring the user day offset.
+   * The Islamic day rolls over at Maghrib, mirroring the in-app widget.
+   * Month names are mapped manually: localized MMMM text is unreliable
+   * in notifications on some firmwares (renders as a bare month number).
+   */
+  private fun hijriDateString(
+    cfg: Config,
+    zone: TimeZone,
+    nowMs: Long,
+    maghribMs: Long?
+  ): String {
+    return try {
+      val zoneId = try {
+        java.time.ZoneId.of(zone.id)
+      } catch (_: Exception) {
+        java.time.ZoneId.systemDefault()
+      }
+      var gregorian =
+          java.time.Instant.ofEpochMilli(nowMs).atZone(zoneId).toLocalDate()
+      gregorian = gregorian.plusDays(cfg.hijriOffset.toLong())
+      if (maghribMs != null && nowMs >= maghribMs) {
+        gregorian = gregorian.plusDays(1)
+      }
+      val hijrah = java.time.chrono.HijrahDate.from(gregorian)
+      val day = hijrah.get(java.time.temporal.ChronoField.DAY_OF_MONTH)
+      val month = hijrah.get(java.time.temporal.ChronoField.MONTH_OF_YEAR)
+      val year = hijrah.get(java.time.temporal.ChronoField.YEAR)
+      "$day ${hijriMonthName(month)} $year"
+    } catch (_: Exception) {
+      ""
+    }
+  }
+
+  private fun hijriMonthName(month: Int): String = when (month) {
+    1 -> "محرم"
+    2 -> "صفر"
+    3 -> "ربيع الأول"
+    4 -> "ربيع الآخر"
+    5 -> "جمادى الأولى"
+    6 -> "جمادى الآخرة"
+    7 -> "رجب"
+    8 -> "شعبان"
+    9 -> "رمضان"
+    10 -> "شوال"
+    11 -> "ذو القعدة"
+    else -> "ذو الحجة"
   }
 
   private fun hourOf(ms: Long, zone: TimeZone): Int =
       Instant.fromEpochMilliseconds(ms).toLocalDateTime(zone).hour
-
-  /** "01:23:45" / "23:45" style remaining time. */
-  private fun formatCountdown(diffMs: Long): String {
-    val total = (diffMs / 1000).coerceAtLeast(0)
-    val h = total / 3600
-    val m = (total % 3600) / 60
-    val s = total % 60
-    return if (h > 0) String.format(Locale.US, "%02d:%02d:%02d", h, m, s)
-    else String.format(Locale.US, "%02d:%02d", m, s)
-  }
 
   /** Six entries (Arabic name, epoch ms) for the given date, or null on failure. */
   private fun prayerTimesList(

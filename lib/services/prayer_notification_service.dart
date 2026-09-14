@@ -94,6 +94,7 @@ Future<void> _writeConfig() async {
     'highLatitudeRule':
         prefs.getString('highLatitudeRule') ?? 'middle_of_night',
     'timezone': prefs.getString('timezone') ?? '',
+    'hijriOffset': prefs.getInt('hijri_day_offset') ?? 0,
   }));
 }
 

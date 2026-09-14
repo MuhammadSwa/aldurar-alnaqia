@@ -143,6 +143,7 @@ class SharedPreferencesService {
   static void setHijriDayOffset(int offset) {
   logInfo('setting offest to $offset');
   _sharedPreferences?.setInt('hijri_day_offset', offset);
+  unawaited(refreshPrayerNotification());
   }
 
   static int getHijriDayOffset() {

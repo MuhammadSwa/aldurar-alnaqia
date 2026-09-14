@@ -1,39 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Collapsed prayer-times notification. Forced RTL so the whole
-     notification lays out right-to-left regardless of device locale. -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Collapsed prayer-times notification: single line with the next-prayer
+     label on the right and the live countdown on the left. Absolute
+     LEFT/RIGHT rules (never Start/End) so the order is identical on every
+     host, even ones that force the layout direction to the system locale. -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/collapsed_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layoutDirection="rtl"
-    android:orientation="vertical"
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
-
-    <TextView
-        android:id="@+id/title"
-        style="@android:style/TextAppearance.Material.Notification.Title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textDirection="rtl"
-        android:singleLine="true"
-        android:text="مواقيت الصلاة" />
-
-    <TextView
-        android:id="@+id/text"
-        style="@android:style/TextAppearance.Material.Notification"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textDirection="rtl"
-        android:maxLines="2" />
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
     <Chronometer
         android:id="@+id/chronometer"
         style="@android:style/TextAppearance.Material.Notification"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textDirection="rtl"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:textSize="14sp"
+        android:textDirection="ltr"
+        android:singleLine="true"
         android:visibility="gone" />
 
-</LinearLayout>
+    <TextView
+        android:id="@+id/next_label"
+        style="@android:style/TextAppearance.Material.Notification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_toLeftOf="@id/chronometer"
+        android:layout_centerVertical="true"
+        android:gravity="right"
+        android:textSize="14sp"
+        android:textDirection="rtl"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:text="الصلاة القادمة" />
+
+</RelativeLayout>
