@@ -11,6 +11,7 @@ import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/tareeqa_bios_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/ibn_ata_allah.dart';
+import 'package:aldurar_alnaqia/models/consts/khitam_alsalah_collection.dart';
 
 class Zikr {
   final String title;
@@ -126,6 +127,11 @@ final allAzkar = AllAzkar(azkarCategMap: {
   monagaIbnAtaAllah.title: monagaIbnAtaAllah,
   hawatfAlhaqaeq.title: hawatfAlhaqaeq,
 
+  // khitamAlSalahCollection
+  khitamMaghribFajr.title: khitamMaghribFajr,
+  khitamIshaDhuhr.title: khitamIshaDhuhr,
+  khitamAsr.title: khitamAsr,
+
 // orphans
   sanadAltareeqa.title: sanadAltareeqa,
   adabAltareeqa.title: adabAltareeqa,
@@ -174,6 +180,7 @@ const azkarCollections = AzkarCollections(
     'الحضرة الصديقية': alhadraCollection,
     'الصلوات اليسرية': salawatYousriaCollection,
     'دلائل الخيرات': dalayilAlkhayratCollection,
+    'أوراد ختام الصلاة': khitamAlSalahCollection,
     'أوارد سيدي عبد الله بن الصديق الغماري': azkarAlgomariCollection,
     'الأحزاب': ahzabCollection,
     'قصائد': poemsCollection,

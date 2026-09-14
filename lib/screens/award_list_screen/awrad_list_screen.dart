@@ -21,7 +21,7 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   late final List<String> collectionTitles =
-      azkarCollections.getTitles().sublist(0, 8);
+      azkarCollections.getTitles().sublist(0, 9);
   late final List<String> azkarTitles = orphanAzkar.getTitles();
 
   @override
