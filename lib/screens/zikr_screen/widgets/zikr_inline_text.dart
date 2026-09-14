@@ -32,6 +32,9 @@ class ZikrInlineText extends ConsumerWidget {
     return EasyRichText(
       text,
       textAlign: textAlign,
+      // Needed so `^` in patterns matches each line start, not just the
+      // start of the whole text (e.g. numbered lines like "1." / "2/3.").
+      multiLine: true,
       defaultStyle: base.copyWith(
         fontSize: fontSize,
         fontWeight: bold ? FontWeight.bold : null,
@@ -78,10 +81,11 @@ class ZikrInlineText extends ConsumerWidget {
           ],
           style: base.copyWith(fontSize: fontSize * .7),
         ),
-        // Numbered lines like "1.".
+        // Line numbering like "1." or "2/3." at line starts,
+        // styled like footer text (same color, smaller).
         EasyRichTextPattern(
-          targetString: r'[0-9/]*\.',
-          style: base.copyWith(fontSize: fontSize),
+          targetString: r'^[0-9/]+\.',
+          style: base.copyWith(fontSize: fontSize * .7),
         ),
       ],
     );
