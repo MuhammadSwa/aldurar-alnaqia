@@ -42,21 +42,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }).toList();
 
-  Future<void> _refreshBookStatuses() async {
-    final downloader = ref.read(downloaderProvider);
-    await Future.wait(
-      bookItems.map((item) => downloader.refreshFileStatus(item.id, item.type)),
-    );
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم تحديث حالة الكتب.'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
@@ -71,13 +56,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
-        actions: [
-          IconButton(
-            tooltip: 'تحديث الحالة',
-            onPressed: _refreshBookStatuses,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
       ),
       body: ListView.builder(
         itemCount: bookItems.length,
