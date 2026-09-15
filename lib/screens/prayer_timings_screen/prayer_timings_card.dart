@@ -2,7 +2,7 @@ import 'package:intl/intl.dart' as intl;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:text_responsive/text_responsive.dart';
+import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class PrayerTimingsCard extends ConsumerWidget {
