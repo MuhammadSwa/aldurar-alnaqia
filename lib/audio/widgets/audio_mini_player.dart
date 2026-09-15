@@ -17,14 +17,35 @@ class AudioMiniPlayer extends ConsumerWidget {
         audioProvider.select((s) => s.isVisible ? s.track : null));
     if (track == null) return const SizedBox.shrink();
 
+    // Green-tinted container derived from the app's Material3 color scheme,
+    // so it stays distinct from the scaffold background in both light and
+    // dark mode (seed is green / greenAccent).
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: Column(
-        children: [
-          _TitleBar(title: track.title),
-          const _ProgressBar(),
-          const _TransportRow(),
-        ],
+      padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+      child: Material(
+        color: colorScheme.secondaryContainer,
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.2),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _TitleBar(title: track.title),
+              const _ProgressBar(),
+              const _TransportRow(),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -37,6 +58,7 @@ class _TitleBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -45,11 +67,24 @@ class _TitleBar extends ConsumerWidget {
           child: IconButton(
             onPressed: () => ref.read(audioProvider.notifier).stopPlayer(),
             icon: const Icon(Icons.close),
+            color: colorScheme.onSecondaryContainer,
           ),
         ),
         Align(
           alignment: Alignment.center,
-          child: Text(title),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colorScheme.onSecondaryContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -67,12 +102,23 @@ class _ProgressBar extends ConsumerWidget {
         ref.watch(audioProvider.select((s) => s.buffered));
     final duration =
         ref.watch(audioProvider.select((s) => s.duration));
+    final colorScheme = Theme.of(context).colorScheme;
 
     return ProgressBar(
       progress: position,
       buffered: buffered,
       total: duration,
       onSeek: ref.read(audioProvider.notifier).seek,
+      progressBarColor: colorScheme.primary,
+      bufferedBarColor:
+          colorScheme.primary.withValues(alpha: 0.25),
+      baseBarColor:
+          colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+      thumbColor: colorScheme.primary,
+      timeLabelTextStyle: TextStyle(
+        color: colorScheme.onSecondaryContainer,
+        fontSize: 12,
+      ),
     );
   }
 }
@@ -99,12 +145,14 @@ class _TransportRow extends ConsumerWidget {
   Widget _buildPrimaryButton(
       BuildContext context, WidgetRef ref, AudioStatus status) {
     final controller = ref.read(audioProvider.notifier);
+    final colorScheme = Theme.of(context).colorScheme;
 
     switch (status) {
       case AudioStatus.playing:
         return IconButton(
           onPressed: controller.togglePlayPause,
           icon: const Icon(Icons.pause),
+          color: colorScheme.onSecondaryContainer,
         );
       case AudioStatus.paused:
       case AudioStatus.error:
@@ -116,12 +164,15 @@ class _TransportRow extends ConsumerWidget {
             controller.togglePlayPause();
           },
           icon: const Icon(Icons.play_arrow),
+          color: colorScheme.onSecondaryContainer,
         );
       case AudioStatus.loading:
-        return const SizedBox(
+        return SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(),
+          child: CircularProgressIndicator(
+            color: colorScheme.primary,
+          ),
         );
       case AudioStatus.stopped:
         return const SizedBox.shrink();
@@ -135,10 +186,14 @@ class SpeedSliderButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final speed = ref.watch(audioProvider.select((s) => s.speed));
+    final colorScheme = Theme.of(context).colorScheme;
 
     return IconButton(
       icon: Text("$speed x",
-          style: const TextStyle(fontWeight: FontWeight.bold)),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSecondaryContainer,
+          )),
       onPressed: () => showSliderDialog(
         context: context,
         title: "تعديل السرعة",

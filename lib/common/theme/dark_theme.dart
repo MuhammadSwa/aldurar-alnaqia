@@ -12,6 +12,20 @@ abstract class BaseTheme {
   static const double titleMediumfontSize = 20;
 }
 
+final _darkColorScheme = ColorScheme.fromSeed(
+  // used for table borders
+  secondaryFixed: Colors.greenAccent,
+  seedColor: Colors.greenAccent,
+  brightness: Brightness.dark,
+);
+
+final _lightColorScheme = ColorScheme.fromSeed(
+  // used for table borders
+  secondaryFixed: Colors.greenAccent,
+  seedColor: Colors.green,
+  brightness: Brightness.light,
+);
+
 final darkTheme = ThemeData(
   useMaterial3: true,
   fontFamily: 'NotoNaskh',
@@ -43,19 +57,26 @@ final darkTheme = ThemeData(
     ),
   ),
 
-  colorScheme: ColorScheme.fromSeed(
-    // used for table borders
-    secondaryFixed: Colors.greenAccent,
-    seedColor: Colors.greenAccent,
-    brightness: Brightness.dark,
-  ),
-  appBarTheme: const AppBarTheme(
+  colorScheme: _darkColorScheme,
+  appBarTheme: AppBarTheme(
+    // Same green tint as the audio mini-player (secondaryContainer) so the
+    // top bar, bottom bar and player share one color in light and dark mode.
+    backgroundColor: _darkColorScheme.secondaryContainer,
+    foregroundColor: _darkColorScheme.onSecondaryContainer,
+    surfaceTintColor: Colors.transparent,
+    elevation: 0,
+    scrolledUnderElevation: 0,
     toolbarHeight: 60,
     titleTextStyle: TextStyle(
       fontFamily: 'NotoNaskh',
       fontSize: 24,
       height: 2,
+      color: _darkColorScheme.onSecondaryContainer,
     ),
+    iconTheme:
+        IconThemeData(color: _darkColorScheme.onSecondaryContainer),
+    actionsIconTheme:
+        IconThemeData(color: _darkColorScheme.onSecondaryContainer),
   ),
   iconTheme: IconThemeData(
     color: Colors.green.shade700,
@@ -115,6 +136,10 @@ final darkTheme = ThemeData(
   //   interactive: true,
   // ),
   navigationBarTheme: NavigationBarThemeData(
+    // Same as the audio mini-player. The selected-pill indicator uses
+    // primary (not the default secondaryContainer) so it stays visible.
+    backgroundColor: _darkColorScheme.secondaryContainer,
+    indicatorColor: _darkColorScheme.primary,
     surfaceTintColor: Colors.green.shade900,
     iconTheme: const WidgetStatePropertyAll(
       IconThemeData(
@@ -122,9 +147,10 @@ final darkTheme = ThemeData(
         // fill: 120,
       ),
     ),
-  labelTextStyle: const WidgetStatePropertyAll(
+  labelTextStyle: WidgetStatePropertyAll(
       TextStyle(
         fontSize: 12,
+        color: _darkColorScheme.onSecondaryContainer,
       ),
     ),
   ),
@@ -163,14 +189,24 @@ final lightTheme = ThemeData(
         color: Colors.grey.shade600,
         fontSize: 20,
       )),
-  colorScheme: ColorScheme.fromSeed(
-    // used for table borders
-    secondaryFixed: Colors.greenAccent,
-    seedColor: Colors.green,
-    brightness: Brightness.light,
-  ),
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Colors.white30,
+  colorScheme: _lightColorScheme,
+  appBarTheme: AppBarTheme(
+    // Same green tint as the audio mini-player (secondaryContainer) so the
+    // top bar, bottom bar and player share one color in light and dark mode.
+    backgroundColor: _lightColorScheme.secondaryContainer,
+    foregroundColor: _lightColorScheme.onSecondaryContainer,
+    surfaceTintColor: Colors.transparent,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+    titleTextStyle: TextStyle(
+      fontFamily: 'NotoNaskh',
+      fontSize: 24,
+      color: _lightColorScheme.onSecondaryContainer,
+    ),
+    iconTheme:
+        IconThemeData(color: _lightColorScheme.onSecondaryContainer),
+    actionsIconTheme:
+        IconThemeData(color: _lightColorScheme.onSecondaryContainer),
   ),
   iconTheme: IconThemeData(
     color: Colors.green.shade900,
@@ -219,6 +255,10 @@ final lightTheme = ThemeData(
     ),
   ),
   navigationBarTheme: NavigationBarThemeData(
+    // Same as the audio mini-player. The selected-pill indicator uses
+    // primary (not the default secondaryContainer) so it stays visible.
+    backgroundColor: _lightColorScheme.secondaryContainer,
+    indicatorColor: _lightColorScheme.primary,
     surfaceTintColor: Colors.green.shade900,
     iconTheme: WidgetStatePropertyAll(
       IconThemeData(
@@ -226,9 +266,10 @@ final lightTheme = ThemeData(
         // fill: 120,
       ),
     ),
-    labelTextStyle: const WidgetStatePropertyAll(
+    labelTextStyle: WidgetStatePropertyAll(
       TextStyle(
         fontSize: 12,
+        color: _lightColorScheme.onSecondaryContainer,
       ),
     ),
   ),
@@ -280,19 +321,26 @@ ThemeData getDarkTheme(double fontSize) {
       ),
     ),
 
-    colorScheme: ColorScheme.fromSeed(
-      // used for table borders
-      secondaryFixed: Colors.greenAccent,
-      seedColor: Colors.greenAccent,
-      brightness: Brightness.dark,
-    ),
-    appBarTheme: const AppBarTheme(
+    colorScheme: _darkColorScheme,
+    appBarTheme: AppBarTheme(
+      // Same green tint as the audio mini-player (secondaryContainer) so the
+      // top bar, bottom bar and player share one color in light and dark mode.
+      backgroundColor: _darkColorScheme.secondaryContainer,
+      foregroundColor: _darkColorScheme.onSecondaryContainer,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
       toolbarHeight: 60,
       titleTextStyle: TextStyle(
         fontFamily: 'NotoNaskh',
         fontSize: 24,
         height: 2,
+        color: _darkColorScheme.onSecondaryContainer,
       ),
+      iconTheme:
+          IconThemeData(color: _darkColorScheme.onSecondaryContainer),
+      actionsIconTheme:
+          IconThemeData(color: _darkColorScheme.onSecondaryContainer),
     ),
     iconTheme: IconThemeData(
       color: Colors.green.shade700,
@@ -352,6 +400,10 @@ ThemeData getDarkTheme(double fontSize) {
     //   interactive: true,
     // ),
     navigationBarTheme: NavigationBarThemeData(
+      // Same as the audio mini-player. The selected-pill indicator uses
+      // primary (not the default secondaryContainer) so it stays visible.
+      backgroundColor: _darkColorScheme.secondaryContainer,
+      indicatorColor: _darkColorScheme.primary,
       surfaceTintColor: Colors.green.shade900,
       labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
       iconTheme: const WidgetStatePropertyAll(
@@ -360,9 +412,10 @@ ThemeData getDarkTheme(double fontSize) {
           // fill: 120,
         ),
       ),
-  labelTextStyle: const WidgetStatePropertyAll(
+  labelTextStyle: WidgetStatePropertyAll(
         TextStyle(
           fontSize: 12,
+          color: _darkColorScheme.onSecondaryContainer,
         ),
       ),
     ),
@@ -400,14 +453,24 @@ ThemeData getLightTheme(double fontSize) {
           color: Colors.grey.shade600,
           fontSize: 20,
         )),
-    colorScheme: ColorScheme.fromSeed(
-      // used for table borders
-      secondaryFixed: Colors.greenAccent,
-      seedColor: Colors.green,
-      brightness: Brightness.light,
-    ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white30,
+    colorScheme: _lightColorScheme,
+    appBarTheme: AppBarTheme(
+      // Same green tint as the audio mini-player (secondaryContainer) so the
+      // top bar, bottom bar and player share one color in light and dark mode.
+      backgroundColor: _lightColorScheme.secondaryContainer,
+      foregroundColor: _lightColorScheme.onSecondaryContainer,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      titleTextStyle: TextStyle(
+        fontFamily: 'NotoNaskh',
+        fontSize: 24,
+        color: _lightColorScheme.onSecondaryContainer,
+      ),
+      iconTheme:
+          IconThemeData(color: _lightColorScheme.onSecondaryContainer),
+      actionsIconTheme:
+          IconThemeData(color: _lightColorScheme.onSecondaryContainer),
     ),
     iconTheme: IconThemeData(
       color: Colors.green.shade900,
@@ -456,6 +519,10 @@ ThemeData getLightTheme(double fontSize) {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
+      // Same as the audio mini-player. The selected-pill indicator uses
+      // primary (not the default secondaryContainer) so it stays visible.
+      backgroundColor: _lightColorScheme.secondaryContainer,
+      indicatorColor: _lightColorScheme.primary,
       surfaceTintColor: Colors.green.shade900,
       labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
       iconTheme: WidgetStatePropertyAll(
@@ -464,9 +531,10 @@ ThemeData getLightTheme(double fontSize) {
           // fill: 120,
         ),
       ),
-      labelTextStyle: const WidgetStatePropertyAll(
+      labelTextStyle: WidgetStatePropertyAll(
         TextStyle(
           fontSize: 12,
+          color: _lightColorScheme.onSecondaryContainer,
         ),
       ),
     ),

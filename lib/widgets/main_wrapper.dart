@@ -40,6 +40,8 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
   Widget build(BuildContext context) {
     final showAudioBar =
         ref.watch(audioProvider.select((state) => state.isVisible));
+    // Selected tab icon color contrasts with the primary indicator pill.
+    final selectedIconColor = Theme.of(context).colorScheme.onPrimary;
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Center(
@@ -63,22 +65,26 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
               ),
               bottomNavigationBar: NavigationBar(
                 indicatorShape: const StadiumBorder(),
-                destinations: const [
+                destinations: [
                   NavigationDestination(
-                      selectedIcon: Icon(Icons.home, color: Colors.green),
-                      icon: Icon(Icons.home_outlined),
+                      selectedIcon:
+                          Icon(Icons.home, color: selectedIconColor),
+                      icon: const Icon(Icons.home_outlined),
                       label: 'الرئيسية'),
                   NavigationDestination(
-                      icon: Icon(Icons.timer_outlined),
-                      selectedIcon: Icon(Icons.timer, color: Colors.green),
+                      icon: const Icon(Icons.timer_outlined),
+                      selectedIcon:
+                          Icon(Icons.timer, color: selectedIconColor),
                       label: 'مواقيت الصلاة'),
                   NavigationDestination(
-                      selectedIcon: Icon(Icons.list, color: Colors.green),
-                      icon: Icon(Icons.list_outlined),
+                      selectedIcon:
+                          Icon(Icons.list, color: selectedIconColor),
+                      icon: const Icon(Icons.list_outlined),
                       label: 'الأوراد'),
                   NavigationDestination(
-                      selectedIcon: Icon(Icons.book, color: Colors.green),
-                      icon: Icon(Icons.book_outlined),
+                      selectedIcon:
+                          Icon(Icons.book, color: selectedIconColor),
+                      icon: const Icon(Icons.book_outlined),
                       label: 'المكتبة'),
                 ],
                 onDestinationSelected: (index) {
