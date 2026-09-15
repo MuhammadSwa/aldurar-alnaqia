@@ -532,10 +532,15 @@ class PrayerNotificationService : Service() {
   ): String {
     // Uses android.icu (built into API 24+, our minSdk) instead of java.time,
     // so no core-library desugaring is needed.
+    // NOTE: Must use Umm al-Qura calculation to match the Flutter UI, which
+    // uses the `hijri` Dart package (Umm al-Qura table). The ICU default is
+    // the tabular civil calendar, which drifts 1-2 days from Umm al-Qura.
     return try {
       val tz = android.icu.util.TimeZone.getTimeZone(zone.id)
       val cal = android.icu.util.IslamicCalendar(
           tz, android.icu.util.ULocale.ENGLISH)
+      cal.setCalculationType(
+          android.icu.util.IslamicCalendar.CalculationType.ISLAMIC_UMALQURA)
       cal.timeInMillis = nowMs + cfg.hijriOffset * 86_400_000L
       if (maghribMs != null && nowMs >= maghribMs) {
         cal.add(android.icu.util.Calendar.DAY_OF_MONTH, 1)

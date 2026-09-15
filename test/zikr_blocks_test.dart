@@ -1,5 +1,6 @@
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_blocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hijri/hijri_calendar.dart';
 
 void main() {
   group('parseZikrBlocks', () {
