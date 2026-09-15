@@ -133,8 +133,19 @@ class _BookListTile extends ConsumerWidget {
     if (isDownloaded) {
       // Open viewer; it will auto-restore last page.
       AppNav.goToPdfViewer(context, item.title);
-    } else {
-      _showDownloadOptionsDialog(context, ref);
+      return;
+    }
+    final action = ref.read(fileOpenActionProvider);
+    switch (action) {
+      case FileOpenAction.open:
+        AppNav.goToPdfViewer(context, item.title);
+        break;
+      case FileOpenAction.download:
+        ref.read(downloaderProvider).startDownload(item);
+        break;
+      case FileOpenAction.ask:
+        _showDownloadOptionsDialog(context, ref);
+        break;
     }
   }
 
@@ -143,6 +154,11 @@ class _BookListTile extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => StreamOrDownloadDialog(
         item: item,
+        showRememberOption: true,
+        onRemember: (stream) {
+          ref.read(fileOpenActionProvider.notifier).set(
+              stream ? FileOpenAction.open : FileOpenAction.download);
+        },
         onStream: () {
           Navigator.of(dialogContext).pop();
           AppNav.goToPdfViewer(context, item.title);

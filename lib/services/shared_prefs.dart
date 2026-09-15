@@ -157,12 +157,40 @@ class SharedPreferencesService {
     return _sharedPreferences?.getInt(_pdfLastPageKey(title));
   }
 
+  // --- File open action preference: 'ask' | 'open' | 'download' ---
+  // Single preference shared by audio and books for non-downloaded files.
+  static String getFileOpenAction() {
+    final current = _sharedPreferences?.getString('file_open_action');
+    if (current != null) return current;
+    // Migrate pre-unified prefs: prefer the audio choice, then the book one.
+    final legacyAudio = _sharedPreferences?.getString('audio_open_action');
+    if (legacyAudio != null) return legacyAudio;
+    final legacyBook = _sharedPreferences?.getString('book_open_action');
+    if (legacyBook != null) return legacyBook;
+    return 'ask';
+  }
+
+  static Future<void> setFileOpenAction(String action) async {
+    await _sharedPreferences?.setString('file_open_action', action);
+  }
+
   // --- Audio open action preference: 'ask' | 'stream' | 'download' ---
+  // Deprecated: kept only as a migration fallback for [getFileOpenAction].
   static String getAudioOpenAction() {
     return _sharedPreferences?.getString('audio_open_action') ?? 'ask';
   }
 
   static Future<void> setAudioOpenAction(String action) async {
     await _sharedPreferences?.setString('audio_open_action', action);
+  }
+
+  // --- Book open action preference: 'ask' | 'open' | 'download' ---
+  // Deprecated: kept only as a migration fallback for [getFileOpenAction].
+  static String getBookOpenAction() {
+    return _sharedPreferences?.getString('book_open_action') ?? 'ask';
+  }
+
+  static Future<void> setBookOpenAction(String action) async {
+    await _sharedPreferences?.setString('book_open_action', action);
   }
 }

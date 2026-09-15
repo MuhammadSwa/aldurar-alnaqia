@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
-import 'package:aldurar_alnaqia/screens/settings_screen/audio_action_setting_widget.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/file_action_setting_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/theme_mode_setting_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
@@ -27,7 +27,7 @@ class MyDrawer extends ConsumerWidget {
             children: [
               const ThemeModeSettingWidget(),
               const YousriaBeginningDayDropDown(),
-              const AudioActionSettingWidget(),
+              const FileActionSettingWidget(),
               const FontSizeSettingsWidget(),
               _buildDrawerItem(
                   context: context,

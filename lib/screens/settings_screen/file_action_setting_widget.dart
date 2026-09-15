@@ -2,19 +2,19 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Drawer setting that controls what happens when the user taps an audio
-/// button for a file that is not downloaded yet.
+/// Drawer setting that controls what happens when the user opens a file
+/// (audio or book) that is not downloaded yet.
 ///
-/// Shows only the title; the current choice is indicated with a tick inside
-/// the popup menu.
-class AudioActionSettingWidget extends ConsumerWidget {
-  const AudioActionSettingWidget({super.key});
+/// Single preference shared by both flows; the "تذكر الاختيار" checkbox in
+/// [StreamOrDownloadDialog] writes to the same provider.
+class FileActionSettingWidget extends ConsumerWidget {
+  const FileActionSettingWidget({super.key});
 
-  String _label(AudioOpenAction action) {
+  String _label(FileOpenAction action) {
     return switch (action) {
-      AudioOpenAction.ask => 'عرض الخيارات كل مرة',
-      AudioOpenAction.stream => 'فتح مباشر دائمًا',
-      AudioOpenAction.download => 'تحميل دائمًا',
+      FileOpenAction.ask => 'عرض الخيارات كل مرة',
+      FileOpenAction.open => 'فتح مباشر دائمًا',
+      FileOpenAction.download => 'تحميل دائمًا',
     };
   }
 
@@ -22,7 +22,7 @@ class AudioActionSettingWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final current = ref.watch(audioOpenActionProvider);
+    final current = ref.watch(fileOpenActionProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -36,15 +36,15 @@ class AudioActionSettingWidget extends ConsumerWidget {
       ),
       child: Directionality(
         textDirection: TextDirection.rtl,
-        child: PopupMenuButton<AudioOpenAction>(
+        child: PopupMenuButton<FileOpenAction>(
           initialValue: current,
           position: PopupMenuPosition.under,
           onSelected: (value) {
-            ref.read(audioOpenActionProvider.notifier).set(value);
+            ref.read(fileOpenActionProvider.notifier).set(value);
           },
           itemBuilder: (context) => [
-            for (final action in AudioOpenAction.values)
-              CheckedPopupMenuItem<AudioOpenAction>(
+            for (final action in FileOpenAction.values)
+              CheckedPopupMenuItem<FileOpenAction>(
                 value: action,
                 checked: action == current,
                 child: Align(
@@ -63,7 +63,7 @@ class AudioActionSettingWidget extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'عند الضغط على زر الصوت',
+                    'اختيارات التحميل',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurface,
                       fontWeight: FontWeight.w500,

@@ -108,47 +108,48 @@ class HijriOffsetNotifier extends Notifier<int> {
 final hijriOffsetProvider =
     NotifierProvider<HijriOffsetNotifier, int>(HijriOffsetNotifier.new);
 
-/// What should happen when the user taps an audio button for a file that
+/// What should happen when the user opens a file (audio or book) that
 /// is not downloaded yet.
-enum AudioOpenAction {
-  /// Show the stream/download dialog every time.
+enum FileOpenAction {
+  /// Show the open/download dialog every time.
   ask,
 
-  /// Always stream directly without asking.
-  stream,
+  /// Always open directly (stream audio / open book) without asking.
+  open,
 
   /// Always start the download without asking.
   download;
 
-  static AudioOpenAction fromString(String? value) {
+  static FileOpenAction fromString(String? value) {
     return switch (value) {
-      'stream' => AudioOpenAction.stream,
-      'download' => AudioOpenAction.download,
-      _ => AudioOpenAction.ask,
+      // 'stream' is the legacy audio value for the same behavior.
+      'open' || 'stream' => FileOpenAction.open,
+      'download' => FileOpenAction.download,
+      _ => FileOpenAction.ask,
     };
   }
 
   String toStorageString() {
     return switch (this) {
-      AudioOpenAction.ask => 'ask',
-      AudioOpenAction.stream => 'stream',
-      AudioOpenAction.download => 'download',
+      FileOpenAction.ask => 'ask',
+      FileOpenAction.open => 'open',
+      FileOpenAction.download => 'download',
     };
   }
 }
 
-class AudioOpenActionNotifier extends Notifier<AudioOpenAction> {
+class FileOpenActionNotifier extends Notifier<FileOpenAction> {
   @override
-  AudioOpenAction build() =>
-      AudioOpenAction.fromString(SharedPreferencesService.getAudioOpenAction());
+  FileOpenAction build() =>
+      FileOpenAction.fromString(SharedPreferencesService.getFileOpenAction());
 
-  Future<void> set(AudioOpenAction action) async {
-    await SharedPreferencesService.setAudioOpenAction(
+  Future<void> set(FileOpenAction action) async {
+    await SharedPreferencesService.setFileOpenAction(
         action.toStorageString());
     state = action;
   }
 }
 
-final audioOpenActionProvider =
-    NotifierProvider<AudioOpenActionNotifier, AudioOpenAction>(
-        AudioOpenActionNotifier.new);
+final fileOpenActionProvider =
+    NotifierProvider<FileOpenActionNotifier, FileOpenAction>(
+        FileOpenActionNotifier.new);

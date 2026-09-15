@@ -1,10 +1,8 @@
 // This dialog is specific to this screen, so it's fine to keep it here.
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class StreamOrDownloadDialog extends ConsumerStatefulWidget {
+class StreamOrDownloadDialog extends StatefulWidget {
   const StreamOrDownloadDialog({
     super.key,
     required this.item,
@@ -12,6 +10,7 @@ class StreamOrDownloadDialog extends ConsumerStatefulWidget {
     required this.onDownload,
     required this.onManageDownloads,
     this.showRememberOption = false,
+    this.onRemember,
   });
 
   final DownloadItem item;
@@ -20,29 +19,32 @@ class StreamOrDownloadDialog extends ConsumerStatefulWidget {
   final VoidCallback onManageDownloads;
 
   /// When true, shows a "تذكر الاختيار" checkbox. If the user checks it,
-  /// the chosen action (stream/download) is persisted via
-  /// [audioOpenActionProvider] so next taps skip the dialog.
+  /// [onRemember] is called with `true` for direct open/stream and `false`
+  /// for download, so the caller can persist the choice via
+  /// `fileOpenActionProvider` and skip the dialog next time.
   final bool showRememberOption;
 
+  /// Called only when [showRememberOption] is true and the checkbox is
+  /// checked. [stream] is true for the direct-open action, false for download.
+  final ValueChanged<bool>? onRemember;
+
   @override
-  ConsumerState<StreamOrDownloadDialog> createState() =>
-      _StreamOrDownloadDialogState();
+  State<StreamOrDownloadDialog> createState() => _StreamOrDownloadDialogState();
 }
 
-class _StreamOrDownloadDialogState
-    extends ConsumerState<StreamOrDownloadDialog> {
+class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
   bool _rememberChoice = false;
 
   void _handleStream() {
     if (widget.showRememberOption && _rememberChoice) {
-      ref.read(audioOpenActionProvider.notifier).set(AudioOpenAction.stream);
+      widget.onRemember?.call(true);
     }
     widget.onStream();
   }
 
   void _handleDownload() {
     if (widget.showRememberOption && _rememberChoice) {
-      ref.read(audioOpenActionProvider.notifier).set(AudioOpenAction.download);
+      widget.onRemember?.call(false);
     }
     widget.onDownload();
   }

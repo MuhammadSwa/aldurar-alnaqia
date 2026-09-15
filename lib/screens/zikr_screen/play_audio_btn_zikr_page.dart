@@ -80,15 +80,15 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
 
   void _handleAudioTap(BuildContext context, WidgetRef ref) {
     if (url == null) return;
-    final action = ref.read(audioOpenActionProvider);
+    final action = ref.read(fileOpenActionProvider);
     switch (action) {
-      case AudioOpenAction.stream:
+      case FileOpenAction.open:
         _streamDirectly(ref);
         break;
-      case AudioOpenAction.download:
+      case FileOpenAction.download:
         _downloadDirectly(ref);
         break;
-      case AudioOpenAction.ask:
+      case FileOpenAction.ask:
         _showStreamDownloadDialog(context, ref);
         break;
     }
@@ -125,6 +125,11 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
         return StreamOrDownloadDialog(
           item: downloadItem,
           showRememberOption: true,
+          onRemember: (stream) {
+            ref.read(fileOpenActionProvider.notifier).set(stream
+                ? FileOpenAction.open
+                : FileOpenAction.download);
+          },
           onStream: () {
             Navigator.of(dialogContext).pop();
             ref.read(audioProvider.notifier).playTrack(
