@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/file_action_setting_widget.dart';
@@ -5,14 +6,14 @@ import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dar
 import 'package:aldurar_alnaqia/screens/settings_screen/theme_mode_setting_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-class MyDrawer extends ConsumerWidget {
+
+class MyDrawer extends StatelessWidget {
   const MyDrawer({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
@@ -96,8 +97,7 @@ class MyDrawer extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    return SettingsCard(
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
@@ -108,14 +108,6 @@ class MyDrawer extends ConsumerWidget {
           highlightColor: colorScheme.onSurface.withValues(alpha: 0.05),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              border: Border.all(
-                color: colorScheme.outline.withValues(alpha: 0.2),
-                width: 0.5,
-              ),
-            ),
             child: Row(
               children: [
                 Container(

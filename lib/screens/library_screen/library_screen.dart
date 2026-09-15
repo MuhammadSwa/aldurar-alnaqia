@@ -1,4 +1,5 @@
 import 'package:aldurar_alnaqia/my_drawer.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
@@ -63,17 +64,9 @@ class _BookListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final downloader = ref.watch(downloaderProvider);
-    // Trigger a coalesced status check outside reactive build updates
-    downloader.ensureKnown(item.id, item.type);
-
-    return ValueListenableBuilder<int>(
-      valueListenable: downloader.statusRevision,
-      builder: (context, _, __) {
-        final isDownloading = downloader.isDownloading(item.id);
-        final isDownloaded =
-            downloader.cachedStatus(item.id, item.type) ?? false;
-
+    return DownloadStatusBuilder(
+      item: item,
+      builder: (context, ref, downloader, isDownloading, isDownloaded) {
         return ListTile(
           title: Text(item.title,
               style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -99,27 +92,9 @@ class _BookListTile extends ConsumerWidget {
     required VoidCallback onCancel,
   }) {
     if (isDownloading && progressNotifier != null) {
-      // Use ValueListenableBuilder for efficient progress updates
-      return ValueListenableBuilder<double>(
-        valueListenable: progressNotifier,
-        builder: (context, progress, child) {
-          return SizedBox(
-            width: 32,
-            height: 32,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(value: progress, strokeWidth: 2.5),
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: onCancel,
-                  tooltip: 'إلغاء التحميل',
-                ),
-              ],
-            ),
-          );
-        },
+      return DownloadProgressIcon(
+        progressNotifier: progressNotifier,
+        onCancel: onCancel,
       );
     }
 
@@ -150,28 +125,11 @@ class _BookListTile extends ConsumerWidget {
   }
 
   void _showDownloadOptionsDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
+    showStreamOrDownloadDialog(
       context: context,
-      builder: (dialogContext) => StreamOrDownloadDialog(
-        item: item,
-        showRememberOption: true,
-        onRemember: (stream) {
-          ref.read(fileOpenActionProvider.notifier).set(
-              stream ? FileOpenAction.open : FileOpenAction.download);
-        },
-        onStream: () {
-          Navigator.of(dialogContext).pop();
-          AppNav.goToPdfViewer(context, item.title);
-        },
-        onDownload: () {
-          Navigator.of(dialogContext).pop();
-          ref.read(downloaderProvider).startDownload(item);
-        },
-        onManageDownloads: () {
-          Navigator.of(dialogContext).pop();
-          AppNav.goToDownloadManager(context, 1);
-        },
-      ),
+      ref: ref,
+      item: item,
+      onOpen: () => AppNav.goToPdfViewer(context, item.title),
     );
   }
 }

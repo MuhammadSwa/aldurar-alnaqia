@@ -1,6 +1,8 @@
 // This dialog is specific to this screen, so it's fine to keep it here.
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class StreamOrDownloadDialog extends StatefulWidget {
   const StreamOrDownloadDialog({
@@ -8,7 +10,6 @@ class StreamOrDownloadDialog extends StatefulWidget {
     required this.item,
     required this.onStream,
     required this.onDownload,
-    required this.onManageDownloads,
     this.showRememberOption = false,
     this.onRemember,
   });
@@ -16,7 +17,6 @@ class StreamOrDownloadDialog extends StatefulWidget {
   final DownloadItem item;
   final VoidCallback onStream;
   final VoidCallback onDownload;
-  final VoidCallback onManageDownloads;
 
   /// When true, shows a "تذكر الاختيار" checkbox. If the user checks it,
   /// [onRemember] is called with `true` for direct open/stream and `false`
@@ -129,11 +129,8 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
           // Build the child manually using a Row
           child: Row(
             children: [
-              // Your Icon
               Icon(icon, size: 24),
-              const SizedBox(width: 16), // Add space between icon and text
-
-              // Use Expanded HERE inside your own Row
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,4 +150,41 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
       ),
     );
   }
+}
+
+/// Shared `showDialog` wiring for files that are not downloaded yet.
+///
+/// Handles the "تذكر الاختيار" persistence + popping + dispatching to
+/// [onOpen]/download, replacing the duplicated blocks in `LibraryScreen`
+/// and `PlayAudioBtnZikrPage`.
+Future<void> showStreamOrDownloadDialog({
+  required BuildContext context,
+  required WidgetRef ref,
+  required DownloadItem item,
+  required VoidCallback onOpen,
+  VoidCallback? onDownload,
+}) {
+  return showDialog(
+    context: context,
+    builder: (dialogContext) => StreamOrDownloadDialog(
+      item: item,
+      showRememberOption: true,
+      onRemember: (stream) {
+        ref.read(fileOpenActionProvider.notifier).set(
+            stream ? FileOpenAction.open : FileOpenAction.download);
+      },
+      onStream: () {
+        Navigator.of(dialogContext).pop();
+        onOpen();
+      },
+      onDownload: () {
+        Navigator.of(dialogContext).pop();
+        if (onDownload != null) {
+          onDownload();
+        } else {
+          ref.read(downloaderProvider).startDownload(item);
+        }
+      },
+    ),
+  );
 }

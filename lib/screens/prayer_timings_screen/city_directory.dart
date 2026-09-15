@@ -16,6 +16,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
+    show normalizeArabic;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 
 /// Precomputed normalized search forms for one city.
@@ -89,26 +91,9 @@ class CityDirectory {
   /// diacritics/tatweel removed, أإآٱ→ا, ؤ→و, ئ→ي, ة→ه, ى→ي,
   /// lowercased, whitespace collapsed.
   ///
-  /// The patterns are hoisted to static finals: [normalize] runs ~136k
-  /// times while building the search index, and recompiling a [RegExp] on
-  /// every call dominated that cost.
-  static final RegExp _diacritics =
-      RegExp(r'[\u064B-\u0652\u0670\u0640\u200C\u200D]');
-  static final RegExp _hamzaVariants = RegExp(r'[أإآٱ]');
-  static final RegExp _whitespace = RegExp(r'\s+');
-
-  static String normalize(String input) {
-    var out = input
-        .replaceAll(_diacritics, '')
-        .replaceAll(_hamzaVariants, 'ا')
-        .replaceAll('ؤ', 'و')
-        .replaceAll('ئ', 'ي')
-        .replaceAll('ة', 'ه')
-        .replaceAll('ى', 'ي')
-        .toLowerCase();
-    out = out.replaceAll(_whitespace, ' ').trim();
-    return out;
-  }
+  /// Delegates to the shared [normalizeArabic] helper so the city picker
+  /// and the global search stay consistent.
+  static String normalize(String input) => normalizeArabic(input);
 
   /// Searches Arabic and English city AND country names. Tiers (best first):
   /// city exact (100) > country exact (90) > city prefix (80) >

@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-// NOTE: same viewer API as pdfx_lite (PdfDocument / PdfControllerPinch /
-// PdfViewPinch). Switch this import to `package:pdfx_lite/pdfx_lite.dart`
-// once the project upgrades to Flutter >=3.47.
 import 'package:pdfx/pdfx.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -310,21 +308,15 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     if (_error != null) return _buildError();
     final controller = _controller;
     if (controller == null) return _buildLoading();
-    return PdfViewPinch(
+    return AppPdfView(
       controller: controller,
-      scrollDirection: Axis.vertical,
       padding: 8,
       onPageChanged: (page) =>
           unawaited(SharedPreferencesService.setPdfLastPage(_title, page)),
       onDocumentLoaded: (_) => setState(() {}),
       onDocumentError: (error) => setState(() => _error = error),
-      builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-        options: const DefaultBuilderOptions(),
-        documentLoaderBuilder: (_) => _buildLoading(),
-        pageLoaderBuilder: (_) =>
-            const Center(child: CircularProgressIndicator()),
-        errorBuilder: (_, error) => _buildError(error),
-      ),
+      documentLoaderBuilder: _buildLoading,
+      errorBuilder: (error) => _buildError(error),
     );
   }
 

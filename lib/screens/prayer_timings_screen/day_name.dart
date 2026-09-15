@@ -1,5 +1,7 @@
 // Modified ArabicDayNameWidget with consistent sizing
 import 'dart:async';
+import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
+    as islamic_date;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -61,12 +63,11 @@ class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
       return;
     }
 
-    DateTime effectiveDate = now;
     final maghribTime = tz.TZDateTime.from(todaysPrayers!.maghrib, tz.local);
-
-    if (now.isAfter(maghribTime)) {
-      effectiveDate = now.add(const Duration(days: 1));
-    }
+    final effectiveDate = islamic_date.islamicEffectiveDate(
+      now: now,
+      maghrib: maghribTime,
+    );
 
     if (mounted) {
       setState(() {

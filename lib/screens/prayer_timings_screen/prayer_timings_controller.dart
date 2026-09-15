@@ -6,6 +6,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
+    as islamic_date;
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 /// Immutable snapshot of everything the prayer UI needs.
@@ -181,10 +183,8 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     }
 
     final maghribTime = tz.TZDateTime.from(prayers.maghrib, tz.local);
-    DateTime effectiveDate = now;
-    if (now.isAfter(maghribTime)) {
-      effectiveDate = now.add(const Duration(days: 1));
-    }
+    final effectiveDate =
+        islamic_date.islamicEffectiveDate(now: now, maghrib: maghribTime);
     state = state.copyWith(islamicWeekday: effectiveDate.weekday);
   }
 
@@ -252,8 +252,7 @@ int islamicWeekdayNow() {
   final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
   if (maghrib == null) return now.weekday;
   final maghribTime = tz.TZDateTime.from(maghrib, tz.local);
-  if (now.isAfter(maghribTime)) return now.add(const Duration(days: 1)).weekday;
-  return now.weekday;
+  return islamic_date.islamicWeekday(now: now, maghrib: maghribTime);
 }
 
 class PrayerTimeings {

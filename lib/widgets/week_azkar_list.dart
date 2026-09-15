@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
+    as islamic_date;
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/azkar_morning_evening_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/ibn_ata_allah.dart';
@@ -13,10 +16,11 @@ import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
 import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
     show PrayerTimeings, islamicWeekdayNow;
 
-class DayAzkarList extends StatefulWidget {
+class DayAzkarList extends ConsumerStatefulWidget {
   const DayAzkarList({
     super.key,
     required this.dayNum,
@@ -32,10 +36,10 @@ class DayAzkarList extends StatefulWidget {
   final String detailPagePrefix;
 
   @override
-  State<DayAzkarList> createState() => _DayAzkarListState();
+  ConsumerState<DayAzkarList> createState() => _DayAzkarListState();
 }
 
-class _DayAzkarListState extends State<DayAzkarList> {
+class _DayAzkarListState extends ConsumerState<DayAzkarList> {
   late bool _bannerDismissed;
   bool _showHideConfirmation = false;
   Timer? _confirmationTimer;
@@ -69,13 +73,16 @@ class _DayAzkarListState extends State<DayAzkarList> {
   Future<void> _openSetupSheet(YousriaDayInfo current) async {
     final saved = await showYousriaSetupSheet(context, current);
     if (saved == true && mounted) {
-      // Titles + banner read prefs fresh on rebuild.
+      // Refresh the provider so the drawer dropdown stays in sync.
+      ref.invalidate(yousriaBeginningProvider);
       setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Watch the beginning so setup-sheet and drawer changes rebuild us.
+    ref.watch(yousriaBeginningProvider);
     // "Today" follows the Islamic day (which starts at Maghrib), matching
     // the day the home screen and todaysZikr route selected — otherwise the
     // Yousria wird would disappear between Maghrib and midnight.
@@ -166,10 +173,7 @@ class WeekCollectionAzkar {
   static DateTime islamicEffectiveDate() {
     final now = DateTime.now();
     final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
-    if (maghrib != null && now.isAfter(maghrib)) {
-      return now.add(const Duration(days: 1));
-    }
-    return now;
+    return islamic_date.islamicEffectiveDate(now: now, maghrib: maghrib);
   }
 
   static DateTime _midnight(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -345,10 +349,11 @@ Future<bool?> showYousriaSetupSheet(
     context: context,
     showDragHandle: true,
     builder: (sheetContext) {
+      final effectiveDate = WeekCollectionAzkar.islamicEffectiveDate();
       final effectiveMidnight = DateTime(
-        WeekCollectionAzkar.islamicEffectiveDate().year,
-        WeekCollectionAzkar.islamicEffectiveDate().month,
-        WeekCollectionAzkar.islamicEffectiveDate().day,
+        effectiveDate.year,
+        effectiveDate.month,
+        effectiveDate.day,
       );
       return Directionality(
         textDirection: TextDirection.rtl,
@@ -397,9 +402,15 @@ Future<bool?> showYousriaSetupSheet(
                             : const Icon(Icons.circle_outlined),
                         selected: selected,
                         onTap: () {
-                          SharedPreferencesService.setYousriaBeginning(
-                            impliedStart,
-                          );
+                          try {
+                            ProviderScope.containerOf(context)
+                                .read(yousriaBeginningProvider.notifier)
+                                .setBeginning(impliedStart);
+                          } catch (_) {
+                            SharedPreferencesService.setYousriaBeginning(
+                              impliedStart,
+                            );
+                          }
                           Navigator.of(sheetContext).pop(true);
                         },
                       );

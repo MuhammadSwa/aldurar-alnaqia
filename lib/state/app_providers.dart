@@ -108,6 +108,34 @@ class HijriOffsetNotifier extends Notifier<int> {
 final hijriOffsetProvider =
     NotifierProvider<HijriOffsetNotifier, int>(HijriOffsetNotifier.new);
 
+class YousriaBeginningNotifier extends Notifier<DateTime> {
+  @override
+  DateTime build() => SharedPreferencesService.getYousriaBeginning();
+
+  static DateTime midnight(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// 0 = today, 1 = yesterday, ... Clamped to the 6-day cycle.
+  int relativeDay({DateTime? now}) {
+    final todayMidnight = midnight(now ?? DateTime.now());
+    final storedMidnight = midnight(state);
+    return todayMidnight.difference(storedMidnight).inDays.clamp(0, 5);
+  }
+
+  Future<void> setBeginning(DateTime date) async {
+    SharedPreferencesService.setYousriaBeginning(date);
+    state = midnight(date);
+  }
+
+  Future<void> setRelativeDay(int relativeDayNum) async {
+    final now = DateTime.now();
+    await setBeginning(now.subtract(Duration(days: relativeDayNum)));
+  }
+}
+
+final yousriaBeginningProvider =
+    NotifierProvider<YousriaBeginningNotifier, DateTime>(
+        YousriaBeginningNotifier.new);
+
 /// What should happen when the user opens a file (audio or book) that
 /// is not downloaded yet.
 enum FileOpenAction {

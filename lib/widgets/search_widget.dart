@@ -1,10 +1,10 @@
 import 'dart:ui';
 
+import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
+    show normalizeArabic;
 import 'package:aldurar_alnaqia/widgets/azkarListView/bookmark_button.dart';
 import 'package:flutter/material.dart';
 
-// TODO: الهمزة والألف نفس الشي
-// NOTE: do you ne to virturalize the list for performance? ListView.builder?
 // SearchWidget remains the same
 class SearchWidget extends StatefulWidget {
   final Function(String)? onSearch;
@@ -100,15 +100,8 @@ class _SearchModalState extends State<SearchModal> {
   }
 
   /// Normalizes Arabic text for better search matching.
-  /// Treats different forms of Alif as one, and Teh Marbuta as Haa.
-  String _normalizeArabic(String text) {
-    return text
-        .replaceAll('أ', 'ا')
-        .replaceAll('إ', 'ا')
-        .replaceAll('آ', 'ا')
-        .replaceAll('ة', 'ه')
-        .replaceAll('ى', 'ي');
-  }
+  /// Shared with the city picker via [normalizeArabic].
+  String _normalizeArabic(String text) => normalizeArabic(text);
 
   void _onTextChanged() {
     if (!mounted) return;

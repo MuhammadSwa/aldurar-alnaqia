@@ -1,4 +1,5 @@
 // lib/screens/download_manager_screen/download_manager_screen.dart
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
@@ -15,43 +16,40 @@ class DownloadManagerTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final downloader = ref.watch(downloaderProvider);
-    // Trigger a coalesced status check without side effects in build
-    downloader.ensureKnown(item.id, item.type);
-
-    return ListTile(
-      title: Text(
-        item.title,
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
-      trailing: SizedBox(
-        width: 100,
-        // Rebuild on any file-status change
-        child: ValueListenableBuilder<int>(
-          valueListenable: downloader.statusRevision,
-          builder: (context, _, __) {
-            final isDownloading = downloader.isDownloading(item.id);
-            final isDownloaded =
-                downloader.cachedStatus(item.id, item.type) ?? false;
-
-            if (isDownloading) {
-              return _DownloadProgressIndicator(
-                id: item.id,
-                onCancel: () => downloader.cancelDownload(item.id, item.type),
-              );
-            } else if (isDownloaded) {
-              return _DeleteButton(
-                onDelete: () => downloader.deleteFile(item.id, item.type),
-                title: item.title,
-              );
-            } else {
-              return _DownloadButton(
-                onDownload: () => downloader.startDownload(item),
-              );
-            }
-          },
-        ),
-      ),
+    return DownloadStatusBuilder(
+      item: item,
+      builder: (context, ref, downloader, isDownloading, isDownloaded) {
+        return ListTile(
+          title: Text(
+            item.title,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          trailing: SizedBox(
+            width: 100,
+            child: Builder(
+              builder: (context) {
+                if (isDownloading) {
+                  return _DownloadProgressIndicator(
+                    id: item.id,
+                    onCancel: () =>
+                        downloader.cancelDownload(item.id, item.type),
+                  );
+                } else if (isDownloaded) {
+                  return _DeleteButton(
+                    onDelete: () =>
+                        downloader.deleteFile(item.id, item.type),
+                    title: item.title,
+                  );
+                } else {
+                  return _DownloadButton(
+                    onDownload: () => downloader.startDownload(item),
+                  );
+                }
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -56,6 +56,34 @@ class LocationButtonWidget extends StatefulWidget {
 }
 
 class _LocationButtonWidgetState extends State<LocationButtonWidget> {
+  void _showSettingsDialog({
+    required String title,
+    required String message,
+    required VoidCallback onOpenSettings,
+  }) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('إغلاق'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: const Text('فتح الإعدادات'),
+            onPressed: () {
+              onOpenSettings();
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void getLocation() async {
     setState(() {
       _isLoading = true;
@@ -70,55 +98,21 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
     } catch (error) {
       // Case 1: The device's location service is turned off.
       if (error is LocationServiceDisabledException) {
-  if (!mounted) return;
         // Show a dialog that asks the user to enable location and provides a button to open settings.
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('خدمة الموقع معطلة'),
-            content:
-                const Text('برجاء تفعيل خدمة تحديد الموقع من إعدادات الجهاز.'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('إغلاق'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              TextButton(
-                child: const Text('فتح الإعدادات'),
-                onPressed: () {
-                  Geolocator
-                      .openLocationSettings(); // Opens device location settings
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          ),
+        _showSettingsDialog(
+          title: 'خدمة الموقع معطلة',
+          message: 'برجاء تفعيل خدمة تحديد الموقع من إعدادات الجهاز.',
+          onOpenSettings: Geolocator.openLocationSettings,
         );
       }
       // Case 2: The app's permission to access location is denied.
       else if (error is PermissionDeniedException) {
-  if (!mounted) return;
         // Show a dialog that asks the user to grant permission from the app settings.
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('الإذن مرفوض'),
-            content: const Text(
-                'تم رفض إذن الوصول إلى الموقع. يرجى تفعيله من إعدادات التطبيق.'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('إغلاق'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              TextButton(
-                child: const Text('فتح الإعدادات'),
-                onPressed: () {
-                  Geolocator.openAppSettings(); // Opens the app's settings
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          ),
+        _showSettingsDialog(
+          title: 'الإذن مرفوض',
+          message:
+              'تم رفض إذن الوصول إلى الموقع. يرجى تفعيله من إعدادات التطبيق.',
+          onOpenSettings: Geolocator.openAppSettings,
         );
       }
       // Case 3: Any other unexpected error.

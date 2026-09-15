@@ -1,9 +1,7 @@
+import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// NOTE: same viewer API as pdfx_lite (PdfDocument / PdfControllerPinch /
-// PdfViewPinch). Switch this import to `package:pdfx_lite/pdfx_lite.dart`
-// once the project upgrades to Flutter >=3.47.
 import 'package:pdfx/pdfx.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
@@ -72,19 +70,7 @@ class _HeliaNasabContentState extends State<HeliaNasabContent> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: PdfViewPinch(
-        controller: _controller,
-        scrollDirection: Axis.vertical,
-        builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-          options: const DefaultBuilderOptions(),
-          documentLoaderBuilder: (_) =>
-              const Center(child: CircularProgressIndicator()),
-          pageLoaderBuilder: (_) =>
-              const Center(child: CircularProgressIndicator()),
-          errorBuilder: (_, error) =>
-              Center(child: Text('تعذّر فتح الملف: $error')),
-        ),
-      ),
+      child: AppPdfView(controller: _controller),
     );
   }
 }
@@ -171,19 +157,7 @@ class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
           child: IndexedStack(
             index: _showPdf ? 0 : 1,
             children: [
-              PdfViewPinch(
-                controller: _controller,
-                scrollDirection: Axis.vertical,
-                builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-                  options: const DefaultBuilderOptions(),
-                  documentLoaderBuilder: (_) =>
-                      const Center(child: CircularProgressIndicator()),
-                  pageLoaderBuilder: (_) =>
-                      const Center(child: CircularProgressIndicator()),
-                  errorBuilder: (_, error) =>
-                      Center(child: Text('تعذّر فتح الملف: $error')),
-                ),
-              ),
+              AppPdfView(controller: _controller),
               ZikrContentWidget(title: title),
             ],
           ),
