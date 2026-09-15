@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
 import 'package:flutter/material.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class GeorgianDateWidget extends StatefulWidget {
   const GeorgianDateWidget({super.key});
@@ -11,7 +12,7 @@ class GeorgianDateWidget extends StatefulWidget {
 }
 
 class _GeorgianDateWidgetState extends State<GeorgianDateWidget> {
-  late DateTime _currentDate;
+  late tz.TZDateTime _currentDate;
   Timer? _timer;
 
   static const Map<int, String> _arabicMonths = {
@@ -32,7 +33,7 @@ class _GeorgianDateWidgetState extends State<GeorgianDateWidget> {
   @override
   void initState() {
     super.initState();
-    _currentDate = DateTime.now();
+    _currentDate = tz.TZDateTime.now(tz.local);
     _scheduleNextUpdate();
   }
 
@@ -43,16 +44,17 @@ class _GeorgianDateWidgetState extends State<GeorgianDateWidget> {
   }
 
   void _scheduleNextUpdate() {
-    final now = DateTime.now();
+    final now = tz.TZDateTime.now(tz.local);
     // Calculate the exact moment of the next midnight.
-    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final nextMidnight =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day + 1);
     final durationUntilMidnight = nextMidnight.difference(now);
 
     // Set a timer that will fire only once, precisely at midnight.
     _timer = Timer(durationUntilMidnight, () {
       if (mounted) {
         setState(() {
-          _currentDate = DateTime.now();
+          _currentDate = tz.TZDateTime.now(tz.local);
         });
         // After updating, schedule the *next* update for the following midnight.
         _scheduleNextUpdate();

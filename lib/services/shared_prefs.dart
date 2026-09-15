@@ -145,6 +145,45 @@ class SharedPreferencesService {
     return _sharedPreferences?.getString(PrefsKeys.timezone) ?? '';
   }
 
+  /// Saves interdependent prayer settings together, then refreshes the native
+  /// notification once so it cannot observe a half-saved location or zone.
+  static Future<void> savePrayerSettings({
+    required double latitude,
+    required double longitude,
+    required String method,
+    required String asrCalculation,
+    required String timezone,
+    String? highLatitudeRule,
+    City? city,
+  }) async {
+    final prefs = _sharedPreferences;
+    if (prefs == null) return;
+
+    await prefs.setDouble(PrefsKeys.latitude, latitude);
+    await prefs.setDouble(PrefsKeys.longitude, longitude);
+    await prefs.setString(PrefsKeys.method, method);
+    await prefs.setString(PrefsKeys.asrCalculation, asrCalculation);
+    await prefs.setString(PrefsKeys.timezone, timezone);
+    if (highLatitudeRule != null) {
+      await prefs.setString(PrefsKeys.highLatitudeRule, highLatitudeRule);
+    }
+    if (city == null) {
+      await prefs.remove(PrefsKeys.cityInfo);
+      await prefs.remove(PrefsKeys.cityName);
+    } else {
+      await prefs.setString(
+        PrefsKeys.cityInfo,
+        jsonEncode({
+          'en': city.nameEn,
+          'ar': city.nameAr,
+          'country': city.countryCode,
+        }),
+      );
+      await prefs.setString(PrefsKeys.cityName, city.displayName);
+    }
+    await refreshPrayerNotification();
+  }
+
   static List<String> getBookmarks() {
     return _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
   }
@@ -182,8 +221,7 @@ class SharedPreferencesService {
   /// First launch has no stored beginning — default to today's midnight and
   /// persist it. Single `now` so the returned and stored values agree.
   static DateTime getYousriaBeginning() {
-    final stored =
-        _sharedPreferences?.getString(PrefsKeys.yousriaStartingDay);
+    final stored = _sharedPreferences?.getString(PrefsKeys.yousriaStartingDay);
     if (stored != null) {
       try {
         return DateTime.parse(stored);

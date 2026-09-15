@@ -16,6 +16,7 @@ CityDirectory buildTestDirectory() {
         'country': 'EG',
         'lat': 30.063,
         'lng': 31.25,
+        'tz': 'Africa/Cairo',
       },
       {
         'en': 'Alexandria',
@@ -23,6 +24,7 @@ CityDirectory buildTestDirectory() {
         'country': 'EG',
         'lat': 31.202,
         'lng': 29.916,
+        'tz': 'Africa/Cairo',
       },
       {
         'en': 'Madinat an Nasr',
@@ -30,12 +32,14 @@ CityDirectory buildTestDirectory() {
         'country': 'EG',
         'lat': 30.067,
         'lng': 31.3,
+        'tz': 'Africa/Cairo',
       },
       {
         'en': 'Springfield',
         'country': 'US',
         'lat': 39.781,
         'lng': -89.65,
+        'tz': 'America/Chicago',
       },
     ],
   });

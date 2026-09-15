@@ -15,8 +15,8 @@ class PrayerTimeings {
   const PrayerTimeings._();
 
   /// Factories per stored method key. Replaces the 12-branch switch.
-  static final Map<String, CalculationParameters Function()>
-      _methodFactories = {
+  static final Map<String, CalculationParameters Function()> _methodFactories =
+      {
     'egyptian': CalculationMethodParameters.egyptian,
     'karachi': CalculationMethodParameters.karachi,
     'muslim_world_league': CalculationMethodParameters.muslimWorldLeague,
@@ -71,8 +71,7 @@ class PrayerTimeings {
 
     if (method.isEmpty ||
         asrCalc.isEmpty ||
-        coords.latitude == 0.0 ||
-        coords.longitude == 0.0) {
+        (coords.latitude == 0.0 && coords.longitude == 0.0)) {
       return null;
     }
 

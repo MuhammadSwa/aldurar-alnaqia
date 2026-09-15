@@ -209,7 +209,7 @@ class PrayerNotificationService : Service() {
   private suspend fun runUpdate(isAlarmTrigger: Boolean) {
     val cfg = readConfig(this)
 
-    if (cfg == null || cfg.lat == 0.0 || cfg.lng == 0.0) {
+    if (cfg == null || (cfg.lat == 0.0 && cfg.lng == 0.0)) {
       postFallback("الرجاء ضبط الموقع لحساب المواقيت")
       scheduleNextWakeup(System.currentTimeMillis() + NO_LOCATION_RETRY_MS)
       return
@@ -427,9 +427,9 @@ class PrayerNotificationService : Service() {
 
   private fun currentZone(): TimeZone =
       try {
-        readConfig(this)?.zone() ?: TimeZone.currentSystemDefault()
+        readConfig(this)?.zone() ?: TimeZone.UTC
       } catch (_: Exception) {
-        TimeZone.currentSystemDefault()
+        TimeZone.UTC
       }
 
   private val PRAYER_SLOTS = listOf(
@@ -485,7 +485,7 @@ class PrayerNotificationService : Service() {
     val hijriOffset: Int
   ) {
     fun zone(): TimeZone =
-        try { TimeZone.of(timezone) } catch (_: Exception) { TimeZone.currentSystemDefault() }
+        try { TimeZone.of(timezone) } catch (_: Exception) { TimeZone.UTC }
   }
 
   private fun readConfig(context: Context): Config? {

@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
+// GeoNames supplies IANA timezone IDs for cities worldwide. The full database
+// is required because the smaller default database omits some valid zones.
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
@@ -31,7 +34,7 @@ class PrayerState {
     this.nextPrayerInfo = (null, ''),
     this.timeLeft = Duration.zero,
     this.isInitialized = false,
-  }) : islamicWeekday = islamicWeekday ?? DateTime.now().weekday;
+  }) : islamicWeekday = islamicWeekday ?? tz.TZDateTime.now(tz.local).weekday;
 
   PrayerState copyWith({
     PrayerTimes? prayerTimings,
@@ -72,27 +75,8 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
   Future<void> _initialize() async {
     tz.initializeTimeZones();
 
-    try {
-      final localTimezone = await FlutterTimezone.getLocalTimezone();
-      final String localTimezoneName = localTimezone.identifier;
-      if (!ref.mounted) return;
-      tz.setLocalLocation(tz.getLocation(localTimezoneName));
-      SharedPreferencesService.setTimezone(localTimezoneName);
-      logInfo("Device timezone set to: ${tz.local.name}");
-    } catch (e) {
-      logWarn("Failed to get or set local timezone: $e");
-      // Fallback to stored timezone
-      final String storedTimezone = SharedPreferencesService.getTimezone();
-      if (storedTimezone.isNotEmpty) {
-        try {
-          tz.setLocalLocation(tz.getLocation(storedTimezone));
-          logInfo("Using stored timezone: ${tz.local.name}");
-        } catch (tzError) {
-          logWarn(
-              "Failed to load stored timezone '$storedTimezone': $tzError.");
-        }
-      }
-    }
+    await _configureLocationTimezone();
+    if (!ref.mounted) return;
 
     _recalculateAllPrayerData();
     state = state.copyWith(isInitialized: true);
@@ -130,7 +114,10 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     final tz.TZDateTime localNextPrayerTime =
         tz.TZDateTime.from(nextPrayerDateTime, tz.local);
     state = state.copyWith(
-      nextPrayerInfo: (localNextPrayerTime, arabicPrayerName(nextPrayerNameString)),
+      nextPrayerInfo: (
+        localNextPrayerTime,
+        arabicPrayerName(nextPrayerNameString)
+      ),
     );
   }
 
@@ -157,24 +144,87 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     });
   }
 
-  void setPrayerSettings({
+  Future<void> setPrayerSettings({
     required double lat,
     required double long,
     required String method,
     required String asrCalc,
     String? highLatitudeRule,
     City? city,
-  }) {
-    SharedPreferencesService.setLatitude(lat);
-    SharedPreferencesService.setLongitude(long);
-    SharedPreferencesService.setMethod(method);
-    SharedPreferencesService.setAsrCalculation(asrCalc);
-    SharedPreferencesService.setCity(city);
-    if (highLatitudeRule != null) {
-      SharedPreferencesService.setHighLatitudeRule(highLatitudeRule);
+  }) async {
+    final timezone = await _resolveTimezone(lat, long, city);
+    if (timezone == null) {
+      logWarn('Could not resolve timezone for $lat, $long.');
+      return;
     }
+    if (!ref.mounted) return;
+    await SharedPreferencesService.savePrayerSettings(
+      latitude: lat,
+      longitude: long,
+      method: method,
+      asrCalculation: asrCalc,
+      timezone: timezone,
+      highLatitudeRule: highLatitudeRule,
+      city: city,
+    );
+    if (!ref.mounted) return;
+    _setTimezone(timezone);
 
     _recalculateAllPrayerData();
+  }
+
+  Future<void> _configureLocationTimezone() async {
+    final storedTimezone = SharedPreferencesService.getTimezone();
+    if (_setTimezone(storedTimezone)) return;
+
+    final latitude = SharedPreferencesService.getLatitude();
+    final longitude = SharedPreferencesService.getLongitude();
+    // (0, 0) is the legacy "no location selected" sentinel. Do not invent a
+    // timezone for a user who has not selected a location yet.
+    if (latitude == 0.0 && longitude == 0.0) return;
+    final timezone = await _resolveTimezone(
+      latitude,
+      longitude,
+      SharedPreferencesService.getCity(),
+    );
+    if (timezone == null || !ref.mounted) return;
+
+    await SharedPreferencesService.savePrayerSettings(
+      latitude: latitude,
+      longitude: longitude,
+      method: SharedPreferencesService.getMethod(),
+      asrCalculation: SharedPreferencesService.getAsrCalculation(),
+      timezone: timezone,
+      highLatitudeRule: SharedPreferencesService.getHighLatitudeRule(),
+      city: SharedPreferencesService.getCity(),
+    );
+    _setTimezone(timezone);
+  }
+
+  Future<String?> _resolveTimezone(
+    double latitude,
+    double longitude,
+    City? selectedCity,
+  ) async {
+    final directory = await ref.read(cityDirectoryProvider.future);
+    return LocationTimezone.resolve(
+      latitude: latitude,
+      longitude: longitude,
+      cities: directory.cities,
+      selectedCity: selectedCity,
+    );
+  }
+
+  bool _setTimezone(String timezone) {
+    if (timezone.isEmpty) return false;
+    try {
+      tz.setLocalLocation(tz.getLocation(timezone));
+      logInfo('Prayer timezone set to: ${tz.local.name}');
+      return true;
+    } catch (error) {
+      logWarn('Invalid prayer timezone "$timezone": $error');
+      return false;
+    }
   }
 
   void _updateIslamicWeekday() {
@@ -224,6 +274,5 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
   }
 }
 
-final prayerProvider =
-    NotifierProvider<PrayerTimingsNotifier, PrayerState>(
-        PrayerTimingsNotifier.new);
+final prayerProvider = NotifierProvider<PrayerTimingsNotifier, PrayerState>(
+    PrayerTimingsNotifier.new);

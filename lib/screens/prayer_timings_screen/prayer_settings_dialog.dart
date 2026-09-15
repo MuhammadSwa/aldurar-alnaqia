@@ -84,13 +84,13 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
 
   bool get _hasLocation => _latitude != null && _longitude != null;
 
-  void _saveSettings(BuildContext context) {
+  Future<void> _saveSettings(BuildContext context) async {
     if (!_hasLocation) {
       if (mounted) setState(() => _showLocationError = true);
       return;
     }
 
-    ref.read(prayerProvider.notifier).setPrayerSettings(
+    await ref.read(prayerProvider.notifier).setPrayerSettings(
           lat: _latitude!,
           long: _longitude!,
           method: _selectedMethod,
@@ -98,6 +98,7 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
           city: _isGpsLocation ? null : _selectedCity,
         );
 
+    if (!context.mounted) return;
     Navigator.of(context).pop();
     showSnackBar(context, 'تم حفظ إعدادات مواقيت الصلاة بنجاح');
   }

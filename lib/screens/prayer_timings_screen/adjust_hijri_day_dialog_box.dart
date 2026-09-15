@@ -3,15 +3,15 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hijri/hijri_calendar.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart';
 
 /// Returns today's Hijri date adjusted by [offset] days, taking the
 /// Maghrib-based Islamic day boundary into account when prayer times exist.
 HijriCalendar? hijriDayWithOffset(int offset) {
   HijriCalendar.setLocal('ar');
-  final adjustedDate = DateTime.now().add(Duration(days: offset));
-
-  final now = DateTime.now();
+  final now = tz.TZDateTime.now(tz.local);
+  final adjustedDate = now.add(Duration(days: offset));
   final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
   if (maghrib == null) {
     // when timings aren't set, return hijriday without considering maghrib,

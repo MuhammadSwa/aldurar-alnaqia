@@ -3,7 +3,6 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  flutter_timezone
   geolocator_windows
   pdfx
   permission_handler_windows

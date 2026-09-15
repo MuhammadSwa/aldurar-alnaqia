@@ -15,8 +15,8 @@ class PrayerTimingsCard extends ConsumerWidget {
       child: Consumer(builder: (context, ref, _) {
         // 1. Read the prayer times. This only changes once a day or on
         //    settings change.
-        final prayerTimings = ref.watch(
-            prayerProvider.select((state) => state.prayerTimings));
+        final prayerTimings =
+            ref.watch(prayerProvider.select((state) => state.prayerTimings));
         if (prayerTimings == null) {
           return _buildPlaceholderTable(context);
         }
@@ -54,7 +54,10 @@ class PrayerTimingsCard extends ConsumerWidget {
         return Container(
           decoration: BoxDecoration(
             border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+                color: Theme.of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.2)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Table(
@@ -80,10 +83,10 @@ class PrayerTimingsCard extends ConsumerWidget {
   TableRow _buildTableRow(
       BuildContext context, _PrayerTime prayer, bool isNextPrayer) {
     final Color? rowColor = isNextPrayer
-  ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+        ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
         : null;
     final border = BorderSide(
-  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
         width: 0.5);
 
     return TableRow(
@@ -138,7 +141,8 @@ class PrayerTimingsCard extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+            color:
+                Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Table(
@@ -165,7 +169,7 @@ class PrayerTimingsCard extends ConsumerWidget {
     final sunrise = todaysPrayerTimes['sunrise'];
     if (maghrib == null || sunrise == null) return null;
 
-    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final tomorrow = tz.TZDateTime.now(tz.local).add(const Duration(days: 1));
     final tomorrowsPrayers =
         PrayerTimeings.getPrayersTimings(forDate: tomorrow);
     final fajrTomorrow = tomorrowsPrayers?.fajr;
