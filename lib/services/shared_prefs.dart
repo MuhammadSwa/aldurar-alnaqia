@@ -120,6 +120,14 @@ class SharedPreferencesService {
     return DateTime.parse(startingDay);
   }
 
+  static bool getYousriaBannerDismissed() {
+  return _sharedPreferences?.getBool('yousriaBannerDismissed') ?? false;
+  }
+
+  static Future<void> setYousriaBannerDismissed(bool dismissed) async {
+    await _sharedPreferences?.setBool('yousriaBannerDismissed', dismissed);
+  }
+
   static void setFontSize(double size) {
   _sharedPreferences?.setDouble('font_size', size);
   }
