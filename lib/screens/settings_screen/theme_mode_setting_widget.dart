@@ -1,27 +1,29 @@
-import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 
 /// Drawer setting for appearance (المظهر) using the same title-only popup
 /// pattern as the other drawer settings.
 ///
 /// Shows only the title; the current choice is indicated with a tick inside
-/// the popup menu.
-class ThemeModeSettingWidget extends StatelessWidget {
+/// the popup menu. Reads/writes [themeModeProvider], the single source of
+/// truth for the app's [ThemeMode].
+class ThemeModeSettingWidget extends ConsumerWidget {
   const ThemeModeSettingWidget({super.key});
 
-  String _label(AdaptiveThemeMode mode) {
+  String _label(ThemeMode mode) {
     return switch (mode) {
-      AdaptiveThemeMode.light => 'فاتح',
-      AdaptiveThemeMode.dark => 'داكن',
-      AdaptiveThemeMode.system => 'تلقائي (النظام)',
+      ThemeMode.light => 'فاتح',
+      ThemeMode.dark => 'داكن',
+      ThemeMode.system => 'تلقائي (النظام)',
     };
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final current = AdaptiveTheme.of(context).mode;
+    final current = ref.watch(themeModeProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -35,15 +37,15 @@ class ThemeModeSettingWidget extends StatelessWidget {
       ),
       child: Directionality(
         textDirection: TextDirection.rtl,
-        child: PopupMenuButton<AdaptiveThemeMode>(
+        child: PopupMenuButton<ThemeMode>(
           initialValue: current,
           position: PopupMenuPosition.under,
           onSelected: (value) {
-            AdaptiveTheme.of(context).setThemeMode(value);
+            ref.read(themeModeProvider.notifier).set(value);
           },
           itemBuilder: (context) => [
-            for (final mode in AdaptiveThemeMode.values)
-              CheckedPopupMenuItem<AdaptiveThemeMode>(
+            for (final mode in ThemeMode.values)
+              CheckedPopupMenuItem<ThemeMode>(
                 value: mode,
                 checked: mode == current,
                 child: Align(

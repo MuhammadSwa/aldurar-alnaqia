@@ -153,3 +153,63 @@ class FileOpenActionNotifier extends Notifier<FileOpenAction> {
 final fileOpenActionProvider =
     NotifierProvider<FileOpenActionNotifier, FileOpenAction>(
         FileOpenActionNotifier.new);
+
+// ---------------------------------------------------------------------------
+// Theme mode (persisted via SharedPreferences; replaces `adaptive_theme`)
+// ---------------------------------------------------------------------------
+
+/// The app's appearance choice. This is the single source of truth consumed
+/// by `MaterialApp.themeMode` in main.dart.
+///
+/// Stored as `'light' | 'dark' | 'system'` (see
+/// `SharedPreferencesService.getThemeMode`), defaulting to [ThemeMode.system]
+/// so fresh installs follow the OS.
+class ThemeModeNotifier extends Notifier<ThemeMode> {
+  @override
+  ThemeMode build() =>
+      ThemeModeStorage.fromString(SharedPreferencesService.getThemeMode());
+
+  /// Persist and apply [mode] (used by the appearance dropdown).
+  Future<void> set(ThemeMode mode) async {
+    await SharedPreferencesService.setThemeMode(mode.toStorageString());
+    state = mode;
+  }
+
+  /// Advance light -> dark -> system -> light (used by the toggle button,
+  /// which shows a distinct icon per mode).
+  Future<void> cycle() => set(state.next);
+}
+
+final themeModeProvider =
+    NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
+
+/// String mapping for [ThemeMode] persistence. Kept here (next to the
+/// provider) so `SharedPreferencesService` stays independent of Flutter
+/// material. Mirrors the `FileOpenAction.fromString/toStorageString`
+/// convention used above.
+extension ThemeModeStorage on ThemeMode {
+  static ThemeMode fromString(String? value) {
+    return switch (value) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+  }
+
+  String toStorageString() {
+    return switch (this) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
+  }
+
+  /// Next mode in the toggle-button cycle: light -> dark -> system.
+  ThemeMode get next {
+    return switch (this) {
+      ThemeMode.light => ThemeMode.dark,
+      ThemeMode.dark => ThemeMode.system,
+      ThemeMode.system => ThemeMode.light,
+    };
+  }
+}

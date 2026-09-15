@@ -178,10 +178,52 @@ class SharedPreferencesService {
     await _sharedPreferences?.setBool('yousriaBannerDismissed', dismissed);
   }
 
+  // --- Theme mode preference: 'light' | 'dark' | 'system' ---
+  static const _themeModeKey = 'theme_mode';
+
+  /// Key used by the removed `adaptive_theme` package (v3.x stored JSON
+  /// `{"theme_mode": <index>}` with light=0, dark=1, system=2).
+  static const _legacyAdaptiveThemeKey = 'adaptive_theme_preferences';
+
+  /// Raw stored value. Kept string-based so this service does not depend
+  /// on Flutter material; providers map it to [ThemeMode].
+  static String getThemeMode() {
+    final current = _sharedPreferences?.getString(_themeModeKey);
+    if (current != null) return current;
+    final migrated = _migrateLegacyAdaptiveThemeMode();
+    if (migrated != null) {
+      _sharedPreferences?.setString(_themeModeKey, migrated);
+      _sharedPreferences?.remove(_legacyAdaptiveThemeKey);
+      return migrated;
+    }
+    return 'system';
+  }
+
+  static Future<void> setThemeMode(String mode) async {
+    await _sharedPreferences?.setString(_themeModeKey, mode);
+  }
+
+  /// One-time migration for installs that saved their choice via
+  /// `adaptive_theme`. Returns null when there is nothing to migrate.
+  static String? _migrateLegacyAdaptiveThemeMode() {
+    try {
+      final raw = _sharedPreferences?.getString(_legacyAdaptiveThemeKey);
+      if (raw == null || raw.isEmpty) return null;
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return switch (json['theme_mode']) {
+        0 => 'light',
+        1 => 'dark',
+        2 => 'system',
+        _ => null,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
   static void setFontSize(double size) {
   _sharedPreferences?.setDouble('font_size', size);
   }
-
   static double getFontSize() {
   final size = _sharedPreferences?.getDouble('font_size');
     if (size == null) {

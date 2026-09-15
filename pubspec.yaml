@@ -36,7 +36,6 @@ dependencies:
   hijri: ^3.0.0
   # flutter_local_notifications: ^17.1.0
 
-  adaptive_theme: ^3.6.0
   just_audio: ^0.10.0
 
   flutter_riverpod: ^3.3.2

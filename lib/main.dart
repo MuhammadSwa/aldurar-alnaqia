@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:aldurar_alnaqia/common/theme/dark_theme.dart';
+import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
 import 'package:aldurar_alnaqia/router/app_router.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
@@ -55,12 +54,10 @@ Future<ProviderContainer> _bootstrap() async {
 Future<void> main() async {
   final container = await _bootstrap();
 
-  final savedThemeMode = await AdaptiveTheme.getThemeMode();
-
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: MyApp(theme: savedThemeMode),
+      child: const MyApp(),
     ),
   );
 
@@ -83,8 +80,7 @@ Future<void> _startPlatformServices() async {
 }
 
 class MyApp extends ConsumerStatefulWidget {
-  const MyApp({super.key, required this.theme});
-  final AdaptiveThemeMode? theme;
+  const MyApp({super.key});
 
   @override
   ConsumerState<MyApp> createState() => _MyAppState();
@@ -112,18 +108,16 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
-    return AdaptiveTheme(
-      light: lightTheme,
-      dark: darkTheme,
-      initial: widget.theme ?? AdaptiveThemeMode.system,
-      builder: (theme, darkTheme) => MaterialApp.router(
-        routerConfig: router,
-        scrollBehavior: AppScrollBehavior(),
-        title: 'الطريقة اليسرية',
-        debugShowCheckedModeBanner: false,
-        darkTheme: darkTheme,
-        theme: theme,
-      ),
+    final themeMode = ref.watch(themeModeProvider);
+    final fontSize = ref.watch(fontSizeProvider);
+    return MaterialApp.router(
+      routerConfig: router,
+      scrollBehavior: AppScrollBehavior(),
+      title: 'الطريقة اليسرية',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(fontSize: fontSize),
+      darkTheme: AppTheme.dark(fontSize: fontSize),
+      themeMode: themeMode,
     );
   }
 }

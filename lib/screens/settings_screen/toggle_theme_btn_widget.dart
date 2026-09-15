@@ -1,31 +1,27 @@
-import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 
-class ToggleThemeBtn extends StatelessWidget {
+/// Icon button that cycles the appearance light -> dark -> system.
+/// The icon always reflects the current [themeModeProvider] value.
+class ToggleThemeBtn extends ConsumerWidget {
   const ToggleThemeBtn({super.key});
 
-  Icon buildIcon(BuildContext context) {
-    final Icon icon;
-    switch (AdaptiveTheme.of(context).mode) {
-      case AdaptiveThemeMode.system:
-        icon = const Icon(Icons.brightness_auto_outlined);
-        break;
-      case AdaptiveThemeMode.light:
-        icon = const Icon(Icons.light_mode_outlined);
-        break;
-      case AdaptiveThemeMode.dark:
-        icon = const Icon(Icons.dark_mode_outlined);
-        break;
-    }
-    return icon;
+  Icon buildIcon(ThemeMode mode) {
+    return switch (mode) {
+      ThemeMode.system => const Icon(Icons.brightness_auto_outlined),
+      ThemeMode.light => const Icon(Icons.light_mode_outlined),
+      ThemeMode.dark => const Icon(Icons.dark_mode_outlined),
+    };
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(themeModeProvider);
     return IconButton(
-      icon: buildIcon(context),
+      icon: buildIcon(mode),
       onPressed: () {
-        AdaptiveTheme.of(context).toggleThemeMode();
+        ref.read(themeModeProvider.notifier).cycle();
       },
     );
   }
