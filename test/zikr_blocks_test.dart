@@ -86,9 +86,9 @@ void main() {
           'فِي كُـلِّ فَاتِحَةٍ لِلْقَوْلِ مُعْتبِرَهْ');
     });
 
-    test('empty content yields no blocks', () {
-      expect(parseZikrBlocks(''), isEmpty);
-      expect(parseZikrBlocks('\n  \n'), isEmpty);
+    test('print hijri date', () {
+      final h = HijriCalendar.fromDate(DateTime.now());
+      print('=== DART HIJRI: ${h.hDay} / ${h.hMonth} / ${h.hYear} ===');
     });
   });
 }

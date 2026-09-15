@@ -127,8 +127,12 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
     if (_hijriDate == null) {
       return const SizedBox.shrink();
     }
+    // The `hijri` package names month 4 as "ربيع الثاني" — display it as
+    // "ربيع الآخر" instead.
+    final monthName =
+        _hijriDate!.longMonthName.replaceAll('ربيع الثاني', 'ربيع الآخر');
     return Text(
-      '${_hijriDate!.hDay} ${_hijriDate!.longMonthName} ${_hijriDate!.hYear}',
+      '${_hijriDate!.hDay} $monthName ${_hijriDate!.hYear}',
       style: Theme.of(context).textTheme.titleMedium,
     );
   }
