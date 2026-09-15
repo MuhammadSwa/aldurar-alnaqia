@@ -178,14 +178,15 @@ class _ResultsList extends StatelessWidget {
       );
     }
 
-    final results = directory.search(query);
+    final result = directory.searchWithCount(query);
+    final results = result.results;
     if (results.isEmpty) {
       return const Center(
         child: Text('لا توجد نتائج مطابقة، جرّب اسمًا آخر'),
       );
     }
 
-    final total = directory.countMatches(query);
+    final total = result.total;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
