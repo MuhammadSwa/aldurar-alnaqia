@@ -192,19 +192,22 @@ class SocialScreen extends StatelessWidget {
                       itemCount: _sites.length,
                       itemBuilder: (context, i) {
                         final site = _sites[i];
+                        void openSite() {
+                          unawaited(launchUrl(
+                            Uri.parse(site.url),
+                            mode: LaunchMode.externalApplication,
+                          ));
+                        }
+
                         return ListTile(
+                          onTap: openSite,
                           title: Text(site.title),
                           trailing: IconButton(
                             style: const ButtonStyle(
                                 iconSize: WidgetStatePropertyAll(27)),
                             color: site.iconColor,
                             icon: site.icon,
-                            onPressed: () {
-                              unawaited(launchUrl(
-                                Uri.parse(site.url),
-                                mode: LaunchMode.externalApplication,
-                              ));
-                            },
+                            onPressed: openSite,
                           ),
                         );
                       },
