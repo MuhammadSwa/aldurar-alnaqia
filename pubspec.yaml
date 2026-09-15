@@ -33,19 +33,16 @@ dependencies:
   shared_preferences: ^2.2.3
   # TODO: get rid of provider?
   geolocator: ^14.0.0
-  flutter_launcher_icons: ^0.14.3
   hijri: ^3.0.0
   # flutter_local_notifications: ^17.1.0
 
   adaptive_theme: ^3.6.0
   just_audio: ^0.10.0
-  audio_video_progress_bar: ^2.0.3
 
   flutter_riverpod: ^3.3.2
-  
+   
   path_provider: ^2.1.3
   url_launcher: ^6.3.0
-  flutter_svg: ^2.0.10+1
   # Lightweight OS-native PDF viewer (Android PdfRenderer / iOS CGPDF,
   # PDFium only on Windows). Same PdfViewPinch API as pdfx_lite, which
   # needs Flutter >=3.47 / Dart >=3.12 — switch to pdfx_lite after upgrade.
@@ -63,6 +60,7 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
 
  # flutter pub run flutter_launcher_icons
 flutter_launcher_icons:

@@ -6,7 +6,6 @@ import 'package:aldurar_alnaqia/screens/settings_screen/theme_mode_setting_widge
 import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 class MyDrawer extends ConsumerWidget {
@@ -59,9 +58,9 @@ class MyDrawer extends ConsumerWidget {
                   }),
               _buildDrawerItem(
                   context: context,
-                  icon: SvgPicture.asset(
-                    'assets/icons/youtube-icon-svgrepo-com.svg',
-                    semanticsLabel: 'youtube_icon',
+                  icon: Image.asset(
+                    'assets/icons/youtube-icon.png',
+                    semanticLabel: 'youtube_icon',
                     width: 24,
                   ),
                   title: 'كيفية قراءة الأوراد',
@@ -72,9 +71,9 @@ class MyDrawer extends ConsumerWidget {
 
               _buildDrawerItem(
                   context: context,
-                  icon: SvgPicture.asset(
-                    'assets/icons/youtube-icon-svgrepo-com.svg',
-                    semanticsLabel: 'youtube_icon',
+                  icon: Image.asset(
+                    'assets/icons/youtube-icon.png',
+                    semanticLabel: 'youtube_icon',
                     width: 24,
                   ),
                   title: 'أسئلة المتابعين',

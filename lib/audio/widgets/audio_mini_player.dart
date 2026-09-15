@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
@@ -104,23 +103,58 @@ class _ProgressBar extends ConsumerWidget {
         ref.watch(audioProvider.select((s) => s.duration));
     final colorScheme = Theme.of(context).colorScheme;
 
-    return ProgressBar(
-      progress: position,
-      buffered: buffered,
-      total: duration,
-      onSeek: ref.read(audioProvider.notifier).seek,
-      progressBarColor: colorScheme.primary,
-      bufferedBarColor:
-          colorScheme.primary.withValues(alpha: 0.25),
-      baseBarColor:
-          colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
-      thumbColor: colorScheme.primary,
-      timeLabelTextStyle: TextStyle(
-        color: colorScheme.onSecondaryContainer,
-        fontSize: 12,
-      ),
+    final totalMs = duration.inMilliseconds.toDouble();
+    final sliderMax = totalMs > 0 ? totalMs : 1.0;
+    final positionMs =
+        position.inMilliseconds.toDouble().clamp(0.0, sliderMax);
+    final bufferedFraction = totalMs <= 0
+        ? 0.0
+        : (buffered.inMilliseconds / totalMs).clamp(0.0, 1.0);
+
+    return Row(
+      children: [
+        Text(
+          _formatDuration(position),
+          style: TextStyle(
+            color: colorScheme.onSecondaryContainer,
+            fontSize: 12,
+          ),
+        ),
+        Expanded(
+          child: Slider(
+            min: 0,
+            max: sliderMax,
+            value: positionMs,
+            secondaryTrackValue: bufferedFraction,
+            onChanged: totalMs <= 0
+                ? null
+                : (value) => ref
+                    .read(audioProvider.notifier)
+                    .seek(Duration(milliseconds: value.round())),
+            activeColor: colorScheme.primary,
+            inactiveColor:
+                colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+            secondaryActiveColor:
+                colorScheme.primary.withValues(alpha: 0.25),
+            thumbColor: colorScheme.primary,
+          ),
+        ),
+        Text(
+          _formatDuration(duration),
+          style: TextStyle(
+            color: colorScheme.onSecondaryContainer,
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
+}
+
+String _formatDuration(Duration d) {
+  final minutes = d.inMinutes;
+  final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
 }
 
 class _TransportRow extends ConsumerWidget {

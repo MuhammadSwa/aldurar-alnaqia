@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class _SocialSite {
@@ -47,20 +46,19 @@ final _sites = <_SocialSite>[
   _SocialSite(
       title: 'قناة اليوتيوب',
       url: 'https://www.youtube.com/c/MohamadSameh',
-      icon: SvgPicture.asset(
-        'assets/icons/youtube-icon-svgrepo-com.svg',
-        semanticsLabel: 'youtube_icon',
+      icon: Image.asset(
+        'assets/icons/youtube-icon.png',
+        semanticLabel: 'youtube_icon',
         width: 24,
-        // colorFilter: ColorFilter.mode(Colors.red, BlendMode.srcIn),
       ),
       iconColor: Colors.transparent),
 
   _SocialSite(
       title: 'دروس د.يسري جبر',
       url: 'https://youtube.com/@dryosrylectures?si=hzAsCiFuwVLpvTEb',
-      icon: SvgPicture.asset(
-        'assets/icons/youtube-icon-svgrepo-com.svg',
-        semanticsLabel: 'youtube_icon',
+      icon: Image.asset(
+        'assets/icons/youtube-icon.png',
+        semanticLabel: 'youtube_icon',
         width: 24,
       ),
       iconColor: Colors.transparent),
@@ -68,9 +66,9 @@ final _sites = <_SocialSite>[
   _SocialSite(
     title: 'حساب الساوند كلاود',
     url: 'https://soundcloud.com/dryosrygabr',
-    icon: SvgPicture.asset(
-      'assets/icons/soundcloud-svgrepo-com.svg',
-      semanticsLabel: 'soundcloud_icon',
+    icon: Image.asset(
+      'assets/icons/soundcloud-icon.png',
+      semanticLabel: 'soundcloud_icon',
       width: 24,
     ),
     iconColor: Colors.transparent,
@@ -87,9 +85,9 @@ final _sites = <_SocialSite>[
   _SocialSite(
     title: 'صفحة الانستجرام',
     url: 'http://www.instagram.com/DrYosryGabr',
-    icon: SvgPicture.asset(
-      'assets/icons/instagram-svgrepo-com.svg',
-      semanticsLabel: 'instagram_icon',
+    icon: Image.asset(
+      'assets/icons/instagram-icon.png',
+      semanticLabel: 'instagram_icon',
       width: 24,
     ),
     iconColor: Colors.transparent,
@@ -98,9 +96,9 @@ final _sites = <_SocialSite>[
   _SocialSite(
     title: 'Dr. Yosry Gabr in English',
     url: 'https://www.instagram.com/dryosrygabr_en/',
-    icon: SvgPicture.asset(
-      'assets/icons/instagram-svgrepo-com.svg',
-      semanticsLabel: 'instagram_icon',
+    icon: Image.asset(
+      'assets/icons/instagram-icon.png',
+      semanticLabel: 'instagram_icon',
       width: 24,
     ),
     iconColor: Colors.transparent,
@@ -122,10 +120,11 @@ final _sites = <_SocialSite>[
         // Adapts to light/dark mode for contrast (was hardcoded white,
         // invisible on light background).
         final color = Theme.of(context).colorScheme.onSurface;
-        return SvgPicture.asset(
-          'assets/icons/icons8-twitterx.svg',
-          semanticsLabel: 'twitter_icon',
-          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+        return Image.asset(
+          'assets/icons/twitterx-icon.png',
+          semanticLabel: 'twitter_icon',
+          color: color,
+          colorBlendMode: BlendMode.srcIn,
           width: 29,
         );
       },
@@ -140,9 +139,9 @@ final _sites = <_SocialSite>[
   _SocialSite(
     title: 'توصية ورجاء وأمر لجميع المتابعين',
     url: 'https://youtu.be/KbQnZN5x2-g',
-    icon: SvgPicture.asset(
-      'assets/icons/youtube-icon-svgrepo-com.svg',
-      semanticsLabel: 'youtube_icon',
+    icon: Image.asset(
+      'assets/icons/youtube-icon.png',
+      semanticLabel: 'youtube_icon',
       width: 24,
     ),
     iconColor: Colors.transparent,
@@ -150,9 +149,9 @@ final _sites = <_SocialSite>[
   _SocialSite(
     title: 'كيفية قراءة الأوراد',
     url: 'https://youtu.be/IyrWSL4jd00',
-    icon: SvgPicture.asset(
-      'assets/icons/youtube-icon-svgrepo-com.svg',
-      semanticsLabel: 'youtube_icon',
+    icon: Image.asset(
+      'assets/icons/youtube-icon.png',
+      semanticLabel: 'youtube_icon',
       width: 24,
     ),
     iconColor: Colors.transparent,
