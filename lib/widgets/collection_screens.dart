@@ -61,7 +61,6 @@ class ZikrCollectionScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(collection),
       ),
-      // floatingActionButton: FloatingSliderBtn(titles: azkarTitles),
       body: AzkarListViewWidget(
         titles: azkarTitles,
         barTitle: collection,

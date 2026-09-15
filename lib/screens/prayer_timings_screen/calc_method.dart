@@ -57,16 +57,6 @@ class _CalcMethodDropDownState extends State<CalcMethodDropDown> {
         );
       }).toList(),
 
-      // items: CalculationMethod.values.map((e) {
-      //   return DropdownMenuItem(
-      //     alignment: Alignment.centerRight,
-      //     value: e.name,
-      //     child: Text(
-      //       arabicMethods[e]!,
-      //       style: Theme.of(context).textTheme.titleSmall,
-      //     ),
-      //   );
-      // }).toList(),
       onChanged: (value) {
         setState(() {
           method = value;

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/day_name.dart';
@@ -129,7 +128,6 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
             SizedBox(height: 14),
             _DateDisplayRow(),
             SizedBox(height: 8),
-            // NextPrayerCountdown(),
             Row(
               children: [
                 Expanded(
@@ -324,14 +322,5 @@ class _GeorgianDateWidgetState extends State<_GeorgianDateWidget> {
       _formatDate(_currentDate),
       textDirection: TextDirection.rtl,
     );
-  }
-}
-
-class ScaleSize {
-  static double textScaleFactor(BuildContext context,
-      {double maxTextScaleFactor = 2}) {
-    final width = MediaQuery.of(context).size.width;
-    double val = (width / 1400) * maxTextScaleFactor;
-    return max(1, min(val, maxTextScaleFactor));
   }
 }

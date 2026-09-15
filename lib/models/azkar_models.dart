@@ -66,8 +66,6 @@ final allAzkar = AllAzkar(azkarCategMap: {
   hizbAlnawawi.title: hizbAlnawawi,
 
   /// === salawatYousriaCollection ===
-  // salawatYousria.title: salawatYousria,
-  // salawatYousriaExplain.title: salawatYousriaExplain,
   day1Yousria.title: day1Yousria,
   day2Yousria.title: day2Yousria,
   day3Yousria.title: day3Yousria,
@@ -79,8 +77,6 @@ final allAzkar = AllAzkar(azkarCategMap: {
   salawatYousria.title: salawatYousria,
 
   /// === dalayilAlkhayratCollection ===
-  // dalayilAlkhayratIntro.title: dalayilAlkhayratIntro,
-  // namesOfTheProphetPBUH.title: namesOfTheProphetPBUH,
   dalayilHizb1.title: dalayilHizb1,
   dalayilHizb2.title: dalayilHizb2,
   dalayilHizb3.title: dalayilHizb3,
@@ -88,8 +84,6 @@ final allAzkar = AllAzkar(azkarCategMap: {
   dalayilHizb5.title: dalayilHizb5,
   dalayilHizb6.title: dalayilHizb6,
   dalayilHizb7.title: dalayilHizb7,
-  // dalayilHizb8.title: dalayilHizb8,
-  // dalayilWrapUp.title: dalayilWrapUp,
 
   //
   poemmadhWithQuarn.title: poemmadhWithQuarn,
@@ -144,7 +138,6 @@ final allAzkar = AllAzkar(azkarCategMap: {
 
 // azkar that doesn't belong to any collection.
 final orphanAzkar = AllAzkar(azkarCategMap: {
-  // asrGomaa.title: asrGomaa,
   adabAltareeqa.title: adabAltareeqa,
   waseyaGamea.title: waseyaGamea,
   sanadAltareeqa.title: sanadAltareeqa,
@@ -176,7 +169,6 @@ class AzkarCollections {
 
 const azkarCollections = AzkarCollections(
   azkarCategList: {
-    // 'الأوراد اليومية': morningEveningAzkarCollection,
     'الحضرة الصديقية': alhadraCollection,
     'الصلوات اليسرية': salawatYousriaCollection,
     'دلائل الخيرات': dalayilAlkhayratCollection,

@@ -18,8 +18,7 @@ const alhyliaAndNasab = Zikr(
     title: 'الحلية والنسب النبوي الشريف',
     content: '',
     url:
-        // 'https://archive.org/download/dorar_audio/%D8%A7%D9%84%D8%AD%D9%84%D9%8A%D8%A9%20%D8%A7%D9%84%D9%86%D8%A8%D9%88%D9%8A%D8%A9%20%D8%A7%D9%84%D8%B4%D8%B1%D9%8A%D9%81%D8%A9%20%D9%88%20%D9%86%D8%B3%D8%A8%20%D8%B3%D9%8A%D8%AF%D9%86%D8%A7%20%D9%85%D8%AD%D9%85%D8%AF.mp3');
-"https://archive.org/download/dorar_audio/%D8%A7%D9%84%D8%AD%D9%84%D9%8A%D8%A9_%D8%A7%D9%84%D9%86%D8%A8%D9%88%D9%8A%D8%A9_%D9%88%D8%A7%D9%84%D9%86%D8%B3%D9%8A%D8%A8.mp3",
+        "https://archive.org/download/dorar_audio/%D8%A7%D9%84%D8%AD%D9%84%D9%8A%D8%A9_%D8%A7%D9%84%D9%86%D8%A8%D9%88%D9%8A%D8%A9_%D9%88%D8%A7%D9%84%D9%86%D8%B3%D9%8A%D8%A8.mp3",
 );
 
 const hadraPrayerAfterAzkar = Zikr(

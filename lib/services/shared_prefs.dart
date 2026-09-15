@@ -11,8 +11,6 @@ class SharedPreferencesService {
       SharedPreferencesService._instance;
   static SharedPreferences? _sharedPreferences;
 
-  // SharedPreferencesService._internal();
-
   Future<void> init() async {
     _sharedPreferences = await SharedPreferences.getInstance();
   }
@@ -153,9 +151,8 @@ class SharedPreferencesService {
     // so when subtract it, hours and minutes wouldn't be considered
     final dayMidnight =
         DateTime(startingDay.year, startingDay.month, startingDay.day);
-    // return todaysMidnight;
-  _sharedPreferences?.setString(
-    'yousriaStartingDay', dayMidnight.toIso8601String());
+    _sharedPreferences?.setString(
+        'yousriaStartingDay', dayMidnight.toIso8601String());
   }
 
   static DateTime getYousriaBeginning() {
@@ -272,25 +269,5 @@ class SharedPreferencesService {
 
   static Future<void> setFileOpenAction(String action) async {
     await _sharedPreferences?.setString('file_open_action', action);
-  }
-
-  // --- Audio open action preference: 'ask' | 'stream' | 'download' ---
-  // Deprecated: kept only as a migration fallback for [getFileOpenAction].
-  static String getAudioOpenAction() {
-    return _sharedPreferences?.getString('audio_open_action') ?? 'ask';
-  }
-
-  static Future<void> setAudioOpenAction(String action) async {
-    await _sharedPreferences?.setString('audio_open_action', action);
-  }
-
-  // --- Book open action preference: 'ask' | 'open' | 'download' ---
-  // Deprecated: kept only as a migration fallback for [getFileOpenAction].
-  static String getBookOpenAction() {
-    return _sharedPreferences?.getString('book_open_action') ?? 'ask';
-  }
-
-  static Future<void> setBookOpenAction(String action) async {
-    await _sharedPreferences?.setString('book_open_action', action);
   }
 }

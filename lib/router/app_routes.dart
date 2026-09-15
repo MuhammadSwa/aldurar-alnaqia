@@ -23,7 +23,6 @@ class RoutePaths {
   static const String timings = '/timings';
   static const String awrad = '/awradScreen';
   static const String library = '/library';
-  static const String settings = '/settings';
   static const String social = '/social';
   static const String downloadManager = '/downloadManager';
 

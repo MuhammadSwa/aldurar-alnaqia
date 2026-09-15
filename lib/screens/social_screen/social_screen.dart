@@ -173,11 +173,8 @@ class SocialScreen extends StatelessWidget {
             body: SingleChildScrollView(
               child: Center(
                   child: SizedBox(
-                // constraints: BoxConstraints(
-                //     maxWidth: ),
                 width: MediaQuery.sizeOf(context).width * .8,
                 child: Column(
-                  // mainAxisAlignment: MainAxisAlignment.,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text('الصفحات الرسمية لفضيلة أ.د. يسري جبر'),
