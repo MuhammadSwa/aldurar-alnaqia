@@ -159,7 +159,7 @@ class JustAudioEngine implements AudioEngine {
   /// (Flutter bundle assets are invisible to the native notification code —
   /// it silently fails and the notification shows a black square), so we
   /// materialize the asset on disk and hand the notification a `file://` URI.
-  static const String _coverAsset = 'assets/imgs/social_png.png';
+  static const String _coverAsset = 'assets/imgs/audio_cover.jpg';
   Uri? _coverFileUri;
   bool _coverResolved = false;
 
@@ -168,7 +168,7 @@ class JustAudioEngine implements AudioEngine {
     _coverResolved = true;
     try {
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/audio_cover.png');
+      final file = File('${dir.path}/audio_cover.jpg');
       if (!await file.exists()) {
         final data = await rootBundle.load(_coverAsset);
         await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
