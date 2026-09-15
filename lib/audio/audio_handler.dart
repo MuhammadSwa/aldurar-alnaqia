@@ -13,10 +13,10 @@ const Duration _skipInterval = Duration(seconds: 15);
 ///
 /// Responsibilities:
 ///  * publishes rich metadata (title, artist, album, art, duration),
-///  * exposes useful controls (rewind -15s / play-pause / forward +15s) plus
-///    a seekable progress bar on the lock screen,
-///  * stops playback and removes the notification when the user swipes the
-///    app away ([onTaskRemoved]),
+///  * exposes play-pause plus a close (stop) control with a seekable
+///    progress bar on the lock screen,
+///  * stops playback and removes the notification when the user taps close
+///    ([stop]) or swipes the app away ([onTaskRemoved]),
 ///  * dismisses cleanly when paused (`androidStopForegroundOnPause`).
 ///
 /// The engine attaches the actual [AudioPlayer] via [attach]; on platforms
@@ -113,18 +113,16 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
     final player = _player;
     final playing = player?.playing ?? false;
 
+    // Notification buttons: play/pause + close (X). No prev/next/rewind.
     final controls = <MediaControl>[
-      MediaControl.rewind,
       playing ? MediaControl.pause : MediaControl.play,
-      MediaControl.fastForward,
+      MediaControl.stop,
     ];
 
     playbackState.add(PlaybackState(
       controls: controls,
       systemActions: const {
         MediaAction.seek,
-        MediaAction.seekForward,
-        MediaAction.seekBackward,
       },
       processingState: _mapProcessing(player?.processingState),
       playing: playing,

@@ -221,8 +221,17 @@ class AudioController extends Notifier<AudioState> {
         _engine.pause();
         break;
       case EnginePlaybackState.idle:
-        // Idle follows intentional stops; unexpected idles arrive together
-        // with [EngineFailed] which drives the error state.
+        // Idle arrives after a notification close (X) which stops the player
+        // directly in the handler, bypassing [stopPlayer]. Mirror it into a
+        // stopped UI state so the mini player disappears. Ignore while
+        // loading: [load] briefly stops the player before setting the new
+        // source, and intentional stops already reset the state themselves.
+        if (state.track != null &&
+            (state.status == AudioStatus.playing ||
+                state.status == AudioStatus.paused ||
+                state.status == AudioStatus.error)) {
+          state = AudioState(speed: state.speed);
+        }
         break;
     }
   }
