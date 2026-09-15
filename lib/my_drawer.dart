@@ -27,21 +27,8 @@ class MyDrawer extends ConsumerWidget {
             children: [
               const ThemeModeSettingWidget(),
               const YousriaBeginningDayDropDown(),
-              const FontSizeSettingsWidget(),
               const AudioActionSettingWidget(),
-              _buildDrawerItem(
-                  context: context,
-                  icon: Icon(
-                    Icons.link,
-                    color: colorScheme.onSecondaryContainer,
-                    size: 20,
-                  ),
-                  title: 'الصفحات الرسمية',
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.push(RoutePaths.social);
-                  }),
-
+              const FontSizeSettingsWidget(),
               _buildDrawerItem(
                   context: context,
                   icon: Icon(
@@ -53,6 +40,22 @@ class MyDrawer extends ConsumerWidget {
                   onTap: () {
                     Navigator.pop(context);
                     AppNav.goToDownloadManager(context, 0);
+                  }),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Divider(height: 1),
+              ),
+              _buildDrawerItem(
+                  context: context,
+                  icon: Icon(
+                    Icons.link,
+                    color: colorScheme.onSecondaryContainer,
+                    size: 20,
+                  ),
+                  title: 'الصفحات الرسمية',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push(RoutePaths.social);
                   }),
               _buildDrawerItem(
                   context: context,
