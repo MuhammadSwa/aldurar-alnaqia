@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/asr_calc_segmented_button.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/calc_method.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_picker.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_button_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
@@ -38,6 +39,11 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
   @override
   void initState() {
     super.initState();
+    // Warm the city directory while the user reads this dialog, so the
+    // city search sheet opens instantly (parse + index ≈ 300 ms otherwise
+    // happens on first sheet open / first keystroke).
+    // ignore: unused_result
+    ref.read(cityDirectoryProvider);
     _selectedAsrCalc = SharedPreferencesService.getAsrCalculation();
     if (_selectedAsrCalc != 'shafi' && _selectedAsrCalc != 'hanafi') {
       _selectedAsrCalc = 'shafi';

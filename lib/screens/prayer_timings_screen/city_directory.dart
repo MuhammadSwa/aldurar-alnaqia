@@ -41,12 +41,18 @@ class _IndexedCity {
 class CityDirectory {
   final List<City> cities;
   final Map<String, CountryInfo> countries;
-  late final List<_IndexedCity> _index = [
-    for (var i = 0; i < cities.length; i++)
-      _IndexedCity(cities[i], i, countries[cities[i].countryCode]),
-  ];
 
-  CityDirectory({required this.cities, required this.countries});
+  /// Search index, built eagerly in the constructor so the provider's
+  /// loading state (and its spinner) covers both JSON parsing and indexing.
+  /// Previously this was `late final`, which deferred ~170 ms of normalize
+  /// work to the first keystroke, with no loading indicator visible.
+  final List<_IndexedCity> _index;
+
+  CityDirectory({required this.cities, required this.countries})
+      : _index = [
+          for (var i = 0; i < cities.length; i++)
+            _IndexedCity(cities[i], i, countries[cities[i].countryCode]),
+        ];
 
   factory CityDirectory.fromJson(Map<String, dynamic> json) {
     final countriesJson = json['countries'] as Map<String, dynamic>;
