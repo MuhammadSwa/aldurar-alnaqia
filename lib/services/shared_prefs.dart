@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 
 class SharedPreferencesService {
@@ -31,6 +33,54 @@ class SharedPreferencesService {
   static void setLongitude(double long) {
   _sharedPreferences?.setDouble('longitude', long);
   unawaited(refreshPrayerNotification());
+  }
+
+  static String getCityName() {
+  return _sharedPreferences?.getString('cityName') ?? '';
+  }
+
+  static void setCityName(String cityName) {
+  _sharedPreferences?.setString('cityName', cityName);
+  }
+
+  /// The city chosen in the city picker, if any (GPS selections clear it).
+  /// Coordinates themselves stay in the latitude/longitude keys.
+  static void setCity(City? city) {
+  if (city == null) {
+  _sharedPreferences?.remove('cityInfo');
+  setCityName('');
+  return;
+  }
+  _sharedPreferences?.setString(
+  'cityInfo',
+  jsonEncode({
+  'en': city.nameEn,
+  'ar': city.nameAr,
+  'country': city.countryCode,
+  }),
+  );
+  setCityName(city.displayName);
+  }
+
+  static City? getCity() {
+  final raw = _sharedPreferences?.getString('cityInfo');
+  if (raw == null) return null;
+  try {
+  final json = jsonDecode(raw) as Map<String, dynamic>;
+  final lat = getLatitude();
+  final lng = getLongitude();
+  if (lat == 0.0 && lng == 0.0) return null;
+  return City(
+  nameEn: json['en'] as String,
+  nameAr: json['ar'] as String?,
+  countryCode: json['country'] as String,
+  latitude: lat,
+  longitude: lng,
+  );
+  } catch (e) {
+  logWarn('Failed to parse stored city info: $e');
+  return null;
+  }
   }
 
   static void setMethod(String method) {

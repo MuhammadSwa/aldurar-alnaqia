@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
@@ -156,11 +157,13 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     required String method,
     required String asrCalc,
     String? highLatitudeRule,
+    City? city,
   }) {
     SharedPreferencesService.setLatitude(lat);
     SharedPreferencesService.setLongitude(long);
     SharedPreferencesService.setMethod(method);
     SharedPreferencesService.setAsrCalculation(asrCalc);
+    SharedPreferencesService.setCity(city);
     if (highLatitudeRule != null) {
       SharedPreferencesService.setHighLatitudeRule(highLatitudeRule);
     }

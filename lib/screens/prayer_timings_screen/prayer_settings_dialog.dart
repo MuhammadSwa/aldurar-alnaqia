@@ -1,16 +1,17 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation_method_info.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/utils/show_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/asr_calc_segmented_button.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/calc_method.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/coordinates_text_input_widget.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_picker.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_button_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
     show prayerProvider;
 
-// CoordinatesForm
+// Prayer settings dialog: GPS or city-picker location + madhab + method.
 class PrayerSettingsDialog extends ConsumerStatefulWidget {
   const PrayerSettingsDialog({super.key});
 
@@ -20,16 +21,18 @@ class PrayerSettingsDialog extends ConsumerStatefulWidget {
 }
 
 class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _latController = TextEditingController();
-  final _lngController = TextEditingController();
   late String _selectedAsrCalc;
   late String _selectedMethod;
 
-  /// Manual lat/lng fields are hidden until the user asks for them.
-  bool _showManual = false;
+  /// Location chosen via GPS or the city picker (manual entry removed).
+  double? _latitude;
+  double? _longitude;
+  City? _selectedCity;
 
-  /// Inline validation flag: shown as red text under the location button.
+  /// True when the user located via GPS rather than picking a city.
+  bool _isGpsLocation = false;
+
+  /// Inline validation flag: shown as red text under the location section.
   bool _showLocationError = false;
 
   @override
@@ -43,60 +46,50 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
     if (!CalculationMethodInfo.methods.any((m) => m.key == _selectedMethod)) {
       _selectedMethod = CalculationMethodInfo.methods.first.key;
     }
-    // Location fields are intentionally left empty so the dialog always
-    // opens cleared: button shows "تحديد الموقع تلقائياً" and manual
-    // lat/lng are blank until the user locates or types them.
-    _latController.addListener(_clearLocationError);
-    _lngController.addListener(_clearLocationError);
+    // Location always starts cleared: the user picks a city or GPS fresh
+    // on every open (no restore of the previously saved location).
   }
 
-  void _clearLocationError() {
-    if (_showLocationError && _hasLocation && mounted) {
-      setState(() => _showLocationError = false);
-    }
-  }
-
-  @override
-  void dispose() {
-    _latController.dispose();
-    _lngController.dispose();
-    super.dispose();
-  }
-
-  void _onSegmentedButtonSelected(String data) {
-    _selectedAsrCalc = data;
+  void _onCitySelected(City city) {
+    setState(() {
+      _selectedCity = city;
+      _latitude = city.latitude;
+      _longitude = city.longitude;
+      _isGpsLocation = false;
+      _showLocationError = false;
+    });
   }
 
   void onGettingLocation(
       {required String latitude, required String longitude}) {
-    _latController.text = latitude;
-    _lngController.text = longitude;
+    final lat = double.tryParse(latitude);
+    final lng = double.tryParse(longitude);
+    if (lat == null || lng == null) return;
     if (mounted) {
       setState(() {
-        _showManual = false;
+        _latitude = lat;
+        _longitude = lng;
+        _selectedCity = null;
+        _isGpsLocation = true;
         _showLocationError = false;
       });
     }
   }
 
-  bool get _hasLocation =>
-      _latController.text.trim().isNotEmpty &&
-      _lngController.text.trim().isNotEmpty;
+  bool get _hasLocation => _latitude != null && _longitude != null;
 
   void _saveSettings(BuildContext context) {
     if (!_hasLocation) {
       if (mounted) setState(() => _showLocationError = true);
       return;
     }
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
 
     ref.read(prayerProvider.notifier).setPrayerSettings(
-          lat: double.parse(_latController.text),
-          long: double.parse(_lngController.text),
+          lat: _latitude!,
+          long: _longitude!,
           method: _selectedMethod,
           asrCalc: _selectedAsrCalc,
+          city: _isGpsLocation ? null : _selectedCity,
         );
 
     Navigator.of(context).pop();
@@ -109,110 +102,86 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Dialog(
-        insetPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.settings,
-                          color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'إعدادات المواقيت',
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.settings, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'إعدادات المواقيت',
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-                  // ---- 1. Location ----
-                  Text(
-                    'الموقع',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
+                // ---- 1. Location ----
+                Text(
+                  'الموقع',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(height: 8),
-                  LocationButtonWidget(
-                      onGettingLocation: onGettingLocation,
-                      hasLocation: _hasLocation),
-                  if (_showLocationError)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        'برجاء تحديد الموقع أولاً',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: theme.colorScheme.error,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: TextButton.icon(
-                      onPressed: () => setState(
-                          () => _showManual = !_showManual),
-                      icon: Icon(_showManual
-                          ? Icons.expand_less
-                          : Icons.edit_location_alt_outlined),
-                      label: Text(_showManual
-                          ? 'إخفاء الإدخال اليدوي'
-                          : 'إدخال يدوي'),
-                    ),
-                  ),
-                  AnimatedCrossFade(
-                    firstChild: const SizedBox.shrink(),
-                    secondChild: Padding(
-                      padding: const EdgeInsets.only(top: 4, bottom: 4),
-                      child: CoordinatesTextInputWidget(
-                        latController: _latController,
-                        lngController: _lngController,
+                ),
+                const SizedBox(height: 8),
+                CityPickerField(
+                  selected: _selectedCity,
+                  onSelected: _onCitySelected,
+                ),
+                const SizedBox(height: 8),
+                LocationButtonWidget(
+                    onGettingLocation: onGettingLocation,
+                    hasLocation: _hasLocation && _isGpsLocation),
+                if (_showLocationError)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      'برجاء تحديد الموقع أولاً',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: theme.colorScheme.error,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    crossFadeState: _showManual
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 200),
                   ),
 
-                  const Divider(height: 24),
+                const Divider(height: 24),
 
-                  // ---- 2. Asr madhab ----
-                  AsrCalcSegmentedButton(
-                    initial: _selectedAsrCalc,
-                    onData: _onSegmentedButtonSelected,
-                  ),
+                // ---- 2. Asr madhab ----
+                AsrCalcSegmentedButton(
+                  initial: _selectedAsrCalc,
+                  onData: _onSegmentedButtonSelected,
+                ),
 
-                  const Divider(height: 24),
+                const Divider(height: 24),
 
-                  // ---- 3. Calculation method ----
-                  CalcMethodDropDown(
-                    initialMethod: _selectedMethod,
-                    onSelect: (value) => _selectedMethod = value,
-                  ),
-                  const SizedBox(height: 20),
-                  ActionButtons(
-                      onPress: () => _saveSettings(context)),
-                ],
-              ),
+                // ---- 3. Calculation method ----
+                CalcMethodDropDown(
+                  initialMethod: _selectedMethod,
+                  onSelect: (value) => _selectedMethod = value,
+                ),
+                const SizedBox(height: 20),
+                ActionButtons(onPress: () => _saveSettings(context)),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  void _onSegmentedButtonSelected(String data) {
+    _selectedAsrCalc = data;
   }
 }
 
