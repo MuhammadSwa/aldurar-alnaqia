@@ -6,8 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/common/theme/dark_theme.dart';
 import 'package:aldurar_alnaqia/router/app_router.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
-import 'package:universal_platform/universal_platform.dart';
-import 'package:desktop_window/desktop_window.dart';
+import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
@@ -18,11 +17,6 @@ import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
-Future setDesktopWindow() async {
-  await DesktopWindow.setMinWindowSize(const Size(600, 600));
-  await DesktopWindow.setWindowSize(const Size(1300, 900));
-}
-
 Future<ProviderContainer> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -30,7 +24,7 @@ Future<ProviderContainer> _bootstrap() async {
   // audio_service entries in AndroidManifest.xml and the iOS audio
   // background mode.
   NarrationAudioHandler? audioHandler;
-  if (UniversalPlatform.isAndroid || UniversalPlatform.isIOS) {
+  if (AppPlatform.isMobile) {
     audioHandler = await AudioService.init(
       builder: () => NarrationAudioHandler(),
       config: const AudioServiceConfig(
@@ -43,12 +37,6 @@ Future<ProviderContainer> _bootstrap() async {
       ),
     );
     await NarrationAudioHandler.configureAudioSession();
-  }
-
-  if (UniversalPlatform.isWindows ||
-      UniversalPlatform.isLinux ||
-      UniversalPlatform.isMacOS) {
-    await setDesktopWindow();
   }
 
   await SharedPreferencesService().init();

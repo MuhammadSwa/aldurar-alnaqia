@@ -51,8 +51,6 @@ dependencies:
   # PDFium only on Windows). Same PdfViewPinch API as pdfx_lite, which
   # needs Flutter >=3.47 / Dart >=3.12 — switch to pdfx_lite after upgrade.
   pdfx: ^2.7.0
-  desktop_window: ^0.4.0
-  universal_platform: ^1.1.0
   background_downloader: ^9.1.1
   text_responsive: ^1.2.1
   adhan_dart: ^2.0.0

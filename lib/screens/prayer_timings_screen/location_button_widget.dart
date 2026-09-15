@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:universal_platform/universal_platform.dart';
+import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 
 /// Determines the current position of the device.
 ///
@@ -155,7 +155,7 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
           ? 'تم تحديد الموقع'
           : 'تحديد الموقع تلقائياً'),
       onPressed: () {
-        if (UniversalPlatform.isLinux) {
+        if (AppPlatform.isLinux) {
           showDialog(
               context: context,
               builder: (builder) => const AlertWidget(
