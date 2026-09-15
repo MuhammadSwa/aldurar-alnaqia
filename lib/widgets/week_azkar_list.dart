@@ -93,17 +93,9 @@ class _DayAzkarListState extends State<DayAzkarList> {
       ),
     );
 
-    if (!isToday) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('ورد يوم ${arabicWeekdays[widget.dayNum - 1]}'),
-        ),
-        body: listView,
-      );
-    }
-
     final yousria = WeekCollectionAzkar.getYousriaDayInfo();
 
+    // The banner shows on every day wird page until the user dismisses it.
     return Scaffold(
       appBar: AppBar(
         title: Text('ورد يوم ${arabicWeekdays[widget.dayNum - 1]}'),
@@ -212,7 +204,7 @@ class WeekCollectionAzkar {
 }
 
 /// Educates about the 6-day Yousria cycle and offers one-tap setup.
-/// Shown only on today's wird page, above the list.
+/// Shown on every day wird page until dismissed.
 class _YousriaBanner extends StatelessWidget {
   const _YousriaBanner({
     required this.yousria,
