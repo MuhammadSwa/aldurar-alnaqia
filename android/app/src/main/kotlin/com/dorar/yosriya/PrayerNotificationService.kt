@@ -67,6 +67,11 @@ class PrayerNotificationService : Service() {
     private const val KEY_CONFIG = "flutter.prayer_native_config"
 
     private const val NO_LOCATION_RETRY_MS = 15 * 60 * 1000L
+    // Cosmetic grace: pushes the displayed countdown's zero-crossing past the
+    // prayer time so a late refresh (1-2 min on inexact alarms) lands before
+    // the Chronometer would tick into "-MM:SS". Display-only; wakeup timing
+    // still uses the true prayer time.
+    private const val CHRONOMETER_GRACE_MS = 120_000L
     private const val NEXT_PRAYER_COLOR = 0xFF2E7D32.toInt()
 
     @Volatile
@@ -348,20 +353,31 @@ class PrayerNotificationService : Service() {
     val collapsed = RemoteViews(packageName, R.layout.notification_prayer_collapsed)
     val expanded = RemoteViews(packageName, R.layout.notification_prayer_expanded)
 
-    val nextLabel = "الصلاة القادمة: ${plan.nextName}"
-    collapsed.setTextViewText(R.id.next_label, nextLabel)
+    collapsed.setTextViewText(R.id.next_label, "${plan.nextName} بعد")
     expanded.setTextViewText(R.id.hijri_date, hijri)
 
-    // System-managed chronometer: SystemUI updates every second with 0 app wakeups
+    // System-managed chronometer: SystemUI updates every second with 0 app wakeups.
+    // Never show a minus: past zero a countdown Chronometer keeps ticking into
+    // "-MM:SS" until the (possibly 1-2 min late) refresh posts. The displayed
+    // zero-crossing is therefore pushed back by CHRONOMETER_GRACE_MS, and a
+    // refresh landing inside the grace window freezes at 00:00:00. Label left
+    // unchanged by request.
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      val remaining = (plan.nextAtMs - System.currentTimeMillis()).coerceAtLeast(0)
-      val base = SystemClock.elapsedRealtime() + remaining
-      collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
-      expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
-      collapsed.setChronometer(R.id.chronometer, base, null, true)
-      expanded.setChronometer(R.id.chronometer, base, null, true)
-      collapsed.setChronometerCountDown(R.id.chronometer, true)
-      expanded.setChronometerCountDown(R.id.chronometer, true)
+      val remaining = plan.nextAtMs - System.currentTimeMillis()
+      if (remaining <= 0) {
+        collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+        expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+        collapsed.setTextViewText(R.id.chronometer, "00:00:00")
+        expanded.setTextViewText(R.id.chronometer, "00:00:00")
+      } else {
+        val base = SystemClock.elapsedRealtime() + remaining + CHRONOMETER_GRACE_MS
+        collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+        expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+        collapsed.setChronometer(R.id.chronometer, base, null, true)
+        expanded.setChronometer(R.id.chronometer, base, null, true)
+        collapsed.setChronometerCountDown(R.id.chronometer, true)
+        expanded.setChronometerCountDown(R.id.chronometer, true)
+      }
     } else {
       collapsed.setViewVisibility(R.id.chronometer, android.view.View.GONE)
       expanded.setViewVisibility(R.id.chronometer, android.view.View.GONE)

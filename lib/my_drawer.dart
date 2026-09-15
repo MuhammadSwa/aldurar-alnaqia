@@ -2,7 +2,7 @@ import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/audio_action_setting_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
-import 'package:aldurar_alnaqia/screens/settings_screen/toggle_theme_btn_widget.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/theme_mode_setting_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,21 +25,7 @@ class MyDrawer extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 20),
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'المظهر',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const ToggleThemeBtn()
-                  ],
-                ),
-              ),
+              const ThemeModeSettingWidget(),
               const YousriaBeginningDayDropDown(),
               const FontSizeSettingsWidget(),
               const AudioActionSettingWidget(),
