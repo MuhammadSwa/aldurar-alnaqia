@@ -5,10 +5,14 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
     as islamic_date;
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+
+export 'prayer_calculator.dart'
+    show PrayerTimeings, arabicPrayerName, islamicWeekdayNow;
 
 /// Immutable snapshot of everything the prayer UI needs.
 class PrayerState {
@@ -223,163 +227,3 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
 final prayerProvider =
     NotifierProvider<PrayerTimingsNotifier, PrayerState>(
         PrayerTimingsNotifier.new);
-
-/// Maps English prayer names from the library to Arabic.
-String arabicPrayerName(String englishName) {
-    switch (englishName.toLowerCase()) {
-      case 'fajr':
-      case 'fajrafter':
-        return 'الفجر';
-    case 'sunrise':
-      return 'الشروق';
-    case 'dhuhr':
-      return 'الظهر';
-    case 'asr':
-      return 'العصر';
-    case 'maghrib':
-      return 'المغرب';
-    case 'isha':
-      return 'العشاء';
-    default:
-      return 'الفجر'; // Sensible default
-  }
-}
-
-/// The current Islamic weekday (after Maghrib the next day begins),
-/// computed without needing a running notifier — safe for routing.
-int islamicWeekdayNow() {
-  final now = tz.TZDateTime.now(tz.local);
-  final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
-  if (maghrib == null) return now.weekday;
-  final maghribTime = tz.TZDateTime.from(maghrib, tz.local);
-  return islamic_date.islamicWeekday(now: now, maghrib: maghribTime);
-}
-
-class PrayerTimeings {
-  static PrayerTimes? getPrayersTimings({DateTime? forDate}) {
-    Coordinates coordinates = Coordinates(
-      SharedPreferencesService.getLatitude(),
-      SharedPreferencesService.getLongitude(),
-    );
-    final method = SharedPreferencesService.getMethod();
-    final asrCalc = SharedPreferencesService.getAsrCalculation();
-
-    if (method == '' ||
-        asrCalc == '' ||
-        coordinates.latitude == 0.0 ||
-        coordinates.longitude == 0.0) {
-      return null;
-    }
-
-    try {
-      // Use tz.local, which should have been configured in
-      // PrayerTimingsNotifier._initialize.
-      final tz.TZDateTime dateForCalculation = forDate != null
-          ? tz.TZDateTime.from(forDate, tz.local)
-          : tz.TZDateTime.now(tz.local);
-
-      final CalculationParameters params;
-      switch (method) {
-        case 'egyptian':
-          params = CalculationMethodParameters.egyptian();
-          break;
-        case 'karachi':
-          params = CalculationMethodParameters.karachi();
-          break;
-        case 'muslim_world_league':
-          params = CalculationMethodParameters.muslimWorldLeague();
-          break;
-        case 'dubai':
-          params = CalculationMethodParameters.dubai();
-          break;
-        case 'qatar':
-          params = CalculationMethodParameters.qatar();
-          break;
-        case 'kuwait':
-          params = CalculationMethodParameters.kuwait();
-          break;
-        case 'turkey':
-          params = CalculationMethodParameters.turkiye();
-          break;
-        case 'tehran':
-          params = CalculationMethodParameters.tehran();
-          break;
-        case 'singapore':
-          params = CalculationMethodParameters.singapore();
-          break;
-        case 'umm_al_qura':
-          params = CalculationMethodParameters.ummAlQura();
-          break;
-        case 'north_america':
-          params = CalculationMethodParameters.northAmerica();
-          break;
-        case 'moon_sighting_committee':
-          params = CalculationMethodParameters.moonsightingCommittee();
-          break;
-        default:
-          params = CalculationMethodParameters.other();
-          break;
-      }
-
-      if (asrCalc == 'shafi') {
-        params.madhab = Madhab.shafi;
-      } else {
-        params.madhab = Madhab.hanafi;
-      }
-
-      // Handle high latitude locations with configurable rules
-      final highLatRule = SharedPreferencesService.getHighLatitudeRule();
-      if (coordinates.latitude.abs() > 48.0) {
-        switch (highLatRule) {
-          case 'middle_of_night':
-            params.highLatitudeRule = HighLatitudeRule.middleOfTheNight;
-            break;
-          case 'seventh_of_night':
-            params.highLatitudeRule = HighLatitudeRule.seventhOfTheNight;
-            break;
-          case 'twilight_angle':
-            params.highLatitudeRule = HighLatitudeRule.twilightAngle;
-            break;
-          default:
-            // Default to middle of night for high latitudes
-            params.highLatitudeRule = HighLatitudeRule.middleOfTheNight;
-            break;
-        }
-      }
-
-      return PrayerTimes(
-        coordinates: coordinates,
-        date: dateForCalculation, // Use timezone-aware date
-        calculationParameters: params,
-        precision: true,
-      );
-    } catch (e) {
-      // Handle timezone errors
-      logError('Error initializing prayer times', e);
-      return null;
-    }
-  }
-
-  // Helper method to get all prayer times for display (in local timezone)
-  static Map<String, tz.TZDateTime>? getAllPrayerTimes() {
-    final prayerTimes = getPrayersTimings();
-
-    if (prayerTimes == null) return null;
-
-    try {
-      final timezone = tz.local;
-
-      return {
-        'fajr': tz.TZDateTime.from(prayerTimes.fajr, timezone),
-        'sunrise': tz.TZDateTime.from(prayerTimes.sunrise, timezone),
-        'dhuhr': tz.TZDateTime.from(prayerTimes.dhuhr, timezone),
-        'asr': tz.TZDateTime.from(prayerTimes.asr, timezone),
-        'maghrib': tz.TZDateTime.from(prayerTimes.maghrib, timezone),
-        'isha': tz.TZDateTime.from(prayerTimes.isha, timezone),
-      };
-    } catch (e) {
-      logError('Error getting prayer times', e);
-      return null;
-    }
-  }
-}

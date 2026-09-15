@@ -19,7 +19,7 @@ import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
 import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart'
     show islamicWeekdayNow;
 
 /// Provides the app-wide [GoRouter]. The app always starts at home;

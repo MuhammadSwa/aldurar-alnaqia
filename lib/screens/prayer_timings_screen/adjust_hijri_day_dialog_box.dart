@@ -3,7 +3,7 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hijri/hijri_calendar.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart';
 
 /// Returns today's Hijri date adjusted by [offset] days, taking the
 /// Maghrib-based Islamic day boundary into account when prayer times exist.

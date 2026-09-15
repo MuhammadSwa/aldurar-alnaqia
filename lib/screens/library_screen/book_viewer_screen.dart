@@ -1,15 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/book_temp_loader.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_error_view.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_jump_dialog.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_loading_view.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 
@@ -77,8 +79,49 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
         document =
             await PdfDocument.openFile(storage.pathFor(DownloadType.books, _title));
       } else {
-        final file = await _downloadToTemp(url, fresh: freshDownload);
-        document = await PdfDocument.openFile(file.path);
+        // NOTE: temp previews intentionally stay on foreground HttpClient via
+        // [BookTempLoader] and do NOT use `background_downloader`. The offline
+        // flow below (`_downloadForOffline` via `downloaderProvider`) already
+        // owns the background-download path; previews need a plain File path
+        // with inline progress, not a background task callback.
+        //
+        // Mirror the original `_downloadToTemp` behavior: a cached temp hit
+        // never flips [_isDownloading] (loading text stays "جاري فتح الكتاب...").
+        void onProgress(int received, int? total) {
+          if (mounted) {
+            setState(() {
+              _receivedBytes = received;
+              _totalBytes = total;
+            });
+          }
+        }
+
+        final cached = await BookTempLoader.tempFile(_title);
+        final useCache = !freshDownload &&
+            await cached.exists() &&
+            await cached.length() > 0;
+        if (useCache) {
+          final file = await BookTempLoader.downloadToTemp(
+            url: url,
+            title: _title,
+            fresh: freshDownload,
+            onProgress: onProgress,
+          );
+          document = await PdfDocument.openFile(file.path);
+        } else {
+          setState(() => _isDownloading = true);
+          try {
+            final file = await BookTempLoader.downloadToTemp(
+              url: url,
+              title: _title,
+              fresh: freshDownload,
+              onProgress: onProgress,
+            );
+            document = await PdfDocument.openFile(file.path);
+          } finally {
+            if (mounted) setState(() => _isDownloading = false);
+          }
+        }
       }
 
       if (!mounted) {
@@ -110,55 +153,6 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       }
     } catch (e) {
       if (mounted) setState(() => _error = e);
-    }
-  }
-
-  /// Downloads [url] to the temp dir, reporting progress via setState.
-  /// Timeouts apply to connect/headers only; slow bodies keep streaming.
-  Future<File> _downloadToTemp(String url, {bool fresh = false}) async {
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/online_${_title.hashCode}.pdf');
-
-    if (!fresh && await file.exists() && await file.length() > 0) {
-      return file;
-    }
-
-    setState(() => _isDownloading = true);
-    final client = HttpClient();
-    try {
-      final request = await client
-          .getUrl(Uri.parse(url))
-          .timeout(const Duration(seconds: 30));
-      final response =
-          await request.close().timeout(const Duration(seconds: 30));
-      if (response.statusCode != HttpStatus.ok) {
-        throw HttpException('فشل التحميل (${response.statusCode})');
-      }
-
-      final total =
-          response.contentLength > 0 ? response.contentLength : null;
-      final tmp = File('${file.path}.part');
-      final sink = tmp.openWrite();
-      var received = 0;
-      try {
-        await for (final chunk in response) {
-          sink.add(chunk);
-          received += chunk.length;
-          if (mounted) {
-            setState(() {
-              _receivedBytes = received;
-              _totalBytes = total;
-            });
-          }
-        }
-      } finally {
-        await sink.close();
-      }
-      await tmp.rename(file.path);
-      return file;
-    } finally {
-      client.close();
-      if (mounted) setState(() => _isDownloading = false);
     }
   }
 
@@ -213,73 +207,37 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   /// in the tree trips `'_dependents.isEmpty'` deactivation asserts, so the
   /// dialog must be awaited — never animate on a stale modal context.
   Future<void> _pickPageAndJump(int total) async {
-    final textController = TextEditingController(
-      text: _controller?.page.toString() ?? '1',
+    final page = await showBookJumpDialog(
+      context,
+      currentPage: _controller?.page ?? 1,
+      total: total,
     );
-    try {
-      // NOTE: showDialog pushes onto the ROOT navigator while this screen
-      // lives on a shell-branch navigator, so the dialog is closed via
-      // [dialogContext] and returns the parsed page (or null).
-      final page = await showDialog<int>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('الانتقال إلى صفحة', textAlign: TextAlign.center),
-          content: TextField(
-            controller: textController,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: 'من 1 إلى $total',
-              border: const OutlineInputBorder(),
-            ),
-            onSubmitted: (_) => Navigator.of(dialogContext)
-                .pop(_parsePage(textController.text)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext)
-                  .pop(_parsePage(textController.text)),
-              child: const Text('انتقال'),
-            ),
-          ],
-        ),
-      );
-      if (page == null || !mounted) return;
-      if (page < 1 || page > total) {
-        ScaffoldMessenger.of(context)
-          ..removeCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text('رقم الصفحة يجب أن يكون بين 1 و $total')),
-          );
-        return;
-      }
-      final controller = _controller;
-      if (controller == null) return;
-      try {
-        await controller.animateToPage(
-          pageNumber: page,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
+    if (page == null || !mounted) return;
+    if (page < 1 || page > total) {
+      ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('رقم الصفحة يجب أن يكون بين 1 و $total')),
         );
-      } catch (_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context)
-          ..removeCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text('تعذر الانتقال إلى الصفحة')),
-          );
-      }
-    } finally {
-      textController.dispose();
+      return;
+    }
+    final controller = _controller;
+    if (controller == null) return;
+    try {
+      await controller.animateToPage(
+        pageNumber: page,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(content: Text('تعذر الانتقال إلى الصفحة')),
+        );
     }
   }
-
-  static int? _parsePage(String raw) => int.tryParse(raw.trim());
 
   @override
   Widget build(BuildContext context) {
@@ -321,82 +279,18 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   }
 
   Widget _buildLoading() {
-    final downloadedMb = (_receivedBytes / (1024 * 1024)).toStringAsFixed(1);
-    final totalMb = _totalBytes != null
-        ? (_totalBytes! / (1024 * 1024)).toStringAsFixed(1)
-        : null;
-    final progress = _totalBytes != null && _totalBytes! > 0
-        ? _receivedBytes / _totalBytes!
-        : null;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(value: progress),
-          const SizedBox(height: 16),
-          Text(
-            _isDownloading
-                ? (totalMb != null
-                    ? '$downloadedMb / $totalMb م.ب'
-                    : '$downloadedMb م.ب')
-                : 'جاري فتح الكتاب...',
-            style: const TextStyle(fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return BookLoadingView(
+      received: _receivedBytes,
+      total: _totalBytes,
+      isDownloading: _isDownloading,
     );
   }
 
   Widget _buildError([Object? error]) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.cloud_off_outlined,
-                size: 64, color: colorScheme.onSurfaceVariant),
-            const SizedBox(height: 16),
-            const Text(
-              'تعذّر فتح الكتاب',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'تحقق من الاتصال بالإنترنت وحاول مجددًا، أو حمّل الكتاب للقراءة دون إنترنت.',
-              style:
-                  TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              alignment: WrapAlignment.center,
-              children: [
-                FilledButton.icon(
-                  onPressed: _retry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('إعادة المحاولة'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: _downloadForOffline,
-                  icon: const Icon(Icons.download_for_offline_outlined),
-                  label: const Text('تحميل للقراءة دون إنترنت'),
-                ),
-                TextButton.icon(
-                  onPressed: _openInBrowser,
-                  icon: const Icon(Icons.open_in_browser),
-                  label: const Text('فتح في المتصفح'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    return BookErrorView(
+      onRetry: _retry,
+      onDownloadOffline: _downloadForOffline,
+      onOpenBrowser: () => unawaited(_openInBrowser()),
     );
   }
 }

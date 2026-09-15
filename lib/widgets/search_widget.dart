@@ -195,58 +195,19 @@ class _SearchModalState extends State<SearchModal> {
     final sheetHeight = (availableHeight * 0.9 - keyboardHeight)
         .clamp(0.0, availableHeight);
 
-    Widget suggestionsArea;
-
-    if (widget.suggestions != null && widget.suggestions!.isNotEmpty) {
-      if (_filteredSuggestions.isNotEmpty) {
-        suggestionsArea = ListView.builder(
-          padding: EdgeInsets.zero,
-          itemCount: _filteredSuggestions.length,
-          itemBuilder: (context, index) {
-            final suggestion = _filteredSuggestions[index];
-            return ListTile(
-              leading: BookmarkButton(bookmarkId: suggestion),
-              title: Text(
-                suggestion,
-                style: TextStyle(color: onSurface),
-              ),
-              onTap: () => _selectSuggestion(suggestion),
-            );
-          },
-        );
-      } else {
-        suggestionsArea = Center(
-          child: Text(
-            widget.controller.text.isEmpty
-                ? 'Type to see suggestions'
-                : 'لا توجد نتائج بحث ل"${widget.controller.text}"',
-            style: TextStyle(
-              fontSize: 16,
-              color: onSurfaceVariant,
-            ),
-          ),
-        );
-      }
+    final hasSuggestions =
+        widget.suggestions != null && widget.suggestions!.isNotEmpty;
+    final Widget suggestionsArea;
+    if (hasSuggestions && _filteredSuggestions.isNotEmpty) {
+      suggestionsArea = _SuggestionsList(
+        suggestions: _filteredSuggestions,
+        onTap: _selectSuggestion,
+      );
     } else {
-      suggestionsArea = Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search,
-              size: 64,
-              color: onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Enter your search query',
-              style: TextStyle(
-                fontSize: 16,
-                color: onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+      suggestionsArea = _SearchEmptyState(
+        hasQuery: hasSuggestions,
+        queryText: widget.controller.text,
+        onSurfaceVariant: onSurfaceVariant,
       );
     }
 
@@ -281,55 +242,164 @@ class _SearchModalState extends State<SearchModal> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: widget.controller,
-                          focusNode: widget.focusNode,
-                          decoration: InputDecoration(
-                            hintText: widget.hintText,
-                            hintStyle:
-                                TextStyle(color: onSurfaceVariant),
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: widget.controller.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    onPressed: () {
-                                      widget.controller.clear();
-                                    },
-                                  )
-                                : null,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: false,
-                          ),
-                          onSubmitted: _performSearch,
-                          textInputAction: TextInputAction.search,
-                          style: TextStyle(color: onSurface),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: () {
-                          if (mounted) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                        child: const Text('إلغاء'),
-                      ),
-                    ],
-                  ),
+                _SearchTextField(
+                  controller: widget.controller,
+                  focusNode: widget.focusNode,
+                  hintText: widget.hintText,
+                  onSubmitted: _performSearch,
+                  onCancel: () {
+                    if (mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  onSurface: onSurface,
+                  onSurfaceVariant: onSurfaceVariant,
                 ),
-                Expanded(
-                  child: suggestionsArea,
-                ),
+                Expanded(child: suggestionsArea),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String? hintText;
+  final ValueChanged<String> onSubmitted;
+  final VoidCallback onCancel;
+  final Color onSurface;
+  final Color onSurfaceVariant;
+
+  const _SearchTextField({
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+    required this.onSubmitted,
+    required this.onCancel,
+    required this.onSurface,
+    required this.onSurfaceVariant,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: TextStyle(color: onSurfaceVariant),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: controller.clear,
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: false,
+              ),
+              onSubmitted: onSubmitted,
+              textInputAction: TextInputAction.search,
+              style: TextStyle(color: onSurface),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onCancel,
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionsList extends StatelessWidget {
+  final List<String> suggestions;
+  final ValueChanged<String> onTap;
+
+  const _SuggestionsList({
+    required this.suggestions,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        final suggestion = suggestions[index];
+        return ListTile(
+          leading: BookmarkButton(bookmarkId: suggestion),
+          title: Text(
+            suggestion,
+            style: TextStyle(color: onSurface),
+          ),
+          onTap: () => onTap(suggestion),
+        );
+      },
+    );
+  }
+}
+
+class _SearchEmptyState extends StatelessWidget {
+  /// True when suggestions were provided (query mode); false when there is
+  /// no search context (suggestions null/empty).
+  final bool hasQuery;
+  final String queryText;
+  final Color onSurfaceVariant;
+
+  const _SearchEmptyState({
+    required this.hasQuery,
+    required this.queryText,
+    required this.onSurfaceVariant,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasQuery) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search,
+              size: 64,
+              color: onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Enter your search query',
+              style: TextStyle(
+                fontSize: 16,
+                color: onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Center(
+      child: Text(
+        queryText.isEmpty
+            ? 'Type to see suggestions'
+            : 'لا توجد نتائج بحث ل"$queryText"',
+        style: TextStyle(
+          fontSize: 16,
+          color: onSurfaceVariant,
         ),
       ),
     );
