@@ -366,7 +366,8 @@ const manzoumaAsmaaHosna = Zikr(
 تقرأ الأربعاء صباحًا جماعة بمسجد الأشراف.
   ''',
   url:
-      "https://archive.org/download/dorar_audio/%D9%85%D9%86%D8%B8%D9%88%D9%85%D8%A9%20%D8%A3%D8%B3%D9%85%D8%A7%D8%A1%20%D8%A7%D9%84%D9%84%D9%87%20%D8%A7%D9%84%D8%AD%D8%B3%D9%86%D9%89.mp3",
+      // "https://archive.org/download/dorar_audio/%D9%85%D9%86%D8%B8%D9%88%D9%85%D8%A9%20%D8%A3%D8%B3%D9%85%D8%A7%D8%A1%20%D8%A7%D9%84%D9%84%D9%87%20%D8%A7%D9%84%D8%AD%D8%B3%D9%86%D9%89.mp3",
+      "https://archive.org/download/dorar_audio/%D9%88%D8%B1%D8%AF_%D9%85%D9%86%D8%B8%D9%88%D9%85%D8%A9_%D8%A3%D8%B3%D9%85%D8%A7%D8%A1_%D8%A7%D9%84%D9%84%D9%87_%D8%A7%D9%84%D8%AD%D8%B3%D9%86%D9%8A_%D8%AF_%D9%8A%D8%B3%D8%B1%D9%8A.mp3",
   content: '''
 ﴿ وَلِلَّهِ ٱلْأَسْمَآءُ ٱلْحُسْنَىٰ فَٱدْعُوهُ بِهَاۖ ﴾
 تَبَارَكْتَ يَا اللهُ رَبِّي لَكَ الثَّنـَـا __ فَحَمْدًا لِمَوْلَانَــا وَشُكْرًا لِرَبِّنَـا
