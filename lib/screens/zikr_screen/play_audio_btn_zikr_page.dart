@@ -60,7 +60,7 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
         }
 
         return IconButton(
-          onPressed: () => _showStreamDownloadDialog(context, ref),
+          onPressed: () => _handleAudioTap(context, ref),
           icon: const Icon(Icons.volume_up),
           tooltip: 'استماع أو تحميل الصوت',
         );
@@ -78,6 +78,39 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
         );
   }
 
+  void _handleAudioTap(BuildContext context, WidgetRef ref) {
+    if (url == null) return;
+    final action = ref.read(audioOpenActionProvider);
+    switch (action) {
+      case AudioOpenAction.stream:
+        _streamDirectly(ref);
+        break;
+      case AudioOpenAction.download:
+        _downloadDirectly(ref);
+        break;
+      case AudioOpenAction.ask:
+        _showStreamDownloadDialog(context, ref);
+        break;
+    }
+  }
+
+  void _streamDirectly(WidgetRef ref) {
+    ref.read(audioProvider.notifier).playTrack(
+          AudioTrack(id: id, title: title, remoteUrl: url!),
+        );
+  }
+
+  void _downloadDirectly(WidgetRef ref) {
+    ref.read(downloaderProvider).startDownload(
+          DownloadItem(
+            id: id,
+            title: title,
+            url: url!,
+            type: DownloadType.narrations,
+          ),
+        );
+  }
+
   void _showStreamDownloadDialog(BuildContext context, WidgetRef ref) {
     final downloadItem = DownloadItem(
       id: id,
@@ -91,6 +124,7 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
       builder: (dialogContext) {
         return StreamOrDownloadDialog(
           item: downloadItem,
+          showRememberOption: true,
           onStream: () {
             Navigator.of(dialogContext).pop();
             ref.read(audioProvider.notifier).playTrack(

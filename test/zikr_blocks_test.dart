@@ -1,6 +1,5 @@
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_blocks.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hijri/hijri_calendar.dart';
 
 void main() {
   group('parseZikrBlocks', () {
@@ -86,10 +85,9 @@ void main() {
       expect((blocks[0] as BaytBlock).sadr,
           'فِي كُـلِّ فَاتِحَةٍ لِلْقَوْلِ مُعْتبِرَهْ');
     });
-
-    test('print hijri date', () {
-      final h = HijriCalendar.fromDate(DateTime.now());
-      print('=== DART HIJRI: ${h.hDay} / ${h.hMonth} / ${h.hYear} ===');
+    test('empty content yields no blocks', () {
+      expect(parseZikrBlocks(''), isEmpty);
+      expect(parseZikrBlocks('\n  \n'), isEmpty);
     });
   });
 }

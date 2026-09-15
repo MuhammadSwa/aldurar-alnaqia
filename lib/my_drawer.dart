@@ -1,17 +1,19 @@
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/audio_action_setting_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/toggle_theme_btn_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-class MyDrawer extends StatelessWidget {
+class MyDrawer extends ConsumerWidget {
   const MyDrawer({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
@@ -38,11 +40,9 @@ class MyDrawer extends StatelessWidget {
                   ],
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: YousriaBeginningDayDropDown(),
-              ),
+              const YousriaBeginningDayDropDown(),
               const FontSizeSettingsWidget(),
+              const AudioActionSettingWidget(),
               _buildDrawerItem(
                   context: context,
                   icon: Icon(

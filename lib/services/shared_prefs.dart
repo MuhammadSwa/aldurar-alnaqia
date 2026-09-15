@@ -156,4 +156,13 @@ class SharedPreferencesService {
   static int? getPdfLastPage(String title) {
     return _sharedPreferences?.getInt(_pdfLastPageKey(title));
   }
+
+  // --- Audio open action preference: 'ask' | 'stream' | 'download' ---
+  static String getAudioOpenAction() {
+    return _sharedPreferences?.getString('audio_open_action') ?? 'ask';
+  }
+
+  static Future<void> setAudioOpenAction(String action) async {
+    await _sharedPreferences?.setString('audio_open_action', action);
+  }
 }

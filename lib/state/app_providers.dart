@@ -107,3 +107,48 @@ class HijriOffsetNotifier extends Notifier<int> {
 
 final hijriOffsetProvider =
     NotifierProvider<HijriOffsetNotifier, int>(HijriOffsetNotifier.new);
+
+/// What should happen when the user taps an audio button for a file that
+/// is not downloaded yet.
+enum AudioOpenAction {
+  /// Show the stream/download dialog every time.
+  ask,
+
+  /// Always stream directly without asking.
+  stream,
+
+  /// Always start the download without asking.
+  download;
+
+  static AudioOpenAction fromString(String? value) {
+    return switch (value) {
+      'stream' => AudioOpenAction.stream,
+      'download' => AudioOpenAction.download,
+      _ => AudioOpenAction.ask,
+    };
+  }
+
+  String toStorageString() {
+    return switch (this) {
+      AudioOpenAction.ask => 'ask',
+      AudioOpenAction.stream => 'stream',
+      AudioOpenAction.download => 'download',
+    };
+  }
+}
+
+class AudioOpenActionNotifier extends Notifier<AudioOpenAction> {
+  @override
+  AudioOpenAction build() =>
+      AudioOpenAction.fromString(SharedPreferencesService.getAudioOpenAction());
+
+  Future<void> set(AudioOpenAction action) async {
+    await SharedPreferencesService.setAudioOpenAction(
+        action.toStorageString());
+    state = action;
+  }
+}
+
+final audioOpenActionProvider =
+    NotifierProvider<AudioOpenActionNotifier, AudioOpenAction>(
+        AudioOpenActionNotifier.new);
