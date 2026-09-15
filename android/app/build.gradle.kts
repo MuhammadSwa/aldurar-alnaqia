@@ -50,6 +50,21 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+
+            // R8 dex shrinking + resource shrinking (release only).
+            // No custom rules needed:
+            //  * manifest-declared components (activities, services,
+            //    receivers) are kept automatically via manifest merging,
+            //  * plugin AARs (Media3, WorkManager, play-services, Flutter
+            //    engine) ship their own consumer rules,
+            //  * app code uses no reflection/serialization — layouts hold
+            //    framework widgets only, resource keep/discard lives in
+            //    res/raw/keep.xml.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt")
+            )
         }
     }
 }
