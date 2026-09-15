@@ -40,9 +40,6 @@ dependencies:
   adaptive_theme: ^3.6.0
   easy_rich_text: ^2.1.0
   just_audio: ^0.10.0
-  media_kit_libs_audio: any
-  media_kit_libs_linux: any
-  just_audio_media_kit: ^2.0.4
   audio_video_progress_bar: ^2.0.3
 
   flutter_riverpod: ^3.3.2

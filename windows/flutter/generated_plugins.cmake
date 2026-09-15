@@ -6,7 +6,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_window
   flutter_timezone
   geolocator_windows
-  media_kit_libs_windows_audio
   pdfx
   permission_handler_windows
   url_launcher_windows

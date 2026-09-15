@@ -5,14 +5,13 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:aldurar_alnaqia/audio/audio_handler.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 /// Raw playback state reported by the engine, before the controller applies
-/// its own policy (e.g. rewind-on-complete, retry-on-error).
+/// its own policy (e.g. rewind-on-complete).
 enum EnginePlaybackState { buffering, playing, paused, completed, idle }
 
 /// Events emitted by [AudioEngine] for the controller to react to.
@@ -83,14 +82,20 @@ abstract class AudioEngine {
   Future<void> dispose();
 }
 
+/// [just_audio] on its native backends:
+///
+/// * Android → ExoPlayer (Media3),
+/// * iOS / macOS → AVPlayer,
+/// * Web → HTML audio.
+///
+/// No extra backend setup is needed. Desktop Linux/Windows have no native
+/// just_audio backend; [load] will throw there and the controller surfaces
+/// it as a normal error state.
 class JustAudioEngine implements AudioEngine {
   /// Optional media-notification bridge; null on platforms without
   /// notification support (desktop) where playback runs bare.
   JustAudioEngine({NarrationAudioHandler? notifications})
       : _notifications = notifications {
-    // media_kit backend for Linux/desktop playback (no-op elsewhere).
-    JustAudioMediaKit.ensureInitialized();
-
     _notifications?.attach(_player);
 
     _subscriptions.add(_player.playerStateStream.listen((playerState) {
@@ -123,19 +128,10 @@ class JustAudioEngine implements AudioEngine {
       ),
     );
 
-    void pushProgress(Duration position, Duration buffered, Duration total) =>
-        _emit(EngineProgress(
-          position: position,
-          buffered: buffered,
-          duration: total,
-        ));
-
-    _subscriptions.add(_player.positionStream.listen((p) => pushProgress(
-        p, _player.bufferedPosition, _player.duration ?? Duration.zero)));
-    _subscriptions.add(_player.bufferedPositionStream.listen((b) =>
-        pushProgress(_player.position, b, _player.duration ?? Duration.zero)));
-    _subscriptions.add(_player.durationStream.listen((d) => pushProgress(
-        _player.position, _player.bufferedPosition, d ?? Duration.zero)));
+    _subscriptions.add(_player.positionStream.listen((_) => _emitProgress()));
+    _subscriptions
+        .add(_player.bufferedPositionStream.listen((_) => _emitProgress()));
+    _subscriptions.add(_player.durationStream.listen((_) => _emitProgress()));
   }
 
   double _currentSpeed = 1.0;
@@ -151,6 +147,14 @@ class JustAudioEngine implements AudioEngine {
 
   void _emit(EngineEvent event) {
     if (!_events.isClosed) _events.add(event);
+  }
+
+  void _emitProgress() {
+    _emit(EngineProgress(
+      position: _player.position,
+      buffered: _player.bufferedPosition,
+      duration: _player.duration ?? Duration.zero,
+    ));
   }
 
   /// The bundled cover image, extracted to a real file once.

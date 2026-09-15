@@ -12,23 +12,20 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 /// Orchestrates playback policy on top of [AudioEngine]:
 ///  * resolves each track's source (downloaded file first, else direct
 ///    https streaming),
-///  * recovers automatically from transient errors (seek back + replay,
-///    exponential backoff, local->remote fallback),
+///  * falls back from a broken local file to streaming once,
 ///  * exposes one immutable [AudioState] for the whole UI.
+///
+/// Transient network hiccups (buffering, reconnection) are handled inside
+/// the native player (ExoPlayer / AVPlayer); this layer only surfaces
+/// terminal failures and lets the user retry with [togglePlayPause].
 class AudioController extends Notifier<AudioState> {
-  /// Max consecutive recovery attempts before surfacing an error.
-  static const int _maxRetries = 3;
-
   AudioEngine get _engine => ref.watch(audioEngineProvider);
 
   StreamSubscription<EngineEvent>? _eventSub;
 
-  /// The request backing the current/last attempted load, reused by retries.
+  /// The request backing the current load, reused for the local→remote
+  /// fallback when the engine reports an async failure.
   EngineLoadRequest? _currentRequest;
-
-  int _retryAttempt = 0;
-  Timer? _retryTimer;
-  bool _stoppedIntentionally = true;
 
   @override
   AudioState build() {
@@ -41,7 +38,6 @@ class AudioController extends Notifier<AudioState> {
   }
 
   void _dispose() {
-    _cancelRetry();
     _eventSub?.cancel();
     _eventSub = null;
   }
@@ -53,10 +49,6 @@ class AudioController extends Notifier<AudioState> {
   /// Plays [track]: prefers the downloaded file when it exists, otherwise
   /// streams the remote URL directly.
   Future<void> playTrack(AudioTrack track) async {
-    _cancelRetry();
-    _stoppedIntentionally = false;
-    _retryAttempt = 0;
-
     state = state.copyWith(
       status: AudioStatus.loading,
       track: track,
@@ -68,7 +60,7 @@ class AudioController extends Notifier<AudioState> {
 
     final request = await _resolveRequest(track);
     _currentRequest = request;
-    await _loadWithRetryTracking(request);
+    await _tryLoad(request);
   }
 
   /// Toggles play/pause; restarts the current track after a terminal error.
@@ -84,7 +76,7 @@ class AudioController extends Notifier<AudioState> {
         await _engine.play();
         break;
       case AudioStatus.error:
-        // Terminal error: start over with fresh retries.
+        // Terminal error: start over.
         if (state.track != null) {
           await playTrack(state.track!);
         }
@@ -95,8 +87,6 @@ class AudioController extends Notifier<AudioState> {
   }
 
   Future<void> stopPlayer() async {
-    _cancelRetry();
-    _stoppedIntentionally = true;
     _currentRequest = null;
     await _engine.stop();
     state = AudioState(speed: state.speed);
@@ -139,17 +129,35 @@ class AudioController extends Notifier<AudioState> {
     );
   }
 
-  Future<void> _loadWithRetryTracking(EngineLoadRequest request) async {
+  /// Loads [request]; on a local-file failure retries once over the network
+  /// before surfacing an error.
+  Future<void> _tryLoad(EngineLoadRequest request) async {
     try {
       await _engine.load(request);
     } catch (e, st) {
       logError('Audio load failed for "${request.title}"', e, st);
-      _scheduleRecovery();
+      if (request.isLocal && state.track != null) {
+        final fallback = EngineLoadRequest(
+          uri: state.track!.remoteUrl,
+          trackId: request.trackId,
+          title: request.title,
+          isLocal: false,
+        );
+        _currentRequest = fallback;
+        try {
+          await _engine.load(fallback);
+          return;
+        } catch (e2, st2) {
+          logError('Audio fallback stream failed for "${request.title}"',
+              e2, st2);
+        }
+      }
+      _fail();
     }
   }
 
   // ---------------------------------------------------------------------
-  // Error recovery
+  // Engine events
   // ---------------------------------------------------------------------
 
   void _onEngineEvent(EngineEvent event) {
@@ -166,7 +174,22 @@ class AudioController extends Notifier<AudioState> {
         break;
       case EngineFailed():
         logWarn('Audio engine reported failure');
-        _scheduleRecovery();
+        final request = _currentRequest;
+        // Broken local file that only fails asynchronously: try streaming.
+        if (request != null && request.isLocal && state.track != null) {
+          final fallback = EngineLoadRequest(
+            uri: state.track!.remoteUrl,
+            trackId: request.trackId,
+            title: request.title,
+            isLocal: false,
+          );
+          _currentRequest = fallback;
+          state = state.copyWith(status: AudioStatus.loading);
+          unawaited(_tryLoad(fallback));
+        } else if (state.track != null &&
+            state.status != AudioStatus.stopped) {
+          _fail();
+        }
         break;
     }
   }
@@ -174,14 +197,11 @@ class AudioController extends Notifier<AudioState> {
   void _onPlaybackState(EnginePlaybackState engineState) {
     switch (engineState) {
       case EnginePlaybackState.buffering:
-        if (!_stoppedIntentionally && state.track != null) {
+        if (state.track != null && state.status != AudioStatus.error) {
           state = state.copyWith(status: AudioStatus.loading);
         }
         break;
       case EnginePlaybackState.playing:
-        // Successful playback resets the retry counter.
-        _retryAttempt = 0;
-        _cancelRetry();
         state =
             state.copyWith(status: AudioStatus.playing, clearError: true);
         break;
@@ -202,52 +222,17 @@ class AudioController extends Notifier<AudioState> {
         break;
       case EnginePlaybackState.idle:
         // Idle follows intentional stops; unexpected idles arrive together
-        // with [EngineFailed] which drives recovery.
+        // with [EngineFailed] which drives the error state.
         break;
     }
   }
 
-  void _scheduleRecovery() {
-    if (_stoppedIntentionally || state.track == null) return;
-    if (_retryTimer != null) return; // recovery already pending
-
-    if (_retryAttempt >= _maxRetries) {
-      state = state.copyWith(
-        status: AudioStatus.error,
-        errorMessage: 'تعذّر تشغيل الصوت بعد عدة محاولات',
-      );
-      return;
-    }
-
-    _retryAttempt++;
-    final delay = Duration(milliseconds: 500 << (_retryAttempt - 1));
-    logInfo('Audio recovery attempt $_retryAttempt/$_maxRetries '
-        'in ${delay.inMilliseconds}ms');
-
-    _retryTimer = Timer(delay, () async {
-      _retryTimer = null;
-      var request = _currentRequest;
-      if (request == null || state.track == null) return;
-
-      // If the local file keeps failing, fall back to streaming once.
-      if (request.isLocal && _retryAttempt >= 2) {
-        request = EngineLoadRequest(
-          uri: state.track!.remoteUrl,
-          trackId: request.trackId,
-          title: request.title,
-          isLocal: false,
-        );
-        _currentRequest = request;
-      }
-
-      state = state.copyWith(status: AudioStatus.loading);
-      await _loadWithRetryTracking(request);
-    });
-  }
-
-  void _cancelRetry() {
-    _retryTimer?.cancel();
-    _retryTimer = null;
+  void _fail() {
+    if (state.track == null || state.status == AudioStatus.stopped) return;
+    state = state.copyWith(
+      status: AudioStatus.error,
+      errorMessage: 'تعذّر تشغيل الصوت',
+    );
   }
 }
 

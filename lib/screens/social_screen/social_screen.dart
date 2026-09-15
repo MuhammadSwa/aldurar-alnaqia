@@ -169,7 +169,7 @@ class SocialScreen extends StatelessWidget {
                       height: 20,
                     ),
                     Image.asset(
-                      'assets/imgs/social_png.png',
+                      'assets/imgs/social_webp.webp',
                     ),
                     ListView.builder(
                       physics: const NeverScrollableScrollPhysics(),

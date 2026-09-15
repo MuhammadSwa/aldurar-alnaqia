@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,11 +69,12 @@ AudioTrack trackFor({String id = 'zikr-1'}) => AudioTrack(
       remoteUrl: 'https://archive.org/download/x/$id.mp3',
     );
 
-ProviderContainer makeContainer(FakeEngine engine) {
+ProviderContainer makeContainer(FakeEngine engine,
+    {StorageService? storage}) {
   return ProviderContainer(
     overrides: [
       audioEngineProvider.overrideWithValue(engine),
-      storageProvider.overrideWithValue(FakeStorage()),
+      storageProvider.overrideWithValue(storage ?? FakeStorage()),
     ],
   );
 }
@@ -139,32 +141,7 @@ void main() {
     expect(state.position, Duration.zero);
   });
 
-  test('load failure triggers retries with backoff then recovers', () async {
-    final engine = FakeEngine()..failNextLoads = 2;
-    final container = makeContainer(engine);
-    addTearDown(container.dispose);
-
-    // Speed up backoff by waiting through it in real time (0.5s + 1s max).
-    final playFuture =
-        container.read(audioProvider.notifier).playTrack(trackFor());
-
-    // First load attempt throws synchronously inside load().
-    await playFuture;
-    // Wait for retry timers (500ms + 1000ms).
-    await Future<void>.delayed(const Duration(milliseconds: 1800));
-
-    expect(engine.loads.length, greaterThanOrEqualTo(3),
-        reason: 'original attempt + 2 retries');
-    expect(container.read(audioProvider).status,
-        isNot(AudioStatus.error));
-
-    // Simulate the player finally succeeding.
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
-    await Future<void>.delayed(Duration.zero);
-    expect(container.read(audioProvider).status, AudioStatus.playing);
-  }, timeout: const Timeout(Duration(seconds: 10)));
-
-  test('gives up after max retries and surfaces error state', () async {
+  test('load failure surfaces an error immediately', () async {
     final engine = FakeEngine()
       ..failNextLoads = 99
       ..loadError = Exception('network down');
@@ -172,31 +149,70 @@ void main() {
     addTearDown(container.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
-    // Backoff totals 0.5s + 1s + 2s; wait beyond.
-    await Future<void>.delayed(const Duration(milliseconds: 3900));
 
     final state = container.read(audioProvider);
     expect(state.status, AudioStatus.error);
     expect(state.errorMessage, isNotNull);
-    expect(engine.loads.length, 4, reason: 'initial + 3 retries');
-  }, timeout: const Timeout(Duration(seconds: 15)));
+    // No timer-based retries: one attempt for a remote source.
+    expect(engine.loads, hasLength(1));
+  });
 
-  test('successful playing resets retry counter', () async {
+  test('broken local file falls back to streaming once', () async {
+    // Create a real temp file so _resolveRequest picks the local path.
+    final dir = await Directory.systemTemp.createTemp('audio_test');
+    addTearDown(() => dir.delete(recursive: true));
+    final localFile = File('${dir.path}/zikr-1.mp3');
+    await localFile.writeAsString('fake audio');
+
+    FakeStorage storageWithLocal() {
+      return _LocalFakeStorage(localFile.path);
+    }
+
+    final engine = FakeEngine()..failNextLoads = 1;
+    final container =
+        makeContainer(engine, storage: storageWithLocal());
+    addTearDown(container.dispose);
+
+    await container.read(audioProvider.notifier).playTrack(trackFor());
+
+    expect(engine.loads, hasLength(2),
+        reason: 'local attempt + one remote fallback');
+    expect(engine.loads[0].isLocal, isTrue);
+    expect(engine.loads[1].isLocal, isFalse);
+    expect(container.read(audioProvider).status, isNot(AudioStatus.error));
+  });
+
+  test('async engine failure surfaces an error', () async {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
-
-    // A transient failure...
     engine.emit(const EngineFailed('connection reset'));
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    // ...then success resets attempts.
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
     await Future<void>.delayed(Duration.zero);
 
+    final state = container.read(audioProvider);
+    expect(state.status, AudioStatus.error);
+    expect(state.errorMessage, isNotNull);
+  });
+
+  test('error can be retried via togglePlayPause', () async {
+    final engine = FakeEngine()..failNextLoads = 1;
+    final container = makeContainer(engine);
+    addTearDown(container.dispose);
+
+    final notifier = container.read(audioProvider.notifier);
+    await notifier.playTrack(trackFor());
+    expect(container.read(audioProvider).status, AudioStatus.error);
+
+    await notifier.togglePlayPause();
+    expect(engine.loads, hasLength(2));
+    expect(container.read(audioProvider).status, AudioStatus.loading);
+
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
     expect(container.read(audioProvider).status, AudioStatus.playing);
-  }, timeout: const Timeout(Duration(seconds: 10)));
+  });
 
   test('stopPlayer hides the mini player and clears the track', () async {
     final engine = FakeEngine();
@@ -215,4 +231,12 @@ void main() {
     expect(state.track, isNull);
     expect(state.speed, 1.0, reason: 'speed preference survives stops');
   });
+}
+
+class _LocalFakeStorage extends FakeStorage {
+  _LocalFakeStorage(this.localPath);
+  final String localPath;
+
+  @override
+  String pathFor(DownloadType type, String id) => localPath;
 }
