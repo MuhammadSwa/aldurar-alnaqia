@@ -59,8 +59,7 @@ final darkTheme = ThemeData(
 
   colorScheme: _darkColorScheme,
   appBarTheme: AppBarTheme(
-    // Same green tint as the audio mini-player (secondaryContainer) so the
-    // top bar, bottom bar and player share one color in light and dark mode.
+    // Same dark container as the bottom NavigationBar (secondaryContainer).
     backgroundColor: _darkColorScheme.secondaryContainer,
     foregroundColor: _darkColorScheme.onSecondaryContainer,
     surfaceTintColor: Colors.transparent,
@@ -87,7 +86,10 @@ final darkTheme = ThemeData(
       padding: WidgetStateProperty.all<EdgeInsets>(
         const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       ),
-      foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
+      backgroundColor: WidgetStateProperty.all<Color>(
+          _darkColorScheme.secondaryContainer),
+      foregroundColor: WidgetStateProperty.all<Color>(
+          _darkColorScheme.onSecondaryContainer),
       shape: WidgetStateProperty.all<OutlinedBorder>(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
@@ -191,22 +193,20 @@ final lightTheme = ThemeData(
       )),
   colorScheme: _lightColorScheme,
   appBarTheme: AppBarTheme(
-    // Same green tint as the audio mini-player (secondaryContainer) so the
-    // top bar, bottom bar and player share one color in light and dark mode.
-    backgroundColor: _lightColorScheme.secondaryContainer,
-    foregroundColor: _lightColorScheme.onSecondaryContainer,
+    // Same as the "إعدادات المواقيت" ElevatedButton (green.shade200
+    // background, black foreground in light mode).
+    backgroundColor: Colors.green.shade200,
+    foregroundColor: Colors.black,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
     scrolledUnderElevation: 0,
-    titleTextStyle: TextStyle(
+    titleTextStyle: const TextStyle(
       fontFamily: 'NotoNaskh',
       fontSize: 24,
-      color: _lightColorScheme.onSecondaryContainer,
+      color: Colors.black,
     ),
-    iconTheme:
-        IconThemeData(color: _lightColorScheme.onSecondaryContainer),
-    actionsIconTheme:
-        IconThemeData(color: _lightColorScheme.onSecondaryContainer),
+    iconTheme: IconThemeData(color: Colors.black),
+    actionsIconTheme: IconThemeData(color: Colors.black),
   ),
   iconTheme: IconThemeData(
     color: Colors.green.shade900,
@@ -323,8 +323,7 @@ ThemeData getDarkTheme(double fontSize) {
 
     colorScheme: _darkColorScheme,
     appBarTheme: AppBarTheme(
-      // Same green tint as the audio mini-player (secondaryContainer) so the
-      // top bar, bottom bar and player share one color in light and dark mode.
+      // Same dark container as the bottom NavigationBar (secondaryContainer).
       backgroundColor: _darkColorScheme.secondaryContainer,
       foregroundColor: _darkColorScheme.onSecondaryContainer,
       surfaceTintColor: Colors.transparent,
@@ -351,7 +350,10 @@ ThemeData getDarkTheme(double fontSize) {
         padding: WidgetStateProperty.all<EdgeInsets>(
           const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
         ),
-        foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
+        backgroundColor: WidgetStateProperty.all<Color>(
+            _darkColorScheme.secondaryContainer),
+        foregroundColor: WidgetStateProperty.all<Color>(
+            _darkColorScheme.onSecondaryContainer),
         shape: WidgetStateProperty.all<OutlinedBorder>(
           RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
@@ -455,22 +457,20 @@ ThemeData getLightTheme(double fontSize) {
         )),
     colorScheme: _lightColorScheme,
     appBarTheme: AppBarTheme(
-      // Same green tint as the audio mini-player (secondaryContainer) so the
-      // top bar, bottom bar and player share one color in light and dark mode.
-      backgroundColor: _lightColorScheme.secondaryContainer,
-      foregroundColor: _lightColorScheme.onSecondaryContainer,
+      // Same as the "إعدادات المواقيت" ElevatedButton (green.shade200
+      // background, black foreground in light mode).
+      backgroundColor: Colors.green.shade200,
+      foregroundColor: Colors.black,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      titleTextStyle: TextStyle(
+      titleTextStyle: const TextStyle(
         fontFamily: 'NotoNaskh',
         fontSize: 24,
-        color: _lightColorScheme.onSecondaryContainer,
+        color: Colors.black,
       ),
-      iconTheme:
-          IconThemeData(color: _lightColorScheme.onSecondaryContainer),
-      actionsIconTheme:
-          IconThemeData(color: _lightColorScheme.onSecondaryContainer),
+      iconTheme: IconThemeData(color: Colors.black),
+      actionsIconTheme: IconThemeData(color: Colors.black),
     ),
     iconTheme: IconThemeData(
       color: Colors.green.shade900,
