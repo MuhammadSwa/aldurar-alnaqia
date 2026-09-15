@@ -117,9 +117,6 @@ flutter:
     - family: NotoNaskh
       fonts:
         - asset: fonts/NotoNaskArabic.ttf
-    - family: Uthmani
-      fonts:
-        - asset: fonts/uthmanic_hafs_v22.ttf
     - family: AmiriQuran
       fonts:
         # - asset: fonts/AmiriQuran-Regular.ttf
