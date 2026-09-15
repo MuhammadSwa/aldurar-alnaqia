@@ -51,7 +51,6 @@ class SettingsScreen extends StatelessWidget {
             ),
             const Divider(),
             const FontSizeSettingsWidget(),
-            const FontFamilySettingsWidget(),
             const Divider(),
             Padding(
               padding: const EdgeInsets.all(20),

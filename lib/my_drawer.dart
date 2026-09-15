@@ -43,7 +43,6 @@ class MyDrawer extends StatelessWidget {
                 child: YousriaBeginningDayDropDown(),
               ),
               const FontSizeSettingsWidget(),
-              const FontFamilySettingsWidget(),
               _buildDrawerItem(
                   context: context,
                   icon: Icon(

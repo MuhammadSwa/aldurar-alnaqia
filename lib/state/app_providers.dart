@@ -72,19 +72,6 @@ class FontSizeNotifier extends Notifier<double> {
 final fontSizeProvider =
     NotifierProvider<FontSizeNotifier, double>(FontSizeNotifier.new);
 
-class FontFamilyNotifier extends Notifier<String> {
-  @override
-  String build() => SharedPreferencesService.getQuranFontFamily();
-
-  void change(String newFamily) {
-    SharedPreferencesService.setQuranFontFamily(newFamily);
-    state = newFamily;
-  }
-}
-
-final fontFamilyProvider =
-    NotifierProvider<FontFamilyNotifier, String>(FontFamilyNotifier.new);
-
 class BookmarksNotifier extends Notifier<List<String>> {
   @override
   List<String> build() => SharedPreferencesService.getBookmarks();

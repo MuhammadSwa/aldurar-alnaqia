@@ -2,56 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 
-class FontFamilySettingsWidget extends ConsumerStatefulWidget {
-  const FontFamilySettingsWidget({super.key});
-
-  @override
-  ConsumerState<FontFamilySettingsWidget> createState() =>
-      _FontFamilySettingsWidgetState();
-}
-
-class _FontFamilySettingsWidgetState
-    extends ConsumerState<FontFamilySettingsWidget> {
-  String araFontFamily(String eng) {
-    return eng == 'Amiri' ? 'عثماني' : 'عثماني ملون';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final fontFamily = ref.watch(fontFamilyProvider);
-
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        const Text(
-          'الخط القرآني',
-          style: TextStyle(fontSize: 20),
-        ),
-        DropdownButton(
-          hint: Text(araFontFamily(fontFamily)),
-          onChanged: (font) {
-            if (font != null) {
-              ref.read(fontFamilyProvider.notifier).change(font);
-            }
-          },
-          items: const <DropdownMenuItem<String>>[
-            DropdownMenuItem(
-              alignment: Alignment.centerRight,
-              value: 'Amiri',
-              child: Text('عثماني'),
-            ),
-            DropdownMenuItem(
-              alignment: Alignment.centerRight,
-              value: 'AmiriQuran',
-              child: Text('عثماني ملون'),
-            ),
-          ],
-        ),
-      ]),
-    );
-  }
-}
-
 class FontSizeSettingsWidget extends ConsumerWidget {
   const FontSizeSettingsWidget({super.key});
 

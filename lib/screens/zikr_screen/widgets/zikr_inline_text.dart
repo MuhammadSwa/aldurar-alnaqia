@@ -26,7 +26,7 @@ class ZikrInlineText extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fontSize = ref.watch(fontSizeProvider) * sizeFactor;
-    final fontFamily = ref.watch(fontFamilyProvider);
+    const fontFamily = 'AmiriQuran';
     final base = Theme.of(context).textTheme.bodyMedium!;
 
     return EasyRichText(
@@ -69,7 +69,7 @@ class ZikrInlineText extends ConsumerWidget {
         EasyRichTextPattern(
           targetString: const [
             r'﴿[^﴾]+﴾',
-            'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+            'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
           ],
           style: TextStyle(fontFamily: fontFamily, color: base.color),
         ),
