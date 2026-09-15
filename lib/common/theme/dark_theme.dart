@@ -193,20 +193,22 @@ final lightTheme = ThemeData(
       )),
   colorScheme: _lightColorScheme,
   appBarTheme: AppBarTheme(
-    // Same as the "إعدادات المواقيت" ElevatedButton (green.shade200
-    // background, black foreground in light mode).
-    backgroundColor: Colors.green.shade200,
-    foregroundColor: Colors.black,
+    // Same light container as the bottom NavigationBar and audio
+    // mini-player (secondaryContainer).
+    backgroundColor: _lightColorScheme.secondaryContainer,
+    foregroundColor: _lightColorScheme.onSecondaryContainer,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
     scrolledUnderElevation: 0,
-    titleTextStyle: const TextStyle(
+    titleTextStyle: TextStyle(
       fontFamily: 'NotoNaskh',
       fontSize: 24,
-      color: Colors.black,
+      color: _lightColorScheme.onSecondaryContainer,
     ),
-    iconTheme: IconThemeData(color: Colors.black),
-    actionsIconTheme: IconThemeData(color: Colors.black),
+    iconTheme:
+        IconThemeData(color: _lightColorScheme.onSecondaryContainer),
+    actionsIconTheme:
+        IconThemeData(color: _lightColorScheme.onSecondaryContainer),
   ),
   iconTheme: IconThemeData(
     color: Colors.green.shade900,
@@ -216,8 +218,10 @@ final lightTheme = ThemeData(
       padding: WidgetStateProperty.all<EdgeInsets>(
         const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       ),
-      backgroundColor: WidgetStateProperty.all<Color>(Colors.green.shade200),
-      foregroundColor: WidgetStateProperty.all<Color>(Colors.black),
+      backgroundColor: WidgetStateProperty.all<Color>(
+          _lightColorScheme.secondaryContainer),
+      foregroundColor: WidgetStateProperty.all<Color>(
+          _lightColorScheme.onSecondaryContainer),
       shape: WidgetStateProperty.all<OutlinedBorder>(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.0),
@@ -457,20 +461,22 @@ ThemeData getLightTheme(double fontSize) {
         )),
     colorScheme: _lightColorScheme,
     appBarTheme: AppBarTheme(
-      // Same as the "إعدادات المواقيت" ElevatedButton (green.shade200
-      // background, black foreground in light mode).
-      backgroundColor: Colors.green.shade200,
-      foregroundColor: Colors.black,
+      // Same light container as the bottom NavigationBar and audio
+      // mini-player (secondaryContainer).
+      backgroundColor: _lightColorScheme.secondaryContainer,
+      foregroundColor: _lightColorScheme.onSecondaryContainer,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         fontFamily: 'NotoNaskh',
         fontSize: 24,
-        color: Colors.black,
+        color: _lightColorScheme.onSecondaryContainer,
       ),
-      iconTheme: IconThemeData(color: Colors.black),
-      actionsIconTheme: IconThemeData(color: Colors.black),
+      iconTheme:
+          IconThemeData(color: _lightColorScheme.onSecondaryContainer),
+      actionsIconTheme:
+          IconThemeData(color: _lightColorScheme.onSecondaryContainer),
     ),
     iconTheme: IconThemeData(
       color: Colors.green.shade900,
@@ -480,8 +486,10 @@ ThemeData getLightTheme(double fontSize) {
         padding: WidgetStateProperty.all<EdgeInsets>(
           const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
         ),
-        backgroundColor: WidgetStateProperty.all<Color>(Colors.green.shade200),
-        foregroundColor: WidgetStateProperty.all<Color>(Colors.black),
+        backgroundColor: WidgetStateProperty.all<Color>(
+            _lightColorScheme.secondaryContainer),
+        foregroundColor: WidgetStateProperty.all<Color>(
+            _lightColorScheme.onSecondaryContainer),
         shape: WidgetStateProperty.all<OutlinedBorder>(
           RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
