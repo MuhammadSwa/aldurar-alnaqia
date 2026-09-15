@@ -56,6 +56,16 @@ final _sites = <_SocialSite>[
       iconColor: Colors.transparent),
 
   _SocialSite(
+      title: 'دروس د.يسري جبر',
+      url: 'https://youtube.com/@dryosrylectures?si=hzAsCiFuwVLpvTEb',
+      icon: SvgPicture.asset(
+        'assets/icons/youtube-icon-svgrepo-com.svg',
+        semanticsLabel: 'youtube_icon',
+        width: 24,
+      ),
+      iconColor: Colors.transparent),
+
+  _SocialSite(
     title: 'حساب الساوند كلاود',
     url: 'https://soundcloud.com/dryosrygabr',
     icon: SvgPicture.asset(
@@ -107,11 +117,18 @@ final _sites = <_SocialSite>[
   _SocialSite(
     title: 'حساب التويتر 𝕏',
     url: 'http://www.twitter.com/DrYosryGabr',
-    icon: SvgPicture.asset(
-      'assets/icons/icons8-twitterx.svg',
-      semanticsLabel: 'twitter_icon',
-      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-      width: 29,
+    icon: Builder(
+      builder: (context) {
+        // Adapts to light/dark mode for contrast (was hardcoded white,
+        // invisible on light background).
+        final color = Theme.of(context).colorScheme.onSurface;
+        return SvgPicture.asset(
+          'assets/icons/icons8-twitterx.svg',
+          semanticsLabel: 'twitter_icon',
+          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          width: 29,
+        );
+      },
     ),
     iconColor: Colors.transparent,
   ),
