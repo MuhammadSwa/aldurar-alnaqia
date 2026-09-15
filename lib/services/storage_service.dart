@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
-import '../screens/download_manager_screen/download_controller.dart';
+import '../models/download_models.dart';
 
 /// StorageService centralizes where we keep persistent files
 /// (e.g., downloaded books and narrations) under the app's

@@ -6,6 +6,33 @@ import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 
+/// Centralized SharedPreferences keys. The native prayer-notification config
+/// reads the same values, so `prayer_notification_service.dart` must use
+/// these constants instead of duplicating literals.
+abstract final class PrefsKeys {
+  static const String latitude = 'latitude';
+  static const String longitude = 'longitude';
+  static const String cityName = 'cityName';
+  static const String cityInfo = 'cityInfo';
+  static const String method = 'method';
+  static const String asrCalculation = 'asrCalculation';
+  static const String highLatitudeRule = 'highLatitudeRule';
+  static const String timezone = 'timezone';
+  static const String bookmarks = 'bookmarks';
+  static const String yousriaStartingDay = 'yousriaStartingDay';
+  static const String yousriaBannerDismissed = 'yousriaBannerDismissed';
+  static const String themeMode = 'theme_mode';
+  static const String fontSize = 'font_size';
+  static const String hijriDayOffset = 'hijri_day_offset';
+  static const String fileOpenAction = 'file_open_action';
+  static const String audioOpenActionLegacy = 'audio_open_action';
+  static const String bookOpenActionLegacy = 'book_open_action';
+  static const String prayerForegroundEnabled = 'prayer_foreground_enabled';
+  static const String prayerNativeConfig = 'prayer_native_config';
+
+  static String pdfLastPage(String title) => 'pdf_last_page_$title';
+}
+
 class SharedPreferencesService {
   static final SharedPreferencesService _instance =
       SharedPreferencesService._instance;
@@ -16,133 +43,130 @@ class SharedPreferencesService {
   }
 
   static double getLatitude() {
-  return _sharedPreferences?.getDouble('latitude') ?? 0.0;
+    return _sharedPreferences?.getDouble(PrefsKeys.latitude) ?? 0.0;
   }
 
   static double getLongitude() {
-  return _sharedPreferences?.getDouble('longitude') ?? 0.0;
+    return _sharedPreferences?.getDouble(PrefsKeys.longitude) ?? 0.0;
   }
 
   static void setLatitude(double lat) {
-  _sharedPreferences?.setDouble('latitude', lat);
-  unawaited(refreshPrayerNotification());
+    _sharedPreferences?.setDouble(PrefsKeys.latitude, lat);
+    unawaited(refreshPrayerNotification());
   }
 
   static void setLongitude(double long) {
-  _sharedPreferences?.setDouble('longitude', long);
-  unawaited(refreshPrayerNotification());
+    _sharedPreferences?.setDouble(PrefsKeys.longitude, long);
+    unawaited(refreshPrayerNotification());
   }
 
   static String getCityName() {
-  return _sharedPreferences?.getString('cityName') ?? '';
+    return _sharedPreferences?.getString(PrefsKeys.cityName) ?? '';
   }
 
   static void setCityName(String cityName) {
-  _sharedPreferences?.setString('cityName', cityName);
+    _sharedPreferences?.setString(PrefsKeys.cityName, cityName);
   }
 
   /// The city chosen in the city picker, if any (GPS selections clear it).
   /// Coordinates themselves stay in the latitude/longitude keys.
   static void setCity(City? city) {
-  if (city == null) {
-  _sharedPreferences?.remove('cityInfo');
-  setCityName('');
-  return;
-  }
-  _sharedPreferences?.setString(
-  'cityInfo',
-  jsonEncode({
-  'en': city.nameEn,
-  'ar': city.nameAr,
-  'country': city.countryCode,
-  }),
-  );
-  setCityName(city.displayName);
+    if (city == null) {
+      _sharedPreferences?.remove(PrefsKeys.cityInfo);
+      setCityName('');
+      return;
+    }
+    _sharedPreferences?.setString(
+      PrefsKeys.cityInfo,
+      jsonEncode({
+        'en': city.nameEn,
+        'ar': city.nameAr,
+        'country': city.countryCode,
+      }),
+    );
+    setCityName(city.displayName);
   }
 
   static City? getCity() {
-  final raw = _sharedPreferences?.getString('cityInfo');
-  if (raw == null) return null;
-  try {
-  final json = jsonDecode(raw) as Map<String, dynamic>;
-  final lat = getLatitude();
-  final lng = getLongitude();
-  if (lat == 0.0 && lng == 0.0) return null;
-  return City(
-  nameEn: json['en'] as String,
-  nameAr: json['ar'] as String?,
-  countryCode: json['country'] as String,
-  latitude: lat,
-  longitude: lng,
-  );
-  } catch (e) {
-  logWarn('Failed to parse stored city info: $e');
-  return null;
-  }
+    final raw = _sharedPreferences?.getString(PrefsKeys.cityInfo);
+    if (raw == null) return null;
+    try {
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final lat = getLatitude();
+      final lng = getLongitude();
+      if (lat == 0.0 && lng == 0.0) return null;
+      return City(
+        nameEn: json['en'] as String,
+        nameAr: json['ar'] as String?,
+        countryCode: json['country'] as String,
+        latitude: lat,
+        longitude: lng,
+      );
+    } catch (e) {
+      logWarn('Failed to parse stored city info: $e');
+      return null;
+    }
   }
 
   static void setMethod(String method) {
-  _sharedPreferences?.setString('method', method);
-  unawaited(refreshPrayerNotification());
+    _sharedPreferences?.setString(PrefsKeys.method, method);
+    unawaited(refreshPrayerNotification());
   }
 
   static String getMethod() {
-  return _sharedPreferences?.getString('method') ?? 'egyptian';
+    return _sharedPreferences?.getString(PrefsKeys.method) ?? 'egyptian';
   }
 
   static void setAsrCalculation(String asrCalculation) {
-  _sharedPreferences?.setString('asrCalculation', asrCalculation);
-  unawaited(refreshPrayerNotification());
+    _sharedPreferences?.setString(PrefsKeys.asrCalculation, asrCalculation);
+    unawaited(refreshPrayerNotification());
   }
 
   static String getAsrCalculation() {
-  return _sharedPreferences?.getString('asrCalculation') ?? 'shafi';
+    return _sharedPreferences?.getString(PrefsKeys.asrCalculation) ?? 'shafi';
   }
 
   static void setHighLatitudeRule(String rule) {
-  _sharedPreferences?.setString('highLatitudeRule', rule);
-  unawaited(refreshPrayerNotification());
-    // Store the high latitude rule
+    _sharedPreferences?.setString(PrefsKeys.highLatitudeRule, rule);
+    unawaited(refreshPrayerNotification());
   }
 
   static String getHighLatitudeRule() {
-  return _sharedPreferences?.getString('highLatitudeRule') ??
+    return _sharedPreferences?.getString(PrefsKeys.highLatitudeRule) ??
         'middle_of_night';
-    // Retrieve the high latitude rule, default to empty string
   }
 
   static void setTimezone(String timezone) {
-    // Store the timezone string
-  _sharedPreferences?.setString('timezone', timezone);
-  unawaited(refreshPrayerNotification());
+    _sharedPreferences?.setString(PrefsKeys.timezone, timezone);
+    unawaited(refreshPrayerNotification());
   }
 
   static String getTimezone() {
-    // Retrieve the timezone string
-  return _sharedPreferences?.getString('timezone') ?? '';
+    return _sharedPreferences?.getString(PrefsKeys.timezone) ?? '';
   }
 
   static List<String> getBookmarks() {
-  return _sharedPreferences?.getStringList('bookmarks') ?? [];
+    return _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
   }
 
   static void setBookmarks(List<String> bookmarks) {
-  _sharedPreferences?.setStringList('bookmarks', bookmarks);
+    _sharedPreferences?.setStringList(PrefsKeys.bookmarks, bookmarks);
   }
 
   static void removeAllBookmarks() {
-  _sharedPreferences?.remove('bookmarks');
+    _sharedPreferences?.remove(PrefsKeys.bookmarks);
   }
 
   static void addBookmark(String bookmark) {
-    List<String> bookmarks = getBookmarks();
+    final bookmarks = getBookmarks();
+    if (bookmarks.contains(bookmark)) return;
     bookmarks.add(bookmark);
     setBookmarks(bookmarks);
   }
 
   static void removeBookmark(String bookmark) {
-    List<String> bookmarks = getBookmarks();
-    bookmarks.remove(bookmark);
+    final bookmarks = getBookmarks();
+    if (!bookmarks.remove(bookmark)) return;
     setBookmarks(bookmarks);
   }
 
@@ -152,44 +176,53 @@ class SharedPreferencesService {
     final dayMidnight =
         DateTime(startingDay.year, startingDay.month, startingDay.day);
     _sharedPreferences?.setString(
-        'yousriaStartingDay', dayMidnight.toIso8601String());
+        PrefsKeys.yousriaStartingDay, dayMidnight.toIso8601String());
   }
 
+  /// First launch has no stored beginning — default to today's midnight and
+  /// persist it. Single `now` so the returned and stored values agree.
   static DateTime getYousriaBeginning() {
-  final startingDay = _sharedPreferences?.getString('yousriaStartingDay');
-    if (startingDay == null) {
-      // if startingDay isn't setup(e.g. first time installying the app, it's automatically sets today as the beginning day
-      // use then can change it in settings.
-      SharedPreferencesService.setYousriaBeginning(DateTime.now());
-      return DateTime.now();
+    final stored =
+        _sharedPreferences?.getString(PrefsKeys.yousriaStartingDay);
+    if (stored != null) {
+      try {
+        return DateTime.parse(stored);
+      } catch (e) {
+        logWarn('Failed to parse yousria beginning "$stored": $e');
+      }
     }
-
-    return DateTime.parse(startingDay);
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    _sharedPreferences?.setString(
+        PrefsKeys.yousriaStartingDay, todayMidnight.toIso8601String());
+    return todayMidnight;
   }
 
   static bool getYousriaBannerDismissed() {
-  return _sharedPreferences?.getBool('yousriaBannerDismissed') ?? false;
+    return _sharedPreferences?.getBool(PrefsKeys.yousriaBannerDismissed) ??
+        false;
   }
 
   static Future<void> setYousriaBannerDismissed(bool dismissed) async {
-    await _sharedPreferences?.setBool('yousriaBannerDismissed', dismissed);
+    await _sharedPreferences?.setBool(
+        PrefsKeys.yousriaBannerDismissed, dismissed);
   }
 
   // --- Theme mode preference: 'light' | 'dark' | 'system' ---
-  static const _themeModeKey = 'theme_mode';
 
   /// Key used by the removed `adaptive_theme` package (v3.x stored JSON
   /// `{"theme_mode": <index>}` with light=0, dark=1, system=2).
+  /// Kept until all pre-migration installs have launched once.
   static const _legacyAdaptiveThemeKey = 'adaptive_theme_preferences';
 
   /// Raw stored value. Kept string-based so this service does not depend
   /// on Flutter material; providers map it to [ThemeMode].
   static String getThemeMode() {
-    final current = _sharedPreferences?.getString(_themeModeKey);
+    final current = _sharedPreferences?.getString(PrefsKeys.themeMode);
     if (current != null) return current;
     final migrated = _migrateLegacyAdaptiveThemeMode();
     if (migrated != null) {
-      _sharedPreferences?.setString(_themeModeKey, migrated);
+      _sharedPreferences?.setString(PrefsKeys.themeMode, migrated);
       _sharedPreferences?.remove(_legacyAdaptiveThemeKey);
       return migrated;
     }
@@ -197,7 +230,7 @@ class SharedPreferencesService {
   }
 
   static Future<void> setThemeMode(String mode) async {
-    await _sharedPreferences?.setString(_themeModeKey, mode);
+    await _sharedPreferences?.setString(PrefsKeys.themeMode, mode);
   }
 
   /// One-time migration for installs that saved their choice via
@@ -219,55 +252,48 @@ class SharedPreferencesService {
   }
 
   static void setFontSize(double size) {
-  _sharedPreferences?.setDouble('font_size', size);
+    _sharedPreferences?.setDouble(PrefsKeys.fontSize, size);
   }
+
   static double getFontSize() {
-  final size = _sharedPreferences?.getDouble('font_size');
-    if (size == null) {
-      return 20;
-    }
-    return size;
+    return _sharedPreferences?.getDouble(PrefsKeys.fontSize) ?? 20;
   }
 
   static void setHijriDayOffset(int offset) {
-  logInfo('setting offest to $offset');
-  _sharedPreferences?.setInt('hijri_day_offset', offset);
-  unawaited(refreshPrayerNotification());
+    logInfo('setting offest to $offset');
+    _sharedPreferences?.setInt(PrefsKeys.hijriDayOffset, offset);
+    unawaited(refreshPrayerNotification());
   }
 
   static int getHijriDayOffset() {
-  final offset = _sharedPreferences?.getInt('hijri_day_offset');
-    if (offset == null) {
-      return 0;
-    }
-    return offset;
+    return _sharedPreferences?.getInt(PrefsKeys.hijriDayOffset) ?? 0;
   }
 
   // --- PDF last page persistence ---
-  static String _pdfLastPageKey(String title) => 'pdf_last_page_$title';
-
   static Future<void> setPdfLastPage(String title, int page) async {
-    await _sharedPreferences?.setInt(_pdfLastPageKey(title), page);
+    await _sharedPreferences?.setInt(PrefsKeys.pdfLastPage(title), page);
   }
 
   static int? getPdfLastPage(String title) {
-    return _sharedPreferences?.getInt(_pdfLastPageKey(title));
+    return _sharedPreferences?.getInt(PrefsKeys.pdfLastPage(title));
   }
 
   // --- File open action preference: 'ask' | 'open' | 'download' ---
   // Single preference shared by audio and books for non-downloaded files.
   static String getFileOpenAction() {
-    final current = _sharedPreferences?.getString('file_open_action');
+    final current = _sharedPreferences?.getString(PrefsKeys.fileOpenAction);
     if (current != null) return current;
     // Migrate pre-unified prefs: prefer the audio choice, then the book one.
-    final legacyAudio = _sharedPreferences?.getString('audio_open_action');
+    final legacyAudio =
+        _sharedPreferences?.getString(PrefsKeys.audioOpenActionLegacy);
     if (legacyAudio != null) return legacyAudio;
-    final legacyBook = _sharedPreferences?.getString('book_open_action');
+    final legacyBook =
+        _sharedPreferences?.getString(PrefsKeys.bookOpenActionLegacy);
     if (legacyBook != null) return legacyBook;
     return 'ask';
   }
 
   static Future<void> setFileOpenAction(String action) async {
-    await _sharedPreferences?.setString('file_open_action', action);
+    await _sharedPreferences?.setString(PrefsKeys.fileOpenAction, action);
   }
 }

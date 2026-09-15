@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
@@ -67,7 +69,10 @@ class MyDrawer extends StatelessWidget {
                   title: 'كيفية قراءة الأوراد',
                   onTap: () {
                     Navigator.pop(context);
-                    launchUrl(Uri.parse('https://youtu.be/IyrWSL4jd00'));
+                    unawaited(launchUrl(
+                      Uri.parse('https://youtu.be/IyrWSL4jd00'),
+                      mode: LaunchMode.externalApplication,
+                    ));
                   }),
 
               _buildDrawerItem(
@@ -80,8 +85,11 @@ class MyDrawer extends StatelessWidget {
                   title: 'أسئلة المتابعين',
                   onTap: () {
                     Navigator.pop(context);
-                    launchUrl(Uri.parse(
-                        'https://www.youtube.com/playlist?list=PLEkQk5xrP-tkGXuZ9atE3k_7it12rUPTs'));
+                    unawaited(launchUrl(
+                      Uri.parse(
+                          'https://www.youtube.com/playlist?list=PLEkQk5xrP-tkGXuZ9atE3k_7it12rUPTs'),
+                      mode: LaunchMode.externalApplication,
+                    ));
                   }),
             ],
           ),

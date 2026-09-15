@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,7 +37,7 @@ class AppRouter {
   static GoRouter createRouter() {
     return GoRouter(
       initialLocation: RoutePaths.home,
-      debugLogDiagnostics: true,
+      debugLogDiagnostics: kDebugMode,
       navigatorKey: _rootNavigatorKey,
       routes: [
         // Standalone routes (not in bottom nav)
@@ -72,8 +73,10 @@ class AppRouter {
     return GoRoute(
       path: '${RoutePaths.downloadManager}/:index',
       builder: (context, state) {
-        final index = int.parse(state.pathParameters['index']!);
-        return DownloadManagerPage(initialIndex: index);
+        final index =
+            int.tryParse(state.pathParameters['index'] ?? '') ?? 0;
+        final safeIndex = index.clamp(0, 1);
+        return DownloadManagerPage(initialIndex: safeIndex);
       },
     );
   }

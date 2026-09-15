@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/audio/widgets/audio_mini_player.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/audio/audio_controller.dart' show audioProvider;
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   const MainWrapper({
@@ -17,7 +18,8 @@ class MainWrapper extends ConsumerStatefulWidget {
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
   void _goBranch(int index) async {
-    // Close all drawers before navigating
+    // Close all drawers before navigating. The short delay lets the drawer
+    // close animation finish so the branch switch doesn't flicker.
     try {
       final drawerRegistry = ref.read(drawerRegistryProvider);
 
@@ -26,10 +28,11 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
         drawerRegistry.closeAllDrawers();
         await Future.delayed(const Duration(milliseconds: 300));
       }
-    } catch (_) {
-      // Registry not available; ignore
+    } catch (e) {
+      logWarn('Drawer registry unavailable in _goBranch: $e');
     }
 
+    if (!mounted) return;
     widget.navigationShell.goBranch(
       index,
       initialLocation: index == widget.navigationShell.currentIndex,

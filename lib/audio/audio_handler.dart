@@ -37,10 +37,10 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> attach(AudioPlayer player) async {
     _player = player;
 
-    _stateSub?.cancel();
-    _durationSub?.cancel();
-    _becomingNoisySub?.cancel();
-    _interruptionSub?.cancel();
+    await _stateSub?.cancel();
+    await _durationSub?.cancel();
+    await _becomingNoisySub?.cancel();
+    await _interruptionSub?.cancel();
 
     _stateSub = player.playerStateStream.listen((_) => _broadcastState());
     _durationSub = player.durationStream.listen((duration) {

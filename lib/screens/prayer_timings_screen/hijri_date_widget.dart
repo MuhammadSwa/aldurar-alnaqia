@@ -44,13 +44,9 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
     // 3. Listen for changes in the manual Hijri offset.
     ref.listenManual(hijriOffsetProvider, (_, __) => _updateHijriDate());
 
-    // 4. Schedule the first update for the next Maghrib.
-    // We add a small delay to ensure the prayer times have been initialized.
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        _resetAndScheduleUpdate();
-      }
-    });
+    // 4. Try an initial schedule now; the prayerProvider listener above
+    // re-schedules as soon as timings load, so no fixed delay is needed.
+    _resetAndScheduleUpdate();
   }
 
   @override

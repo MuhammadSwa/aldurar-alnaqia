@@ -7,26 +7,9 @@ import 'package:flutter/foundation.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
-enum DownloadType { narrations, books }
-
-extension DownloadTypeExtension on DownloadType {
-  String get extension => this == DownloadType.narrations ? 'mp3' : 'pdf';
-  String get directoryName => name;
-}
-
-class DownloadItem {
-  final String id;
-  final String title;
-  final String url;
-  final DownloadType type;
-
-  const DownloadItem({
-    required this.id,
-    required this.title,
-    required this.url,
-    required this.type,
-  });
-}
+import 'package:aldurar_alnaqia/models/download_models.dart';
+export 'package:aldurar_alnaqia/models/download_models.dart'
+    show DownloadItem, DownloadType, DownloadTypeExtension;
 
 /// Framework-agnostic download orchestration service.
 ///
@@ -256,7 +239,10 @@ class DownloaderService {
     for (final notifier in _retiredProgressNotifiers) {
       try {
         notifier.dispose();
-      } catch (_) {}
+      } catch (e) {
+        // Already disposed by a listener racing us; safe to ignore.
+        logWarn('Retired progress notifier dispose failed: $e');
+      }
     }
     _retiredProgressNotifiers.clear();
     statusRevision.dispose();

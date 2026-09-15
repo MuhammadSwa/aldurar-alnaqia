@@ -9,7 +9,6 @@ import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
-import 'package:go_router/go_router.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
     show prayerProvider;
@@ -24,17 +23,32 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
+    });
+  }
+
+  @override
+  void dispose() {
+    try {
+      ref.read(drawerRegistryProvider).unregisterScaffoldKey(_scaffoldKey);
+    } catch (_) {
+      // Registry already disposed; ignore.
+    }
+    super.dispose();
+  }
+
   void handleSearch(String query) {
-    // Pass the raw title; go_router percent-encodes path parameters itself.
-    context.goNamed(
-      RouteNames.zikrPage(ZikrBranch.home.namePrefix),
-      pathParameters: {'zikr': query},
-    );
+    // Typed target keeps encoding + route names in one place.
+    ZikrDetailTarget(branch: ZikrBranch.home, title: query).go(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
     final islamicWeekday =
         ref.watch(prayerProvider.select((state) => state.islamicWeekday));
     final dayIndex = islamicWeekday - 1;

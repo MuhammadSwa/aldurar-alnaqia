@@ -5,6 +5,9 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart'
+    show PrefsKeys;
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 // ---------------------------------------------------------------------------
 // Native prayer-notification bridge (Android only)
@@ -17,10 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // while the app UI is closed.
 // ---------------------------------------------------------------------------
 
-const _kEnabledKey = 'prayer_foreground_enabled';
-const _kConfigKey = 'prayer_native_config';
-
-final MethodChannel _channel = MethodChannel('app/prayer_notification');
+const MethodChannel _channel = MethodChannel('app/prayer_notification');
 
 final StreamController<String> _routeTaps =
     StreamController<String>.broadcast();
@@ -52,26 +52,30 @@ Future<void> initializePrayerNotifications() async {
     try {
       // Flush a buffered cold-start notification tap, if any.
       await _channel.invokeMethod<void>('dartReady');
-    } catch (_) {}
+    } catch (e) {
+      logWarn('prayer channel dartReady failed: $e');
+    }
     _startNativeService();
   }
 }
 
 Future<bool> isPrayerNotificationEnabled() async {
   final prefs = await SharedPreferences.getInstance();
-  return prefs.getBool(_kEnabledKey) ?? false;
+  return prefs.getBool(PrefsKeys.prayerForegroundEnabled) ?? false;
 }
 
 Future<void> setPrayerNotificationEnabled(bool enabled) async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool(_kEnabledKey, enabled);
+  await prefs.setBool(PrefsKeys.prayerForegroundEnabled, enabled);
   await _writeConfig();
   if (enabled) {
     _startNativeService();
   } else {
     try {
       await _channel.invokeMethod<void>('stop');
-    } catch (_) {}
+    } catch (e) {
+      logWarn('prayer channel stop failed: $e');
+    }
   }
 }
 
@@ -81,27 +85,32 @@ Future<void> refreshPrayerNotification() async {
   await _writeConfig();
   try {
     await _channel.invokeMethod<void>('refresh');
-  } catch (_) {}
+  } catch (e) {
+    logWarn('prayer channel refresh failed: $e');
+  }
 }
 
 Future<void> _writeConfig() async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(_kConfigKey, jsonEncode({
-    'lat': prefs.getDouble('latitude') ?? 0.0,
-    'lng': prefs.getDouble('longitude') ?? 0.0,
-    'method': prefs.getString('method') ?? 'egyptian',
-    'asrCalculation': prefs.getString('asrCalculation') ?? 'shafi',
+  await prefs.setString(PrefsKeys.prayerNativeConfig, jsonEncode({
+    'lat': prefs.getDouble(PrefsKeys.latitude) ?? 0.0,
+    'lng': prefs.getDouble(PrefsKeys.longitude) ?? 0.0,
+    'method': prefs.getString(PrefsKeys.method) ?? 'egyptian',
+    'asrCalculation':
+        prefs.getString(PrefsKeys.asrCalculation) ?? 'shafi',
     'highLatitudeRule':
-        prefs.getString('highLatitudeRule') ?? 'middle_of_night',
-    'timezone': prefs.getString('timezone') ?? '',
-    'hijriOffset': prefs.getInt('hijri_day_offset') ?? 0,
+        prefs.getString(PrefsKeys.highLatitudeRule) ?? 'middle_of_night',
+    'timezone': prefs.getString(PrefsKeys.timezone) ?? '',
+    'hijriOffset': prefs.getInt(PrefsKeys.hijriDayOffset) ?? 0,
   }));
 }
 
 void _startNativeService() {
   try {
     _channel.invokeMethod<void>('start');
-  } catch (_) {}
+  } catch (e) {
+    logWarn('prayer channel start failed: $e');
+  }
 }
 
 /// Whether the native service has actually posted its notification.

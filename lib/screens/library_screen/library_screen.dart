@@ -32,9 +32,30 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }).toList();
 
   @override
-  Widget build(BuildContext context) {
-    ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        ref.read(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
+      } catch (_) {
+        // Registry not ready; ignore.
+      }
+    });
+  }
 
+  @override
+  void dispose() {
+    try {
+      ref.read(drawerRegistryProvider).unregisterScaffoldKey(_scaffoldKey);
+    } catch (_) {
+      // Registry already disposed; ignore.
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const MyDrawer(),

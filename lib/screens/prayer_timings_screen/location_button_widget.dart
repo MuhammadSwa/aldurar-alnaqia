@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
@@ -118,11 +120,11 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
       // Case 3: Any other unexpected error.
         else {
           if (!mounted) return;
-          showDialog(
+          unawaited(showDialog(
             context: context,
             builder: (builder) =>
                 const AlertWidget(msg: 'حدث خطأ غير متوقع أثناء تحديد الموقع.'),
-          );
+          ));
         }
     } finally {
       if (mounted) {
@@ -136,13 +138,14 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
   bool _isLoading = false;
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ElevatedButton.icon(
       icon: _isLoading
-          ? const SizedBox(
+          ? SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
+                  strokeWidth: 2, color: colorScheme.onPrimary),
             )
           : Icon(widget.hasLocation ? Icons.check_circle : Icons.location_on),
       label: Text(widget.hasLocation

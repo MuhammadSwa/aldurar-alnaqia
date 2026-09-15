@@ -349,13 +349,15 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   }
 
   Widget _buildError([Object? error]) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_outlined, size: 64, color: Colors.grey),
+            Icon(Icons.cloud_off_outlined,
+                size: 64, color: colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             const Text(
               'تعذّر فتح الكتاب',
@@ -363,9 +365,10 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'تحقق من الاتصال بالإنترنت وحاول مجددًا، أو حمّل الكتاب للقراءة دون إنترنت.',
-              style: TextStyle(fontSize: 14, color: Colors.black54),
+              style:
+                  TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),

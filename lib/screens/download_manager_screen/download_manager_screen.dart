@@ -75,6 +75,7 @@ class _DeleteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return IconButton(
       onPressed: () {
         showDialog(
@@ -88,7 +89,9 @@ class _DeleteButton extends StatelessWidget {
                 child: const Text('إلغاء'),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.error,
+                    foregroundColor: colorScheme.onError),
                 onPressed: () {
                   onDelete();
                   Navigator.of(dialogContext).pop();
@@ -99,7 +102,7 @@ class _DeleteButton extends StatelessWidget {
           ),
         );
       },
-      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+      icon: Icon(Icons.delete_outline, color: colorScheme.error),
       tooltip: 'حذف الملف',
     );
   }

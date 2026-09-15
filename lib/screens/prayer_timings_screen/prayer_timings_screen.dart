@@ -38,11 +38,25 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Provider init is async — check after first frame, the ref.listen in
-    // build() covers the case where init finishes after we enter the page.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        ref.read(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
+      } catch (_) {
+        // Registry not ready; ignore.
+      }
       _maybeAutoShowSettingsDialog();
     });
+  }
+
+  @override
+  void dispose() {
+    try {
+      ref.read(drawerRegistryProvider).unregisterScaffoldKey(_scaffoldKey);
+    } catch (_) {
+      // Registry already disposed; ignore.
+    }
+    super.dispose();
   }
 
   void _maybeAutoShowSettingsDialog() {
@@ -62,7 +76,6 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
     // Fires when the async provider finishes init (or settings change)
     // after we've already entered the page.
     ref.listen(prayerProvider, (previous, next) {

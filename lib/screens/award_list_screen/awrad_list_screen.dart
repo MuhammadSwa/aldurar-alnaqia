@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:go_router/go_router.dart';
 
 class AwradListScreen extends ConsumerStatefulWidget {
   const AwradListScreen({super.key});
@@ -25,15 +24,29 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
   late final List<String> azkarTitles = orphanAzkar.getTitles();
 
   @override
-  Widget build(BuildContext context) {
-    ref.watch(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
+    });
+  }
 
+  @override
+  void dispose() {
+    try {
+      ref.read(drawerRegistryProvider).unregisterScaffoldKey(_scaffoldKey);
+    } catch (_) {
+      // Registry already disposed; ignore.
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     void handleSearch(String query) {
-      // Pass the raw title; go_router percent-encodes path parameters itself.
-      context.goNamed(
-        RouteNames.zikrPage(ZikrBranch.awrad.namePrefix),
-        pathParameters: {'zikr': query},
-      );
+      // Typed target keeps encoding + route names in one place.
+      ZikrDetailTarget(branch: ZikrBranch.awrad, title: query).go(context);
     }
 
     return Scaffold(

@@ -181,6 +181,9 @@ class _SearchModalState extends State<SearchModal> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final onSurface = colorScheme.onSurface;
+    final onSurfaceVariant = colorScheme.onSurfaceVariant;
     // Available height below the status bar. The modal itself already avoids
     // the top intrusion via `useSafeArea: true`, so size the sheet from what
     // is left to guarantee it never slides under the status bar.
@@ -205,7 +208,7 @@ class _SearchModalState extends State<SearchModal> {
               leading: BookmarkButton(bookmarkId: suggestion),
               title: Text(
                 suggestion,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: onSurface),
               ),
               onTap: () => _selectSuggestion(suggestion),
             );
@@ -219,7 +222,7 @@ class _SearchModalState extends State<SearchModal> {
                 : 'لا توجد نتائج بحث ل"${widget.controller.text}"',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[300],
+              color: onSurfaceVariant,
             ),
           ),
         );
@@ -232,14 +235,14 @@ class _SearchModalState extends State<SearchModal> {
             Icon(
               Icons.search,
               size: 64,
-              color: Colors.grey[400],
+              color: onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
               'Enter your search query',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[300],
+                color: onSurfaceVariant,
               ),
             ),
           ],
@@ -262,8 +265,10 @@ class _SearchModalState extends State<SearchModal> {
           filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
           child: Container(
             height: sheetHeight,
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
               children: [
@@ -272,7 +277,7 @@ class _SearchModalState extends State<SearchModal> {
                   height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.green[400],
+                    color: colorScheme.primary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -286,7 +291,8 @@ class _SearchModalState extends State<SearchModal> {
                           focusNode: widget.focusNode,
                           decoration: InputDecoration(
                             hintText: widget.hintText,
-                            hintStyle: TextStyle(color: Colors.grey[300]),
+                            hintStyle:
+                                TextStyle(color: onSurfaceVariant),
                             prefixIcon: const Icon(Icons.search),
                             suffixIcon: widget.controller.text.isNotEmpty
                                 ? IconButton(
@@ -303,7 +309,7 @@ class _SearchModalState extends State<SearchModal> {
                           ),
                           onSubmitted: _performSearch,
                           textInputAction: TextInputAction.search,
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: onSurface),
                         ),
                       ),
                       const SizedBox(width: 8),

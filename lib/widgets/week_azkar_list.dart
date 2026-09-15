@@ -406,7 +406,9 @@ Future<bool?> showYousriaSetupSheet(
                             ProviderScope.containerOf(context)
                                 .read(yousriaBeginningProvider.notifier)
                                 .setBeginning(impliedStart);
-                          } catch (_) {
+                          } catch (e) {
+                            // Outside a ProviderScope (e.g. tests); persist
+                            // directly so the choice isn't lost.
                             SharedPreferencesService.setYousriaBeginning(
                               impliedStart,
                             );

@@ -36,10 +36,10 @@ class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
     ref.listenManual(prayerProvider, (_, __) {
       _updateDayAndScheduleNext();
     });
-    Future.delayed(const Duration(milliseconds: 50), () {
-      if (mounted) {
-        _updateDayAndScheduleNext();
-      }
+    // Initial attempt after the first frame; the listener above retries
+    // once timings load, so no fixed millisecond delay is needed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateDayAndScheduleNext();
     });
   }
 

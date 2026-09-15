@@ -83,7 +83,7 @@ class BookmarksNotifier extends Notifier<List<String>> {
     final wasBookmarked = state.contains(bookmarkId);
     if (wasBookmarked) {
       SharedPreferencesService.removeBookmark(bookmarkId);
-      state = [...state]..remove(bookmarkId);
+      state = state.where((e) => e != bookmarkId).toList();
     } else {
       SharedPreferencesService.addBookmark(bookmarkId);
       state = [...state, bookmarkId];

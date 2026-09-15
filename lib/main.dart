@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
 import 'package:aldurar_alnaqia/router/app_router.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart' show RoutePaths;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:audio_service/audio_service.dart';
@@ -86,6 +87,15 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
+bool _isAllowedNotificationRoute(String route) {
+  return route == RoutePaths.timings ||
+      route == RoutePaths.home ||
+      route == RoutePaths.awrad ||
+      route == RoutePaths.library ||
+      route == RoutePaths.social ||
+      route.startsWith('${RoutePaths.downloadManager}/');
+}
+
 class _MyAppState extends ConsumerState<MyApp> {
   StreamSubscription<String>? _routeSub;
 
@@ -94,7 +104,14 @@ class _MyAppState extends ConsumerState<MyApp> {
     super.initState();
     // The native prayer notification asks us to navigate when the user taps
     // it (cold start included — Android buffers the tap until we're ready).
+    // Only allow known in-app locations; anything else is ignored so a
+    // compromised/malformed channel message can't drive us to an arbitrary
+    // location.
     _routeSub = onNotificationRouteTap.listen((route) {
+      if (!_isAllowedNotificationRoute(route)) {
+        logWarn('Ignoring notification route: $route');
+        return;
+      }
       ref.read(appRouterProvider).go(route);
     });
   }

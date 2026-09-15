@@ -51,6 +51,7 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return AlertDialog(
       title: Text(widget.item.title,
           style: const TextStyle(fontSize: 18), textAlign: TextAlign.center),
@@ -67,7 +68,7 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
             label: 'فتح مباشر',
             subtitle: 'يتطلب اتصالاً بالإنترنت',
             onPressed: _handleStream,
-            color: Colors.blue,
+            color: colorScheme.primary,
           ),
           const SizedBox(height: 12),
           _buildOptionButton(
@@ -76,7 +77,7 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
             label: 'تحميل',
             subtitle: 'سيكون متاحًا بدون إنترنت',
             onPressed: _handleDownload,
-            color: Colors.green,
+            color: colorScheme.secondary,
           ),
           if (widget.showRememberOption) ...[
             const SizedBox(height: 8),
