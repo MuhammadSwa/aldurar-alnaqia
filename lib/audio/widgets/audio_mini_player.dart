@@ -14,7 +14,8 @@ class AudioMiniPlayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final track = ref.watch(
-        audioProvider.select((s) => s.isVisible ? s.track : null),);
+      audioProvider.select((s) => s.isVisible ? s.track : null),
+    );
     if (track == null) return const SizedBox.shrink();
 
     // Green-tinted container derived from the app's Material3 color scheme,
@@ -96,18 +97,14 @@ class _ProgressBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final position =
-        ref.watch(audioProvider.select((s) => s.position));
-    final buffered =
-        ref.watch(audioProvider.select((s) => s.buffered));
-    final duration =
-        ref.watch(audioProvider.select((s) => s.duration));
+    final position = ref.watch(audioProvider.select((s) => s.position));
+    final buffered = ref.watch(audioProvider.select((s) => s.buffered));
+    final duration = ref.watch(audioProvider.select((s) => s.duration));
     final colorScheme = Theme.of(context).colorScheme;
 
     final totalMs = duration.inMilliseconds.toDouble();
     final sliderMax = totalMs > 0 ? totalMs : 1.0;
-    final positionMs =
-        position.inMilliseconds.toDouble().clamp(0.0, sliderMax);
+    final positionMs = position.inMilliseconds.toDouble().clamp(0.0, sliderMax);
     final bufferedFraction = totalMs <= 0
         ? 0.0
         : (buffered.inMilliseconds / totalMs).clamp(0.0, 1.0);
@@ -135,8 +132,7 @@ class _ProgressBar extends ConsumerWidget {
             activeColor: colorScheme.primary,
             inactiveColor:
                 colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
-            secondaryActiveColor:
-                colorScheme.primary.withValues(alpha: 0.25),
+            secondaryActiveColor: colorScheme.primary.withValues(alpha: 0.25),
             thumbColor: colorScheme.primary,
           ),
         ),
@@ -178,7 +174,10 @@ class _TransportRow extends ConsumerWidget {
   }
 
   Widget _buildPrimaryButton(
-      BuildContext context, WidgetRef ref, AudioStatus status,) {
+    BuildContext context,
+    WidgetRef ref,
+    AudioStatus status,
+  ) {
     final controller = ref.read(audioProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -220,22 +219,19 @@ class SpeedSliderButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final speed = ref.watch(audioProvider.select((s) => s.speed));
     final colorScheme = Theme.of(context).colorScheme;
 
     return IconButton(
-      icon: Text('$speed x',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSecondaryContainer,
-          ),),
+      icon: const Icon(Icons.speed),
+      color: colorScheme.onSecondaryContainer,
+      tooltip: 'تعديل السرعة',
       onPressed: () => showSliderDialog(
         context: context,
         title: 'تعديل السرعة',
-        divisions: 10,
-        min: 0.5,
-        max: 1.5,
-        value: speed,
+        divisions: 7,
+        min: 0.25,
+        max: 2.0,
+        value: ref.read(audioProvider).speed,
         onChanged: ref.read(audioProvider.notifier).setSpeed,
       ),
     );
