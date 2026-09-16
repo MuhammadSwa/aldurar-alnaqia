@@ -231,9 +231,14 @@ class JustAudioEngine implements AudioEngine {
 
   @override
   Future<void> stop() async {
-    await _player.stop();
-    await _player.seek(Duration.zero);
-    // Removes the media notification as well.
+    try {
+      await _player.stop();
+    } catch (_) {
+      // Already idle — still dismiss the notification below.
+    }
+    // Removes the media notification as well. No seek after stop: it
+    // would emit extra player events that could resurrect an empty
+    // (black) notification after the service is stopped.
     await _notifications?.stop();
   }
 

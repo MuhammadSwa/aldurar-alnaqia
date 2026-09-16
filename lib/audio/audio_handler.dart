@@ -10,7 +10,7 @@ import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 ///
 /// Responsibilities:
 ///  * publishes rich metadata (title, artist, album, art, duration),
-///  * exposes play-pause plus a close (stop) control with a seekable
+///  * exposes play-pause plus a close (X) control with a seekable
 ///    progress bar on the lock screen,
 ///  * stops playback and removes the notification when the user taps close
 ///    ([stop]) or swipes the app away ([onTaskRemoved]),
@@ -22,12 +22,30 @@ import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
   NarrationAudioHandler();
 
+  /// Close (X) button for the notification. Same [MediaAction.stop] action
+  /// as [MediaControl.stop] — so the existing [stop] handler runs — but
+  /// with a custom `drawable/audio_service_close` icon (bundled in
+  /// `android/app/src/main/res/drawable/`) instead of the square stop icon.
+  static const closeControl = MediaControl(
+    androidIcon: 'drawable/audio_service_close',
+    label: 'Close',
+    action: MediaAction.stop,
+  );
+
   AudioPlayer? _player;
   StreamSubscription<dynamic>? _stateSub;
   StreamSubscription<Duration?>? _durationSub;
   StreamSubscription<void>? _becomingNoisySub;
   StreamSubscription<AudioInterruptionEvent>? _interruptionSub;
   bool _resumedAfterInterruption = false;
+
+  /// True once [stop] starts, until the next [setTrackMetadata].
+  ///
+  /// While set, [_broadcastState] is suppressed so late player events
+  /// (stop/seek completions arriving after `super.stop()`) can't
+  /// resurrect the notification with empty metadata (black square with a
+  /// dead stop button).
+  bool _stopInProgress = false;
 
   /// Wires the handler to the engine's player and starts mirroring its
   /// state into the notification.
@@ -92,14 +110,18 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
   // -------------------------------------------------------------------
 
   void setTrackMetadata(MediaItem item) {
+    _stopInProgress = false;
     final duration = _player?.duration;
     mediaItem.add(duration == null ? item : item.copyWith(duration: duration));
     _broadcastState();
   }
 
   void clearTrackMetadata() {
-    mediaItem.add(const MediaItem(id: '', title: ''));
-    _broadcastState();
+    // Push null (not an empty MediaItem): an empty item keeps a black,
+    // button-less notification alive, while null lets the service remove it.
+    // No state broadcast here — [stop] pushes the final state itself and
+    // [_broadcastState] is suppressed while stopping.
+    mediaItem.add(null);
   }
 
   // -------------------------------------------------------------------
@@ -107,13 +129,21 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
   // -------------------------------------------------------------------
 
   void _broadcastState() {
+    // Don't resurrect the notification after stop: late player events
+    // arriving after `super.stop()` would otherwise re-show it with
+    // empty (black) metadata and a dead stop button.
+    if (_stopInProgress) return;
+    if (mediaItem.valueOrNull == null) return;
+
     final player = _player;
     final playing = player?.playing ?? false;
 
     // Notification buttons: play/pause + close (X). No prev/next/rewind.
+    // The X reuses the stop action, so tapping it runs [stop]: playback
+    // halts and the notification is dismissed.
     final controls = <MediaControl>[
       playing ? MediaControl.pause : MediaControl.play,
-      MediaControl.stop,
+      closeControl,
     ];
 
     playbackState.add(PlaybackState(
@@ -162,12 +192,28 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> stop() async {
+    // Idempotent: the notification X can arrive when the player is
+    // already stopped (e.g. mini player closed first). Still run
+    // `super.stop()` so the notification is always dismissed.
+    _stopInProgress = true;
     final player = _player;
     if (player != null) {
-      await player.stop();
-      await player.seek(Duration.zero);
+      try {
+        await player.stop();
+      } catch (_) {
+        // Already idle / no source — notification still needs dismissal.
+      }
     }
-    clearTrackMetadata();
+    // Clear metadata without resurrecting the notification, then push a
+    // button-less final state before stopping the service.
+    mediaItem.add(null);
+    playbackState.add(
+      PlaybackState(
+        controls: [],
+        processingState: AudioProcessingState.idle,
+        playing: false,
+      ),
+    );
     await super.stop();
   }
 
