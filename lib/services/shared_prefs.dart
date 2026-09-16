@@ -15,6 +15,7 @@ abstract final class PrefsKeys {
   static const String latitude = 'latitude';
   static const String longitude = 'longitude';
   static const String cityInfo = 'cityInfo';
+  static const String cityLabel = 'cityLabel';
   static const String method = 'method';
   static const String asrCalculation = 'asrCalculation';
   static const String highLatitudeRule = 'highLatitudeRule';
@@ -88,6 +89,17 @@ class SharedPreferencesService {
     }
   }
 
+  /// Display label for the configured location ('القاهرة، مصر'), computed
+  /// once at save time (city pick → its label; GPS → nearest city within
+  /// 50 km, else coordinates) and stored as a plain string so rendering
+  /// never needs the city directory. Empty when no location is configured.
+  static String getPrayerCityLabel() =>
+      _sharedPreferences?.getString(PrefsKeys.cityLabel) ?? '';
+
+  static Future<void> setPrayerCityLabel(String label) async {
+    await _sharedPreferences?.setString(PrefsKeys.cityLabel, label);
+  }
+
   /// Stored method or default. Absent returns the default; present-but-unknown
   /// values are logged visibly and reset to default (no silent guess).
   static String getMethod() {
@@ -148,6 +160,7 @@ class SharedPreferencesService {
     required String timezone,
     String? highLatitudeRule,
     City? city,
+    String? cityLabel, // null = leave stored label unchanged
   }) async {
     final prefs = _sharedPreferences;
     if (prefs == null) return;
@@ -171,6 +184,9 @@ class SharedPreferencesService {
           'country': city.countryCode,
         }),
       );
+    }
+    if (cityLabel != null) {
+      await prefs.setString(PrefsKeys.cityLabel, cityLabel);
     }
     await refreshPrayerNotification();
   }
@@ -221,7 +237,8 @@ class SharedPreferencesService {
         return DateTime.parse(stored);
       } catch (e) {
         logWarn(
-            'Failed to parse yousria beginning "$stored": $e — resetting to today',);
+          'Failed to parse yousria beginning "$stored": $e — resetting to today',
+        );
         _sharedPreferences?.remove(PrefsKeys.yousriaStartingDay);
       }
     }

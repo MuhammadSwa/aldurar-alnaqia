@@ -114,7 +114,7 @@ class YousriaHideConfirmation extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'تم الإخفاء. يمكنك تغيير البداية لاحقًا من القائمة الجانبية.',
+                'يمكنك تغيير البداية لاحقًا من القائمة الجانبية.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),

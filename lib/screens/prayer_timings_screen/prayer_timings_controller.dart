@@ -58,15 +58,16 @@ String? _localZoneName() {
 /// `select()` schedule/weekday/next info therefore never rebuild every second
 /// and listeners are not woken while the user reads elsewhere.
 class PrayerState {
-  /// Typed schedule for the current civil date (today + tomorrow Fajr +
-  /// Sunnah times), computed once per recalculation. The timetable card
-  /// renders from this and must not recalculate times itself.
   final PrayerSchedule? schedule;
-
-  /// The current Islamic day of the week (Monday=1, Sunday=7).
   final int islamicWeekday;
   final (DateTime?, String) nextPrayerInfo;
   final bool isInitialized;
+
+  /// Display label for the configured location ('القاهرة، مصر'), resolved
+  /// and persisted at save time (city pick → exact label; GPS → nearest
+  /// city within 50 km; remote area → formatted coordinates). Empty when
+  /// unconfigured. No directory load is needed to render it.
+  final String cityLabel;
 
   // ignore: prefer_const_constructors_in_immutables
   PrayerState({
@@ -74,6 +75,7 @@ class PrayerState {
     int? islamicWeekday,
     this.nextPrayerInfo = (null, ''),
     this.isInitialized = false,
+    this.cityLabel = '',
   }) : islamicWeekday = islamicWeekday ?? tz.TZDateTime.now(tz.local).weekday;
 
   PrayerState copyWith({
@@ -81,12 +83,14 @@ class PrayerState {
     int? islamicWeekday,
     (DateTime?, String)? nextPrayerInfo,
     bool? isInitialized,
+    String? cityLabel,
   }) {
     return PrayerState(
       schedule: schedule ?? this.schedule,
       islamicWeekday: islamicWeekday ?? this.islamicWeekday,
       nextPrayerInfo: nextPrayerInfo ?? this.nextPrayerInfo,
       isInitialized: isInitialized ?? this.isInitialized,
+      cityLabel: cityLabel ?? this.cityLabel,
     );
   }
 }
@@ -126,16 +130,19 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
   /// Called only when data can fundamentally change: init, settings change,
   /// event boundary, or midnight.
   void _recalculateAllPrayerData() {
-    // 1. Calculate and cache the typed schedule (today + tomorrow Fajr +
-    //    sunnah) — the single solar calculation per cycle.
-    // 2. Determine the next prayer and its time.
-    // 3. Update the Islamic weekday.
-    // 4. Schedule the single one-shot boundary timer.
     final schedule = todayPrayerSchedule();
-    state = state.copyWith(schedule: schedule);
+    state = state.copyWith(schedule: schedule, cityLabel: _locationLabel());
     _updateNextPrayerInfo();
     _updateIslamicWeekday();
     _scheduleBoundaryTimer();
+  }
+
+  /// Persisted label, falling back to the stored city's own name for
+  /// installs saved before labels existed (no country suffix).
+  String _locationLabel() {
+    final label = SharedPreferencesService.getPrayerCityLabel();
+    if (label != null && label.isNotEmpty) return label;
+    return SharedPreferencesService.getCity()?.displayName ?? '';
   }
 
   void _updateNextPrayerInfo() {
@@ -176,6 +183,21 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     String? highLatitudeRule,
     City? city,
   }) async {
+    final directory = await ref.read(cityDirectoryProvider.future);
+
+    // Display label only. GPS (city == null) → nearest city within 50 km,
+    // else coordinates. Prayer math and timezone resolution keep using the
+    // exact coordinates; cityInfo semantics are unchanged.
+    final labelCity = city ??
+        LocationTimezone.nearestCity(
+          latitude: lat,
+          longitude: long,
+          cities: directory.cities,
+        );
+    final cityLabel = labelCity != null
+        ? directory.cityLabel(labelCity)
+        : '${lat.toStringAsFixed(2)}°، ${long.toStringAsFixed(2)}°';
+
     final timezone = await _resolveTimezone(lat, long, city);
     if (timezone == null) {
       logWarn('Could not resolve timezone for $lat, $long.');
@@ -190,6 +212,7 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
       timezone: timezone,
       highLatitudeRule: highLatitudeRule,
       city: city,
+      cityLabel: cityLabel,
     );
     if (!ref.mounted) return;
     _setTimezone(timezone);
@@ -298,4 +321,5 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
 }
 
 final prayerProvider = NotifierProvider<PrayerTimingsNotifier, PrayerState>(
-    PrayerTimingsNotifier.new,);
+  PrayerTimingsNotifier.new,
+);

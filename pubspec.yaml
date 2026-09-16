@@ -1,29 +1,12 @@
 name: aldurar_alnaqia
 description: "تطبيق الدرر النقية يحتوى على أوراد الطريقة اليسرية الصديقية الشاذلية"
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: "none" # Remove this line if you wish to publish to pub.dev
+publish_to: "none" 
 
-# The following defines the version and build number for your application.
-# A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
-# Both the version and the builder number may be overridden in flutter
-# build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
-# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
-# Read more about iOS versioning at
-# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-# In Windows, build-name is used as the major, minor, and patch parts
-# of the product and file versions while build-number is used as the build suffix.
 version: 1.0.0+1
 
 environment:
   sdk: ">=3.3.4 <4.0.0"
 
-# To automatically upgrade your package dependencies to the latest versions
-# consider running `flutter pub upgrade --major-versions`.
-# To see which dependencies have newer versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
     sdk: flutter
@@ -33,17 +16,10 @@ dependencies:
   shared_preferences: ^2.2.3
   geolocator: ^14.0.0
   hijri: ^3.0.0
-  # flutter_local_notifications: ^17.1.0
-
   just_audio: ^0.10.0
-
   flutter_riverpod: ^3.3.2
-   
   path_provider: ^2.1.3
   url_launcher: ^6.3.0
-  # Lightweight OS-native PDF viewer (Android PdfRenderer / iOS CGPDF,
-  # PDFium only on Windows). Same PdfViewPinch API as pdfx_lite, which
-  # needs Flutter >=3.47 / Dart >=3.12 — switch to pdfx_lite after upgrade.
   pdfx: ^2.7.0
   background_downloader: ^9.1.1
   adhan_dart: ^2.0.0
@@ -59,16 +35,14 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
 
- # flutter pub run flutter_launcher_icons
   plugin_platform_interface: any
   url_launcher_platform_interface: any
 flutter_launcher_icons:
-  # android: "launcher_icon"
   android: true
   ios: true
   image_path: "app_logo_cropped.png"
   image_path_android: "app_logo_cropped.png"
-  min_sdk_android: 21 # android min sdk min:16, default 21
+  min_sdk_android: 21 
   web:
     generate: true
     image_path: "app_logo_cropped.png"
@@ -82,14 +56,7 @@ flutter_launcher_icons:
     generate: true
     image_path: "app_logo_cropped.png"
 
-# For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
-
-# The following section is specific to Flutter packages.
 flutter:
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
 
   assets:
@@ -98,25 +65,13 @@ flutter:
     - assets/icons/
     - assets/data/
 
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/assets-and-images/#resolution-aware
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/assets-and-images/#from-packages
-
   fonts:
     - family: NotoNaskh
       fonts:
         - asset: fonts/NotoNaskArabic.ttf
     - family: AmiriQuran
       fonts:
-        # - asset: fonts/AmiriQuran-Regular.ttf
         - asset: fonts/DigitalKhatt.otf
-    # - family: antic
-    #   fonts:
-    #     - asset: fonts/arfonts-old-antic-decorative.ttf
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/custom-fonts/#from-packages
 
 dependency_overrides:
   # permission_handler_android 14 requires AGP 9 (ecosystem not migrated yet);

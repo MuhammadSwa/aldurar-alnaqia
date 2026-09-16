@@ -50,4 +50,29 @@ abstract final class LocationTimezone {
     final eastWest = longitudeDelta * math.cos(meanLatitude);
     return latitudeDelta * latitudeDelta + eastWest * eastWest;
   }
+
+  /// Nearest indexed city to the coordinate, or null when none lies within
+  /// [maxKm]. Used to label GPS-derived locations. Timezone resolution keeps
+  /// its own uncapped scan in [resolve] — do not couple the two cutoffs.
+  static City? nearestCity({
+    required double latitude,
+    required double longitude,
+    required Iterable<City> cities,
+    double maxKm = 50,
+  }) {
+    if (!_isValidCoordinate(latitude, longitude)) return null;
+    // _squaredDistance works in approximate degrees²; 1° ≈ 111.32 km.
+    final maxDeg = maxKm / 111.32;
+    final maxSquared = maxDeg * maxDeg;
+    City? nearest;
+    var nearestDistance = double.infinity;
+    for (final city in cities) {
+      final distance = _squaredDistance(latitude, longitude, city);
+      if (distance < nearestDistance) {
+        nearest = city;
+        nearestDistance = distance;
+      }
+    }
+    return nearestDistance <= maxSquared ? nearest : null;
+  }
 }
