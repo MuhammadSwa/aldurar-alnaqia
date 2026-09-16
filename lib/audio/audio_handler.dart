@@ -6,9 +6,6 @@ import 'package:just_audio/just_audio.dart';
 
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
-/// Interval used by the notification's rewind / fast-forward controls.
-const Duration _skipInterval = Duration(seconds: 15);
-
 /// Custom [BaseAudioHandler] that owns the media notification.
 ///
 /// Responsibilities:
@@ -162,25 +159,6 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> seek(Duration position) =>
       _player?.seek(position) ?? Future.value();
-
-  @override
-  Future<void> rewind() async {
-    final player = _player;
-    if (player == null) return;
-    final target = player.position - _skipInterval;
-    await player.seek(target < Duration.zero ? Duration.zero : target);
-  }
-
-  @override
-  Future<void> fastForward() async {
-    final player = _player;
-    if (player == null) return;
-    final duration = player.duration;
-    final target = player.position + _skipInterval;
-    await player.seek(
-      duration != null && target > duration ? duration : target,
-    );
-  }
 
   @override
   Future<void> stop() async {

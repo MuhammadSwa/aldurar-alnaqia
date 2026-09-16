@@ -129,6 +129,19 @@ class AudioController extends Notifier<AudioState> {
     );
   }
 
+  /// Builds the one-time remote-stream fallback for a broken local file,
+  /// or null when no fallback applies (already remote, or no track).
+  EngineLoadRequest? _remoteFallbackFor(EngineLoadRequest request) {
+    final track = state.track;
+    if (!request.isLocal || track == null) return null;
+    return EngineLoadRequest(
+      uri: track.remoteUrl,
+      trackId: request.trackId,
+      title: request.title,
+      isLocal: false,
+    );
+  }
+
   /// Loads [request]; on a local-file failure retries once over the network
   /// before surfacing an error.
   Future<void> _tryLoad(EngineLoadRequest request) async {
@@ -136,13 +149,8 @@ class AudioController extends Notifier<AudioState> {
       await _engine.load(request);
     } catch (e, st) {
       logError('Audio load failed for "${request.title}"', e, st);
-      if (request.isLocal && state.track != null) {
-        final fallback = EngineLoadRequest(
-          uri: state.track!.remoteUrl,
-          trackId: request.trackId,
-          title: request.title,
-          isLocal: false,
-        );
+      final fallback = _remoteFallbackFor(request);
+      if (fallback != null) {
         _currentRequest = fallback;
         try {
           await _engine.load(fallback);
@@ -176,13 +184,9 @@ class AudioController extends Notifier<AudioState> {
         logWarn('Audio engine reported failure');
         final request = _currentRequest;
         // Broken local file that only fails asynchronously: try streaming.
-        if (request != null && request.isLocal && state.track != null) {
-          final fallback = EngineLoadRequest(
-            uri: state.track!.remoteUrl,
-            trackId: request.trackId,
-            title: request.title,
-            isLocal: false,
-          );
+        final fallback =
+            request == null ? null : _remoteFallbackFor(request);
+        if (fallback != null) {
           _currentRequest = fallback;
           state = state.copyWith(status: AudioStatus.loading);
           unawaited(_tryLoad(fallback));
