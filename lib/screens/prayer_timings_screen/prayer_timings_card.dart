@@ -32,7 +32,7 @@ class PrayerTimingsCard extends ConsumerWidget {
           return _buildPlaceholderTable(context);
         }
         final sunnahTimes = _calculateSunnahTimes(timezonedPrayerTimes);
-        final placeholderTime = tz.TZDateTime.from(DateTime(1, 1, 1), tz.local);
+        final placeholderTime = tz.TZDateTime(tz.local, 1, 1, 1);
 
         final prayers = [
           _PrayerTime('المغرب', timezonedPrayerTimes['maghrib']!),
@@ -125,7 +125,7 @@ class PrayerTimingsCard extends ConsumerWidget {
 
   // Helper method to build the placeholder table to avoid code duplication
   Widget _buildPlaceholderTable(BuildContext context) {
-    final placeholderTime = tz.TZDateTime.from(DateTime(1, 1, 1), tz.local);
+    final placeholderTime = tz.TZDateTime(tz.local, 1, 1, 1);
     final prayers = [
       _PrayerTime('المغرب', placeholderTime),
       _PrayerTime('العشاء', placeholderTime),
@@ -155,7 +155,7 @@ class PrayerTimingsCard extends ConsumerWidget {
   }
 
   String _formatTime(tz.TZDateTime time) {
-    if (time.year == 1) {
+    if (time.year <= 1) {
       return '--:--';
     }
     final period = (time.hour >= 12) ? 'م' : 'ص';
