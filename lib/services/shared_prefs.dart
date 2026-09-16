@@ -153,8 +153,6 @@ class SharedPreferencesService {
     required String timezone,
     String? highLatitudeRule,
     City? city,
-    int? hijriOffset,
-    bool? preciseAlerts,
   }) async {
     final prefs = _sharedPreferences;
     if (prefs == null) return;
@@ -166,12 +164,6 @@ class SharedPreferencesService {
     await prefs.setString(PrefsKeys.timezone, timezone);
     if (highLatitudeRule != null) {
       await prefs.setString(PrefsKeys.highLatitudeRule, highLatitudeRule);
-    }
-    if (hijriOffset != null) {
-      await prefs.setInt(PrefsKeys.hijriDayOffset, hijriOffset);
-    }
-    if (preciseAlerts != null) {
-      await prefs.setBool(PrefsKeys.prayerPreciseAlerts, preciseAlerts);
     }
     if (city == null) {
       await prefs.remove(PrefsKeys.cityInfo);

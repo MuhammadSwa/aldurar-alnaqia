@@ -33,10 +33,6 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
   /// True when the user located via GPS rather than picking a city.
   bool _isGpsLocation = false;
 
-  /// Exact-alarm arrival alerts (Android). Off = inexact wakeups, cheaper in
-  /// Doze but alerts can arrive minutes late.
-  late bool _preciseAlerts;
-
   /// Inline validation flag: shown as red text under the location section.
   bool _showLocationError = false;
 
@@ -56,7 +52,6 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
     if (!CalculationMethodInfo.methods.any((m) => m.key == _selectedMethod)) {
       _selectedMethod = CalculationMethodInfo.methods.first.key;
     }
-    _preciseAlerts = SharedPreferencesService.getPrayerPreciseAlerts();
     // Location always starts cleared: the user picks a city or GPS fresh
     // on every open (no restore of the previously saved location).
   }
@@ -101,7 +96,6 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
           method: _selectedMethod,
           asrCalc: _selectedAsrCalc,
           city: _isGpsLocation ? null : _selectedCity,
-          preciseAlerts: _preciseAlerts,
         );
 
     if (!context.mounted) return;
@@ -182,21 +176,6 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
                 CalcMethodDropDown(
                   initialMethod: _selectedMethod,
                   onSelect: (value) => _selectedMethod = value,
-                ),
-
-                const Divider(height: 24),
-
-                // ---- 4. Precise arrival alerts (Android exact alarms) ----
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('تنبيه دقيق عند دخول الوقت'),
-                  subtitle: const Text(
-                    'إيقافه يوفّر البطارية لكن قد يتأخر التنبيه دقائق',
-                  ),
-                  value: _preciseAlerts,
-                  onChanged: (value) {
-                    setState(() => _preciseAlerts = value);
-                  },
                 ),
                 const SizedBox(height: 20),
                 ActionButtons(onPress: () => _saveSettings(context)),

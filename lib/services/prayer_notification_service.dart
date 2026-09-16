@@ -114,29 +114,3 @@ void _startNativeService() {
     logWarn('prayer channel start failed: $e');
   }
 }
-
-/// Whether the native service has actually posted its notification.
-Future<bool> isPrayerNotificationPosted() async {
-  try {
-    return await _channel.invokeMethod<bool>('isNotificationPosted') ?? false;
-  } catch (_) {
-    return false;
-  }
-}
-
-/// Waits until the notification is actually shown/removed so the UI spinner
-/// matches reality. [minDuration] keeps the spinner from flashing (SystemUI
-/// can lag a bit behind the post on some OEMs).
-Future<void> waitUntilPrayerNotificationState(
-  bool target, {
-  Duration timeout = const Duration(seconds: 8),
-  Duration minDuration = const Duration(milliseconds: 800),
-}) async {
-  final sw = Stopwatch()..start();
-  final deadline = DateTime.now().add(timeout);
-  while (DateTime.now().isBefore(deadline)) {
-    final posted = await isPrayerNotificationPosted();
-    if (posted == target && sw.elapsed >= minDuration) return;
-    await Future.delayed(const Duration(milliseconds: 100));
-  }
-}

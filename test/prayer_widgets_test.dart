@@ -14,6 +14,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_d
     show hijriDayWithOffset;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 
@@ -197,6 +198,32 @@ void main() {
             .difference(DateTime(base.hYear, base.hMonth, base.hDay)),
         const Duration(days: 1),
       );
+    });
+  });
+
+  group('PrayerNotificationDialog', () {
+    Future<void> pumpDialog(WidgetTester tester) {
+      return tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: PrayerNotificationDialog(),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('explains the notification and the precise toggle',
+        (tester) async {
+      await pumpDialog(tester);
+      expect(find.text('إشعار المواقيت'), findsOneWidget);
+      expect(find.textContaining('شريط الإشعارات'), findsOneWidget);
+      expect(find.text('تنبيه دقيق عند دخول الوقت'), findsOneWidget);
+      expect(find.textContaining('يوفّر البطارية'), findsOneWidget);
+      expect(find.text('تشغيل الإشعار'), findsOneWidget);
+      expect(find.text('إغلاق'), findsOneWidget);
+      expect(find.text('إيقاف الإشعار'), findsNothing);
     });
   });
 }

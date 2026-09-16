@@ -78,16 +78,11 @@ class PrayerNotificationService : Service() {
     @Volatile
     private var running: PrayerNotificationService? = null
 
-    @Volatile
-    private var notificationPosted: Boolean = false
-
     fun refreshIfRunning() {
       running?.requestRefresh()
     }
 
     fun isRunning(): Boolean = running != null
-
-    fun isNotificationPosted(): Boolean = notificationPosted
 
     fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
@@ -115,7 +110,6 @@ class PrayerNotificationService : Service() {
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     startForeground(WIDGET_NOTIFICATION_ID, buildLoadingNotification())
-    notificationPosted = true
 
     val isAlarmTrigger = intent?.action == ACTION_ALARM_TRIGGER
     requestRefresh(isAlarmTrigger = isAlarmTrigger)
@@ -126,7 +120,6 @@ class PrayerNotificationService : Service() {
     cancelExactAlarm()
     scope.cancel()
     if (running === this) running = null
-    notificationPosted = false
     releaseWakeLock()
 
     getSystemService(NotificationManager::class.java)?.cancel(WIDGET_NOTIFICATION_ID)
@@ -337,14 +330,12 @@ class PrayerNotificationService : Service() {
     if (running !== this) return
     val nm = getSystemService(NotificationManager::class.java)
     nm?.notify(WIDGET_NOTIFICATION_ID, buildFallbackNotification(message))
-    notificationPosted = true
   }
 
   private fun postNotification(plan: DayPlan, hijri: String) {
     if (running !== this) return
     val nm = getSystemService(NotificationManager::class.java)
     nm?.notify(WIDGET_NOTIFICATION_ID, buildNotification(plan, hijri))
-    notificationPosted = true
   }
 
   private fun contentIntent(): PendingIntent {

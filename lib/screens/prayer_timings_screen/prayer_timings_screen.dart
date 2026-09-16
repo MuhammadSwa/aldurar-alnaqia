@@ -3,6 +3,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/day_name.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_action_buttons.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_date_row.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
@@ -21,10 +22,6 @@ class PrayerTimingsScreen extends ConsumerStatefulWidget {
 }
 
 class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
-  // True while the native prayer service is starting/stopping after a bell
-  // tap — shows a spinner until the notification actually appears/disappears.
-  bool _togglingNotification = false;
-
   // Ensures the settings dialog auto-opens only once per route visit
   // when prayer timings can't be calculated (e.g. no location yet).
   bool _hasAutoShownSettings = false;
@@ -80,31 +77,28 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
               builder: (context, snapshot) {
                 final enabled = snapshot.data ?? false;
                 return IconButton(
-                  tooltip:
-                      enabled ? 'إيقاف إشعار المواقيت' : 'تشغيل إشعار المواقيت',
-                  icon: _togglingNotification
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          enabled
-                              ? Icons.notifications_active
-                              : Icons.notifications_off,
-                        ),
-                  onPressed: _togglingNotification
-                      ? null
-                      : () async {
-                          setState(() => _togglingNotification = true);
-                          final newValue = !enabled;
-                          await setPrayerNotificationEnabled(newValue);
-                          // Wait until the service actually started/stopped
-                          // so the spinner reflects the real notification.
-                          await waitUntilPrayerNotificationState(newValue);
-                          if (!mounted) return;
-                          setState(() => _togglingNotification = false);
-                        },
+                  tooltip: 'إشعار المواقيت',
+                  icon: Icon(
+                    enabled
+                        ? Icons.notifications_active
+                        : Icons.notifications_off,
+                  ),
+                  onPressed: () async {
+                    if (enabled) {
+                      // On → off straight away, no dialog.
+                      await setPrayerNotificationEnabled(false);
+                      if (mounted) setState(() {});
+                      return;
+                    }
+                    // Off → explain first, then enable from the dialog.
+                    final changed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) =>
+                          const PrayerNotificationDialog(),
+                    );
+                    // Refresh the bell icon when the dialog changed anything.
+                    if (changed == true && mounted) setState(() {});
+                  },
                 );
               },
             ),

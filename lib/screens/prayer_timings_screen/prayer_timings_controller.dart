@@ -175,7 +175,6 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     required String asrCalc,
     String? highLatitudeRule,
     City? city,
-    bool? preciseAlerts,
   }) async {
     final timezone = await _resolveTimezone(lat, long, city);
     if (timezone == null) {
@@ -191,7 +190,6 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
       timezone: timezone,
       highLatitudeRule: highLatitudeRule,
       city: city,
-      preciseAlerts: preciseAlerts,
     );
     if (!ref.mounted) return;
     _setTimezone(timezone);

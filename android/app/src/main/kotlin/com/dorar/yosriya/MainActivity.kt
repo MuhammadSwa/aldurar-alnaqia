@@ -44,8 +44,6 @@ class MainActivity : AudioServiceActivity() {
           PrayerNotificationService.refreshIfRunning()
           result.success(null)
         }
-        "isNotificationPosted" ->
-            result.success(PrayerNotificationService.isNotificationPosted())
         "dartReady" -> {
           pendingRoute?.let { r ->
             pendingRoute = null
