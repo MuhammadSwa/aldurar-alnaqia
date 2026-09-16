@@ -34,9 +34,9 @@ class Zikr {
 
   const Zikr({
     required this.id,
+    required this.title,
     required this.content,
     this.url,
-    this.title = '',
     this.notes = '',
     this.footer = '',
     this.kind = ZikrKind.text,
@@ -169,6 +169,7 @@ final collectionByTitle = <String, ZikrCollection>{
 
 /// Accepts a stable id or (for pre-migration data / deep links) a legacy
 /// Arabic title. Returns null when unknown.
+// TODO(v2): drop the title fallback once migrated bookmarks/deep links expire.
 Zikr? resolveZikr(String idOrTitle) =>
     zikrById[idOrTitle] ?? zikrByTitle[idOrTitle];
 
@@ -191,6 +192,7 @@ List<String> allZikrTitles() =>
     {for (final z in zikrById.values) z.title}.toList();
 
 /// One-time migration of persisted bookmarks / titles to stable ids.
+// TODO(v2): remove once v1 bookmarks have migrated.
 String migrateBookmark(String bookmark) {
   // Already migrated.
   if (zikrById.containsKey(bookmark) ||
@@ -247,19 +249,23 @@ final audioSections = <AudioSection>[
   ),
   const AudioSection(
     id: 'ahzab',
-    title: 'أحزاب',
+    title: 'الأحزاب',
     items: [...ahzabCollection, alfathAlsedeqy],
   ),
   AudioSection(
     id: 'qasaed',
-    title: 'القصائد',
-    items: poemsCollection.sublist(0, poemsCollection.length - 1),
+    title: 'قصائد',
+    // dua-istighatha is a dua read with the wazifa, not a qasida.
+    items: [
+      for (final z in poemsCollection)
+        if (z.id != 'dua-istighatha') z,
+    ],
   ),
   const AudioSection(
-      id: 'hadra', title: 'أوراد الحضرة', items: alhadraCollection),
+      id: 'hadra', title: 'الحضرة الصديقية', items: alhadraCollection),
   const AudioSection(
       id: 'salawat-mukhtara',
-      title: 'صلوات مختارة',
+      title: 'صلوات مختارة على النبي ﷺ',
       items: chosenSalawatCollection),
   const AudioSection(
       id: 'ibn-ata-allah',

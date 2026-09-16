@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart';
 
 /// Educates about the 6-day Yousria cycle and offers one-tap setup.
@@ -20,7 +19,6 @@ class YousriaBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final startWeekday = arabicWeekdays[yousria.startDate.weekday - 1];
 
     return Directionality(
       textDirection: TextDirection.rtl,

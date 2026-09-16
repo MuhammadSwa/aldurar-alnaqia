@@ -42,8 +42,7 @@ YousriaDayInfo getYousriaDayInfo() {
   final effectiveDay = _midnight(islamicEffectiveDate());
   final diff = effectiveDay.difference(startingDay).inDays;
   final dayNumber = (diff % 6 + 6) % 6 + 1;
-  // salawatYousriaCollection: 0 intro, 1 asmaa, 2..7 day1..day6.
-  final zikr = salawatYousriaCollection[dayNumber + 1];
+  final zikr = yousriaDayZikr(dayNumber);
   return YousriaDayInfo(
     dayNumber: dayNumber,
     zikrId: zikr.id,

@@ -294,6 +294,7 @@ class AppRouter {
 
   /// Typed extras parsing for zikr detail pages. Accepts both the typed
   /// [ZikrRouteExtra] and legacy map extras ({'titles'|'zikrIds', 'index'}).
+  // TODO(v2): drop the legacy Map/'titles' branch.
   static (List<String>?, int?) _parseZikrExtras(Object? extra) {
     if (extra is ZikrRouteExtra) {
       return (extra.zikrIds, extra.index);

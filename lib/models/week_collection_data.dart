@@ -1,5 +1,6 @@
-import 'package:aldurar_alnaqia/services/yousria_cycle.dart' as yousria_cycle;
-import 'package:aldurar_alnaqia/services/yousria_cycle.dart' show YousriaDayInfo;
+import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
+import 'package:aldurar_alnaqia/services/yousria_cycle.dart'
+    show getYousriaForToday;
 
 /// Composition of the 7 day-wirds from stable zikr ids.
 ///
@@ -18,28 +19,16 @@ class WeekCollectionAzkar {
   ];
 
   /// Index 0 = Monday (day 1) .. index 6 = Sunday (day 7).
-  static const collection = <List<String>>[
+  /// Wednesday derives from [chosenSalawatCollection] so reordering that
+  /// collection stays in sync automatically.
+  static final collection = <List<String>>[
     ['hawatif-haqaiq', 'munajat-ibn-ata-allah', 'hizb-alnasr'],
     ['hizb-albar'],
-    ['manzuma-asma-husna', ..._chosenSalawatIds],
+    ['manzuma-asma-husna', for (final z in chosenSalawatCollection) z.id],
     ['burda-busiri'],
     ['fath-siddiqi', 'qasida-mudariyya', 'qasida-muhammadiyya', 'madh-quran'],
     ['hizb-albahr', 'hizb-alnawawi'],
     ['munfarija-ghazali', 'munfarija-nahwi', 'banat-suad'],
-  ];
-
-  static const _chosenSalawatIds = <String>[
-    'salat-shafiiyya',
-    'salat-mashishiyya',
-    'salat-nuraniyya',
-    'salat-zatiyya',
-    'salat-azimiyya',
-    'salat-anmuzajiyya',
-    'salat-qasim',
-    'salat-mutardi',
-    'salat-fatih',
-    'salat-baha',
-    'salat-muhtaj',
   ];
 
   static List<String> getDay(int day, {required bool isToday}) {
@@ -48,15 +37,4 @@ class WeekCollectionAzkar {
     }
     return [...head, ...collection[day - 1], ...tail];
   }
-
-  // --- Backward-compat forwarders (logic lives in yousria_cycle.dart) ---
-
-  static DateTime islamicEffectiveDate() =>
-      yousria_cycle.islamicEffectiveDate();
-
-  static YousriaDayInfo getYousriaDayInfo() =>
-      yousria_cycle.getYousriaDayInfo();
-
-  static List<String> getYousriaForToday() =>
-      yousria_cycle.getYousriaForToday();
 }

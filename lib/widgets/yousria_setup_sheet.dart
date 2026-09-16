@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart';
@@ -53,9 +52,7 @@ Future<bool?> showYousriaSetupSheet(
                       // (day - 1) days ago.
                       final impliedStart =
                           effectiveMidnight.subtract(Duration(days: day - 1));
-                      final startWeekday =
-                          arabicWeekdays[impliedStart.weekday - 1];
-                      final title = salawatYousriaCollection[day + 1].title;
+                      final title = yousriaDayZikr(day).title;
                       final selected = day == current.dayNumber;
                       return ListTile(
                         title: Text(title),

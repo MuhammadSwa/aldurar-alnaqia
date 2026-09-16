@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
+import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/models/week_collection_data.dart';
 
 void main() {
@@ -86,6 +88,30 @@ void main() {
       expect(titles.length, zikrByTitle.length);
       for (final z in zikrById.values) {
         expect(titles, contains(z.title));
+      }
+    });
+
+    test('yousria day lookup matches explicit day list', () {
+      expect(yousriaDayZikrs, hasLength(6));
+      for (var day = 1; day <= 6; day++) {
+        expect(yousriaDayZikr(day), same(yousriaDayZikrs[day - 1]));
+        expect(yousriaDayZikr(day).id, isNotEmpty);
+      }
+    });
+
+    test('wednesday wird tracks chosen-salawat collection order', () {
+      final wednesday = WeekCollectionAzkar.collection[2];
+      expect(
+        wednesday,
+        ['manzuma-asma-husna', for (final z in chosenSalawatCollection) z.id],
+      );
+    });
+
+    test('qasaed audio excludes dua-istighatha by id, not position', () {
+      final qasaed = audioSections.firstWhere((s) => s.id == 'qasaed');
+      expect(qasaed.items.map((z) => z.id), isNot(contains('dua-istighatha')));
+      for (final z in qasaed.items) {
+        expect(resolveZikr(z.id), isNotNull);
       }
     });
   });

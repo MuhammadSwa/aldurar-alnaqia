@@ -11,6 +11,23 @@ const salawatYousriaCollection = [
   day6Yousria,
 ];
 
+/// Day parts in order 1..6. Use [yousriaDayZikr] instead of indexing
+/// [salawatYousriaCollection] directly (0 = intro, 1 = asmaa).
+const yousriaDayZikrs = [
+  day1Yousria,
+  day2Yousria,
+  day3Yousria,
+  day4Yousria,
+  day5Yousria,
+  day6Yousria,
+];
+
+/// Returns the Yousria zikr for [dayNumber] (1..6).
+Zikr yousriaDayZikr(int dayNumber) {
+  assert(dayNumber >= 1 && dayNumber <= 6, 'dayNumber must be 1..6');
+  return yousriaDayZikrs[dayNumber - 1];
+}
+
 const day1Yousria = Zikr(
     id: 'yousria-day-1',
     title: 'صلوات اليوم الأول',

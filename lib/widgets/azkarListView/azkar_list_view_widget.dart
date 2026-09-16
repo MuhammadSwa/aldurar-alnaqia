@@ -10,7 +10,6 @@ class AzkarListViewWidget extends StatelessWidget {
     super.key,
     // stable ids (zikr, collection, or day-wird ids)
     required this.zikrIds,
-    this.titles,
     required this.barTitle,
     required this.targetBuilder,
     this.scrollable = true,
@@ -18,9 +17,6 @@ class AzkarListViewWidget extends StatelessWidget {
 
   final List<String> zikrIds;
 
-  /// Optional display overrides, parallel to [zikrIds]. When omitted,
-  /// titles resolve from the registry.
-  final List<String>? titles;
   final String barTitle;
   final ZikrTargetBuilder targetBuilder;
   final bool scrollable;
@@ -35,12 +31,8 @@ class AzkarListViewWidget extends StatelessWidget {
         shrinkWrap: true,
         itemBuilder: (context, index) {
           final id = zikrIds[index];
-          final title = titles != null && index < titles!.length
-              ? titles![index]
-              : null;
           return ZikrListViewTile(
             zikrId: id,
-            title: title,
             target: targetBuilder(id, index),
           );
         });
