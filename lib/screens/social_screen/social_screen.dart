@@ -179,9 +179,17 @@ class SocialScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text('الصفحات الرسمية لفضيلة أ.د. يسري جبر'),
-                    const SizedBox(
-                      height: 20,
+                    Padding(
+                      padding:
+                          const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 12.0),
+                      child: Text(
+                        'الصفحات الرسمية لفضيلة أ.د. يسري جبر',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
                     ),
                     Image.asset(
                       'assets/imgs/social_webp.webp',

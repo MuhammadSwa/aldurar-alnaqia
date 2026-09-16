@@ -294,7 +294,7 @@ class SharedPreferencesService {
   }
 
   static double getFontSize() {
-    return _sharedPreferences?.getDouble(PrefsKeys.fontSize) ?? 20;
+    return _sharedPreferences?.getDouble(PrefsKeys.fontSize) ?? 22;
   }
 
   static void setHijriDayOffset(int offset) {

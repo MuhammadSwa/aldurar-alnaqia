@@ -27,7 +27,7 @@ abstract final class AppTheme {
 
   /// Fallback body font size. Must match the default in
   /// `SharedPreferencesService.getFontSize`.
-  static const double defaultFontSize = 20;
+  static const double defaultFontSize = 22;
 
   static const double _bodyLineHeight = 1.8;
 
