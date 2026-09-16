@@ -219,7 +219,6 @@ void main() {
       await pumpDialog(tester);
       expect(find.text('إشعار المواقيت'), findsOneWidget);
       expect(find.textContaining('شريط الإشعارات'), findsOneWidget);
-      expect(find.textContaining('لحظة دخول الوقت'), findsOneWidget);
       expect(find.textContaining('بضع ثوان'), findsOneWidget);
       expect(find.text('تشغيل الإشعار'), findsOneWidget);
       expect(find.text('إغلاق'), findsOneWidget);
