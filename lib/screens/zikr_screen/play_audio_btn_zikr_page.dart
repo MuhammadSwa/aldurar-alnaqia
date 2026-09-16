@@ -21,9 +21,11 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final audio = ref.watch(audioProvider.select((s) => (
-          playingId: s.isPlayingThisTrack ? s.track?.id : null,
-        )));
+    // Hide while this zikr is loaded in the mini player (playing, paused,
+    // loading, or error) — not just while actively playing.
+    final isOpenForThisZikr = ref.watch(
+      audioProvider.select((s) => s.isVisible && s.track?.id == id),
+    );
 
     return DownloadStatusBuilder(
       item: DownloadItem(
@@ -33,9 +35,7 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
         type: DownloadType.narrations,
       ),
       builder: (context, ref, downloader, isDownloading, isFileDownloaded) {
-        final isPlayingThisUrl = audio.playingId == id;
-
-        if (url == null || isPlayingThisUrl) {
+        if (url == null || isOpenForThisZikr) {
           return Container();
         }
 
