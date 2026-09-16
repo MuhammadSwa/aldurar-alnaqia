@@ -1,4 +1,4 @@
-// Phase 6 — widget/unit tests for the Phase 2 timer consolidation.
+// Widget/unit tests for the prayer timings screen.
 //
 // Proves: the timetable renders from the cached schedule (no calculation in
 // build), the countdown owns its ticker locally, Hijri/day labels flip at
@@ -214,13 +214,13 @@ void main() {
       );
     }
 
-    testWidgets('explains the notification and the precise toggle',
+    testWidgets('explains the notification with always-exact alert',
         (tester) async {
       await pumpDialog(tester);
       expect(find.text('إشعار المواقيت'), findsOneWidget);
       expect(find.textContaining('شريط الإشعارات'), findsOneWidget);
-      expect(find.text('تنبيه دقيق عند دخول الوقت'), findsOneWidget);
-      expect(find.textContaining('يوفّر البطارية'), findsOneWidget);
+      expect(find.textContaining('لحظة دخول الوقت'), findsOneWidget);
+      expect(find.textContaining('بضع ثوان'), findsOneWidget);
       expect(find.text('تشغيل الإشعار'), findsOneWidget);
       expect(find.text('إغلاق'), findsOneWidget);
       expect(find.text('إيقاف الإشعار'), findsNothing);

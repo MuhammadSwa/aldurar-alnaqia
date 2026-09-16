@@ -21,8 +21,9 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   void handleSearch(String query) {
-    // Search suggestions are display titles; resolve to the stable id.
-    final zikr = resolveZikr(query);
+    // Search suggestions are display titles; map back to the stable id once.
+    final id = zikrIdForTitle(query) ?? query;
+    final zikr = resolveZikr(id);
     if (zikr == null) return;
     ZikrDetailTarget(branch: ZikrBranch.home, zikrId: zikr.id).go(context);
   }

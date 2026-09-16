@@ -1,4 +1,4 @@
-// Phase 0/6 — parity + regression fixtures for the prayer domain.
+// Parity + regression fixtures for the prayer domain.
 //
 // Same fixture set must pass in Dart and Kotlin (see
 // android/.../PrayerNotificationService parity notes). Golden epoch-ms values

@@ -205,11 +205,10 @@ class PrayerNotificationService : Service() {
     val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     val pi = PendingIntent.getService(this, ALARM_REQUEST_CODE, intent, flags)
 
-    // Phase 5 policy: exact alarms wake the device out of Doze and are
-    // reserved for user-facing prayer-arrival alerts (when the user left
-    // precise alerts enabled). Midnight/sunrise/fallback refreshes use
-    // inexact alarms — the displayed countdown is a system Chronometer, so
-    // it keeps ticking correctly without an exact wakeup.
+    // Always-exact policy: alertable prayer boundaries wake the device out
+    // of Doze. Midnight/sunrise/fallback refreshes use inexact alarms — the
+    // displayed countdown is a system Chronometer, so it keeps ticking
+    // correctly without an exact wakeup.
     try {
       if (exact && canScheduleExactAlarms()) {
         am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pi)
@@ -268,8 +267,8 @@ class PrayerNotificationService : Service() {
     postNotification(plan, hijri)
 
     // Target next event: either the upcoming prayer or midnight.
-    // Exact wakeup only for alertable prayers with precise alerts enabled.
-    val (nextWakeMs, exact) = computeNextWake(nowMs, zone, plan, cfg.preciseAlerts)
+    // Exact wakeup for alertable prayers; midnight/sunrise stay inexact.
+    val (nextWakeMs, exact) = computeNextWake(nowMs, zone, plan)
     scheduleNextWakeup(nextWakeMs, exact)
   }
 
@@ -299,15 +298,14 @@ class PrayerNotificationService : Service() {
   }
 
   /**
-   * Next wakeup as (timestamp, exact): exact only when the upcoming boundary
-   * is an alertable prayer AND the user enabled precise alerts. Midnight and
-   * sunrise use inexact alarms (Chronometer display needs no exact wakeup).
+   * Next wakeup as (timestamp, exact): exact when the upcoming boundary
+   * is an alertable prayer. Midnight and sunrise use inexact alarms
+   * (Chronometer display needs no exact wakeup).
    */
   private fun computeNextWake(
     nowMs: Long,
     zone: TimeZone,
-    plan: DayPlan,
-    preciseAlerts: Boolean
+    plan: DayPlan
   ): Pair<Long, Boolean> {
     val nowDate = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(zone).date
     val nextMidnightMs = (nowDate.plus(1, kotlinx.datetime.DateTimeUnit.DAY))
@@ -316,7 +314,7 @@ class PrayerNotificationService : Service() {
 
     // Wake 1 second after whichever event happens first
     return if (plan.nextAtMs in (nowMs + 1000)..nextMidnightMs) {
-      (plan.nextAtMs + 1000) to (preciseAlerts && plan.nextIsPrayer)
+      (plan.nextAtMs + 1000) to plan.nextIsPrayer
     } else {
       (nextMidnightMs + 1000) to false
     }
@@ -401,29 +399,24 @@ class PrayerNotificationService : Service() {
 
     // System-managed chronometer: SystemUI updates every second with 0 app wakeups.
     // Never show a minus: past zero a countdown Chronometer keeps ticking into
-    // "-MM:SS" until the (possibly 1-2 min late) refresh posts. The displayed
-    // zero-crossing is therefore pushed back by CHRONOMETER_GRACE_MS, and a
-    // refresh landing inside the grace window freezes at 00:00:00. Label left
-    // unchanged by request.
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      val remaining = plan.nextAtMs - System.currentTimeMillis()
-      if (remaining <= 0) {
-        collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
-        expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
-        collapsed.setTextViewText(R.id.chronometer, "00:00:00")
-        expanded.setTextViewText(R.id.chronometer, "00:00:00")
-      } else {
-        val base = SystemClock.elapsedRealtime() + remaining + CHRONOMETER_GRACE_MS
-        collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
-        expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
-        collapsed.setChronometer(R.id.chronometer, base, null, true)
-        expanded.setChronometer(R.id.chronometer, base, null, true)
-        collapsed.setChronometerCountDown(R.id.chronometer, true)
-        expanded.setChronometerCountDown(R.id.chronometer, true)
-      }
+    // "-MM:SS" until the late refresh posts. The displayed zero-crossing is
+    // therefore pushed back by CHRONOMETER_GRACE_MS, and a refresh landing
+    // inside the grace window freezes at 00:00:00. Label left unchanged by
+    // request. (minSdk 24, so no pre-N fallback.)
+    val remaining = plan.nextAtMs - System.currentTimeMillis()
+    if (remaining <= 0) {
+      collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+      expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+      collapsed.setTextViewText(R.id.chronometer, "00:00:00")
+      expanded.setTextViewText(R.id.chronometer, "00:00:00")
     } else {
-      collapsed.setViewVisibility(R.id.chronometer, android.view.View.GONE)
-      expanded.setViewVisibility(R.id.chronometer, android.view.View.GONE)
+      val base = SystemClock.elapsedRealtime() + remaining + CHRONOMETER_GRACE_MS
+      collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+      expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
+      collapsed.setChronometer(R.id.chronometer, base, null, true)
+      expanded.setChronometer(R.id.chronometer, base, null, true)
+      collapsed.setChronometerCountDown(R.id.chronometer, true)
+      expanded.setChronometerCountDown(R.id.chronometer, true)
     }
 
     val zone = currentZone()
@@ -544,9 +537,7 @@ class PrayerNotificationService : Service() {
     val asrCalculation: String,
     val highLatitudeRule: String,
     val timezone: String,
-    val hijriOffset: Int,
-    /** Phase 5 policy: exact alarms only for alertable prayers. */
-    val preciseAlerts: Boolean = true
+    val hijriOffset: Int
   ) {
     fun zone(): TimeZone =
         try { TimeZone.of(timezone) } catch (_: Exception) { TimeZone.UTC }
@@ -563,8 +554,7 @@ class PrayerNotificationService : Service() {
           asrCalculation = o.optString("asrCalculation", "shafi"),
           highLatitudeRule = o.optString("highLatitudeRule", "middle_of_night"),
           timezone = o.optString("timezone", ""),
-          hijriOffset = o.optInt("hijriOffset", 0),
-          preciseAlerts = o.optBoolean("preciseAlerts", true))
+          hijriOffset = o.optInt("hijriOffset", 0))
     } catch (_: Exception) {
       null
     }
@@ -581,6 +571,7 @@ class PrayerNotificationService : Service() {
 
   private fun computePlan(cfg: Config, zone: TimeZone, nowMs: Long): DayPlan? {
     val params = buildParams(cfg.method, cfg.asrCalculation, cfg.highLatitudeRule, cfg.lat)
+        ?: return null
     val coordinates = Coordinates(cfg.lat, cfg.lng)
     val now = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(zone)
 
@@ -613,8 +604,8 @@ class PrayerNotificationService : Service() {
     nowMs: Long,
     maghribMs: Long?
   ): String {
-    // Uses android.icu (built into API 24+, our minSdk) instead of java.time,
-    // so no core-library desugaring is needed.
+    // Uses android.icu (present on all supported APIs, minSdk 24) instead of
+    // java.time, so no core-library desugaring is needed.
     // NOTE: Must use Umm al-Qura calculation to match the Flutter UI, which
     // uses the `hijri` Dart package (Umm al-Qura table). The ICU default is
     // the tabular civil calendar, which drifts 1-2 days from Umm al-Qura.
@@ -678,6 +669,8 @@ class PrayerNotificationService : Service() {
 
   /**
    * Stable method IDs — must match Dart [PrayerMethods] (contract v1).
+   * Strict like Dart: unknown method/madhab returns null (visible fallback
+   * notification) instead of silently substituting a different method.
    * NOTE (Tehran): adhan2 0.0.5 has no TEHRAN method and no maghribAngle
    * field, so Tehran is approximated as OTHER(fajr 17.7, isha 14.0) while
    * Dart uses the full Tehran parameters (fajr 17.7, isha 14, maghribAngle
@@ -689,7 +682,7 @@ class PrayerNotificationService : Service() {
     asrCalculation: String,
     highLatitudeRule: String,
     lat: Double
-  ): CalculationParameters {
+  ): CalculationParameters? {
     var params: CalculationParameters = when (method) {
       "egyptian" -> CalculationMethod.EGYPTIAN.parameters
       "karachi" -> CalculationMethod.KARACHI.parameters
@@ -703,13 +696,19 @@ class PrayerNotificationService : Service() {
       "umm_al_qura" -> CalculationMethod.UMM_AL_QURA.parameters
       "north_america" -> CalculationMethod.NORTH_AMERICA.parameters
       "moon_sighting_committee" -> CalculationMethod.MOON_SIGHTING_COMMITTEE.parameters
-      else -> CalculationMethod.OTHER.parameters
+      else -> {
+        android.util.Log.w("PrayerNotify", "Unknown prayer method \"$method\": refusing to guess")
+        return null
+      }
     }
 
-    params = if (asrCalculation == "shafi") {
-      params.copy(madhab = Madhab.SHAFI)
-    } else {
-      params.copy(madhab = Madhab.HANAFI)
+    params = when (asrCalculation) {
+      "shafi" -> params.copy(madhab = Madhab.SHAFI)
+      "hanafi" -> params.copy(madhab = Madhab.HANAFI)
+      else -> {
+        android.util.Log.w("PrayerNotify", "Unknown madhab \"$asrCalculation\": refusing to guess")
+        return null
+      }
     }
 
     if (kotlin.math.abs(lat) > 48.0) {
@@ -717,7 +716,10 @@ class PrayerNotificationService : Service() {
         "middle_of_night" -> HighLatitudeRule.MIDDLE_OF_THE_NIGHT
         "seventh_of_night" -> HighLatitudeRule.SEVENTH_OF_THE_NIGHT
         "twilight_angle" -> HighLatitudeRule.TWILIGHT_ANGLE
-        else -> HighLatitudeRule.MIDDLE_OF_THE_NIGHT
+        else -> {
+          android.util.Log.w("PrayerNotify", "Unknown high-latitude rule \"$highLatitudeRule\": using middle_of_night")
+          HighLatitudeRule.MIDDLE_OF_THE_NIGHT
+        }
       }
       params = params.copy(highLatitudeRule = rule)
     }

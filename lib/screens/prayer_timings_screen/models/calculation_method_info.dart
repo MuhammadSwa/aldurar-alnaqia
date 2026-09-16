@@ -1,4 +1,5 @@
 // models/calculation_method_info.dart
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
     show PrayerMethods;
 
@@ -46,8 +47,8 @@ class CalculationMethodInfo {
     try {
       return methods.firstWhere((method) => method.key == key).arabicName;
     } catch (e) {
-      // Fallback to key if not found; avoid print in production
-      // Consider localizing this message via a logger if needed.
+      // Unknown key: visible fallback, never a silent wrong method.
+      logWarn('Unknown calculation method key "$key"');
       return key;
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 
@@ -19,12 +20,8 @@ final downloaderProvider = Provider<DownloaderService>((ref) {
 });
 
 /// Key of the single [Scaffold] in [MainWrapper] that owns the app drawer
-/// and the bottom [NavigationBar].
-///
-/// Branch screens open it via `ref.read(rootScaffoldKeyProvider)` instead of
-/// owning per-screen keys — previously each branch registered its own key in
-/// a `DrawerRegistry` so the bottom nav could close drawers before `goBranch`
-/// (with a 300ms delay). One owner removes the registry and the delay.
+/// and the bottom [NavigationBar]. Branch screens open it via
+/// `ref.read(rootScaffoldKeyProvider)` instead of owning per-screen keys.
 final rootScaffoldKeyProvider = Provider<GlobalKey<ScaffoldState>>((ref) {
   return GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 });
@@ -133,7 +130,11 @@ enum FileOpenAction {
     return switch (value) {
       'open' => FileOpenAction.open,
       'download' => FileOpenAction.download,
-      _ => FileOpenAction.ask,
+      'ask' || null => FileOpenAction.ask,
+      _ => () {
+        logWarn('Unknown FileOpenAction "$value" — using ask');
+        return FileOpenAction.ask;
+      }(),
     };
   }
 
@@ -173,7 +174,7 @@ final fileOpenActionProvider =
 ///
 /// Stored as `'light' | 'dark' | 'system'` (see
 /// `SharedPreferencesService.getThemeMode`), defaulting to [ThemeMode.system]
-/// so fresh installs follow the OS.
+/// so the app follows the OS theme unless the user picks otherwise.
 class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() =>
@@ -198,7 +199,11 @@ extension ThemeModeStorage on ThemeMode {
     return switch (value) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
+      'system' || null => ThemeMode.system,
+      _ => () {
+        logWarn('Unknown ThemeMode "$value" — using system');
+        return ThemeMode.system;
+      }(),
     };
   }
 

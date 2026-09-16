@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
     show normalizeArabic;
-import 'package:aldurar_alnaqia/models/azkar_models.dart' show resolveZikr;
+import 'package:aldurar_alnaqia/models/azkar_models.dart' show zikrIdForTitle;
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart';
 import 'package:flutter/material.dart';
 
@@ -344,7 +344,7 @@ class _SuggestionsList extends StatelessWidget {
       itemBuilder: (context, index) {
         final suggestion = suggestions[index];
         // Suggestions are display titles; bookmarks store stable ids.
-        final bookmarkId = resolveZikr(suggestion)?.id ?? suggestion;
+        final bookmarkId = zikrIdForTitle(suggestion) ?? suggestion;
         return ListTile(
           leading: BookmarkButton(bookmarkId: bookmarkId),
           title: Text(

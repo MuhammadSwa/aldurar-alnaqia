@@ -10,8 +10,8 @@ import 'package:go_router/go_router.dart';
 //    typed [ZikrTarget]s / [AppRoutes] builders, or navigate by route NAME
 //    via `goNamed`/`pushNamed`.
 //  * Path parameters (`:zikr`, `:collection`) carry stable ASCII ids
-//    ([Zikr.id], [ZikrCollection.id]). Display titles also resolve via
-//    [resolveZikr]/[resolveCollection] (search suggestions are titles).
+//    ([Zikr.id], [ZikrCollection.id]) only. Search suggestions display
+//    titles but map back via [zikrIdForTitle] at the search edge.
 //    Always pass values RAW to go_router; it encodes them when building
 //    the location and decodes them in `state.pathParameters`.
 //  * Non-ASCII segments must only travel through named routes or the

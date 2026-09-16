@@ -100,7 +100,7 @@ class DownloaderService {
       case TaskStatus.running:
       case TaskStatus.paused:
         // A task became active: make sure the UI switches to the
-        // progress state (GetX relied on its observable map for this).
+        // progress state.
         if (!_downloadProgress.containsKey(taskId)) {
           _downloadProgress[taskId] = ValueNotifier<double>(0);
           changed = true;

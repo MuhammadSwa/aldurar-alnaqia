@@ -145,42 +145,31 @@ Map<String, Zikr> _buildZikrById() {
 
 final zikrById = _buildZikrById();
 
-/// First-registered zikr wins on duplicate display titles.
-final zikrByTitle = _buildZikrByTitle();
-
-Map<String, Zikr> _buildZikrByTitle() {
-  final map = <String, Zikr>{};
-  for (final z in zikrById.values) {
-    map.putIfAbsent(z.title, () => z);
-  }
-  return map;
-}
-
 final collectionById = <String, ZikrCollection>{
   for (final c in allCollections) c.id: c,
 };
 
-final collectionByTitle = <String, ZikrCollection>{
-  for (final c in allCollections) c.title: c,
-};
+/// ID-only lookup. Routes, bookmarks, and downloads store stable ids;
+/// display titles never resolve here.
+Zikr? resolveZikr(String id) => zikrById[id];
 
-/// Resolves a stable id or a display title (search suggestions are titles).
-/// Returns null when unknown.
-Zikr? resolveZikr(String idOrTitle) =>
-    zikrById[idOrTitle] ?? zikrByTitle[idOrTitle];
+ZikrCollection? resolveCollection(String id) => collectionById[id];
 
-/// Display title for an id (unknown strings pass through).
-String zikrTitleOf(String idOrTitle) =>
-    resolveZikr(idOrTitle)?.title ?? idOrTitle;
-
-ZikrCollection? resolveCollection(String idOrTitle) =>
-    collectionById[idOrTitle] ?? collectionByTitle[idOrTitle];
-
-/// Zikr ids of a collection (accepts id or title).
-List<String> collectionZikrIds(String collectionIdOrTitle) {
-  final c = resolveCollection(collectionIdOrTitle);
+/// Zikr ids of a collection id. Unknown ids yield empty (visible empty list).
+List<String> collectionZikrIds(String collectionId) {
+  final c = resolveCollection(collectionId);
   if (c == null) return const [];
   return c.zikrIds;
+}
+
+/// Search edge only: suggestions display titles, so map the chosen title
+/// back to its stable id once, at the search boundary. First-registered
+/// zikr wins on duplicate display titles.
+String? zikrIdForTitle(String title) {
+  for (final z in zikrById.values) {
+    if (z.title == title) return z.id;
+  }
+  return null;
 }
 
 /// Ordered, de-duplicated display titles for search suggestions.

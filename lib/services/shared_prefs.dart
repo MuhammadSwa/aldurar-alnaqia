@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
-    show PrayerSettings;
+    show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods, PrayerSettings;
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 
 /// Centralized SharedPreferences keys. The native prayer-notification config
@@ -14,7 +14,6 @@ import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 abstract final class PrefsKeys {
   static const String latitude = 'latitude';
   static const String longitude = 'longitude';
-  static const String cityName = 'cityName';
   static const String cityInfo = 'cityInfo';
   static const String method = 'method';
   static const String asrCalculation = 'asrCalculation';
@@ -29,7 +28,6 @@ abstract final class PrefsKeys {
   static const String fileOpenAction = 'file_open_action';
   static const String prayerForegroundEnabled = 'prayer_foreground_enabled';
   static const String prayerNativeConfig = 'prayer_native_config';
-  static const String prayerPreciseAlerts = 'prayer_precise_alerts';
 
   static String pdfLastPage(String title) => 'pdf_last_page_$title';
 }
@@ -51,20 +49,11 @@ class SharedPreferencesService {
     return _sharedPreferences?.getDouble(PrefsKeys.longitude) ?? 0.0;
   }
 
-  static String getCityName() {
-    return _sharedPreferences?.getString(PrefsKeys.cityName) ?? '';
-  }
-
-  static void setCityName(String cityName) {
-    _sharedPreferences?.setString(PrefsKeys.cityName, cityName);
-  }
-
   /// The city chosen in the city picker, if any (GPS selections clear it).
   /// Coordinates themselves stay in the latitude/longitude keys.
   static void setCity(City? city) {
     if (city == null) {
       _sharedPreferences?.remove(PrefsKeys.cityInfo);
-      setCityName('');
       return;
     }
     _sharedPreferences?.setString(
@@ -75,7 +64,6 @@ class SharedPreferencesService {
         'country': city.countryCode,
       }),
     );
-    setCityName(city.displayName);
   }
 
   static City? getCity() {
@@ -94,39 +82,46 @@ class SharedPreferencesService {
         longitude: lng,
       );
     } catch (e) {
-      logWarn('Failed to parse stored city info: $e');
+      logWarn('Failed to parse stored city info: $e — dropping corrupt key');
+      _sharedPreferences?.remove(PrefsKeys.cityInfo);
       return null;
     }
   }
 
+  /// Stored method or default. Absent returns the default; present-but-unknown
+  /// values are logged visibly and reset to default (no silent guess).
   static String getMethod() {
-    return _sharedPreferences?.getString(PrefsKeys.method) ?? 'egyptian';
+    final stored = _sharedPreferences?.getString(PrefsKeys.method);
+    if (stored == null) return PrayerMethods.egyptian;
+    if (!PrayerMethods.isValid(stored)) {
+      logWarn('Unknown stored prayer method "$stored" — using default');
+      return PrayerMethods.egyptian;
+    }
+    return stored;
   }
 
   static String getAsrCalculation() {
-    return _sharedPreferences?.getString(PrefsKeys.asrCalculation) ?? 'shafi';
+    final stored = _sharedPreferences?.getString(PrefsKeys.asrCalculation);
+    if (stored == null) return PrayerMadhabs.shafi;
+    if (!PrayerMadhabs.isValid(stored)) {
+      logWarn('Unknown stored madhab "$stored" — using default');
+      return PrayerMadhabs.shafi;
+    }
+    return stored;
   }
 
   static String getHighLatitudeRule() {
-    return _sharedPreferences?.getString(PrefsKeys.highLatitudeRule) ??
-        'middle_of_night';
+    final stored = _sharedPreferences?.getString(PrefsKeys.highLatitudeRule);
+    if (stored == null) return PrayerHighLatitudeRules.middleOfNight;
+    if (!PrayerHighLatitudeRules.isValid(stored)) {
+      logWarn('Unknown stored high-latitude rule "$stored" — using default');
+      return PrayerHighLatitudeRules.middleOfNight;
+    }
+    return stored;
   }
 
   static String getTimezone() {
     return _sharedPreferences?.getString(PrefsKeys.timezone) ?? '';
-  }
-
-  /// Whether prayer-arrival alerts may wake the device with an exact alarm.
-  /// Defaults to true (previous behavior). When false, the native service
-  /// uses inexact wakeups for all boundaries — cheaper in Doze, but arrival
-  /// alerts can arrive minutes late.
-  static bool getPrayerPreciseAlerts() {
-    return _sharedPreferences?.getBool(PrefsKeys.prayerPreciseAlerts) ?? true;
-  }
-
-  static Future<void> setPrayerPreciseAlerts(bool value) async {
-    await _sharedPreferences?.setBool(PrefsKeys.prayerPreciseAlerts, value);
-    await refreshPrayerNotification();
   }
 
   /// Typed snapshot of all prayer settings. Single source of defaults and
@@ -167,7 +162,6 @@ class SharedPreferencesService {
     }
     if (city == null) {
       await prefs.remove(PrefsKeys.cityInfo);
-      await prefs.remove(PrefsKeys.cityName);
     } else {
       await prefs.setString(
         PrefsKeys.cityInfo,
@@ -177,7 +171,6 @@ class SharedPreferencesService {
           'country': city.countryCode,
         }),
       );
-      await prefs.setString(PrefsKeys.cityName, city.displayName);
     }
     await refreshPrayerNotification();
   }
@@ -218,15 +211,18 @@ class SharedPreferencesService {
     );
   }
 
-  /// First launch has no stored beginning — default to today's midnight and
-  /// persist it. Single `now` so the returned and stored values agree.
+  /// No stored beginning — default to today's midnight and persist it.
+  /// Single `now` so the returned and stored values agree.
+  /// Corrupt values are dropped (key removed) and reset to today visibly.
   static DateTime getYousriaBeginning() {
     final stored = _sharedPreferences?.getString(PrefsKeys.yousriaStartingDay);
     if (stored != null) {
       try {
         return DateTime.parse(stored);
       } catch (e) {
-        logWarn('Failed to parse yousria beginning "$stored": $e');
+        logWarn(
+            'Failed to parse yousria beginning "$stored": $e — resetting to today',);
+        _sharedPreferences?.remove(PrefsKeys.yousriaStartingDay);
       }
     }
     final now = DateTime.now();
@@ -254,8 +250,15 @@ class SharedPreferencesService {
 
   /// Raw stored value. Kept string-based so this service does not depend
   /// on Flutter material; providers map it to [ThemeMode].
+  /// Absent returns system; unknown values are logged and reset to system.
   static String getThemeMode() {
-    return _sharedPreferences?.getString(PrefsKeys.themeMode) ?? 'system';
+    final stored = _sharedPreferences?.getString(PrefsKeys.themeMode);
+    if (stored == null) return 'system';
+    if (stored != 'light' && stored != 'dark' && stored != 'system') {
+      logWarn('Unknown stored theme mode "$stored" — using system');
+      return 'system';
+    }
+    return stored;
   }
 
   static Future<void> setThemeMode(String mode) async {
@@ -267,7 +270,13 @@ class SharedPreferencesService {
   }
 
   static double getFontSize() {
-    return _sharedPreferences?.getDouble(PrefsKeys.fontSize) ?? 22;
+    final stored = _sharedPreferences?.getDouble(PrefsKeys.fontSize);
+    if (stored == null) return 22;
+    if (!stored.isFinite || stored < 16 || stored > 40) {
+      logWarn('Invalid stored font size "$stored" — using default');
+      return 22;
+    }
+    return stored;
   }
 
   static void setHijriDayOffset(int offset) {
@@ -276,7 +285,13 @@ class SharedPreferencesService {
   }
 
   static int getHijriDayOffset() {
-    return _sharedPreferences?.getInt(PrefsKeys.hijriDayOffset) ?? 0;
+    final stored = _sharedPreferences?.getInt(PrefsKeys.hijriDayOffset);
+    if (stored == null) return 0;
+    if (stored < -2 || stored > 2) {
+      logWarn('Invalid stored hijri offset "$stored" — using 0');
+      return 0;
+    }
+    return stored;
   }
 
   // --- PDF last page persistence ---
@@ -290,8 +305,15 @@ class SharedPreferencesService {
 
   // --- File open action preference: 'ask' | 'open' | 'download' ---
   // Single preference shared by audio and books for non-downloaded files.
+  // Unknown values are logged and reset to ask (no silent guess).
   static String getFileOpenAction() {
-    return _sharedPreferences?.getString(PrefsKeys.fileOpenAction) ?? 'ask';
+    final stored = _sharedPreferences?.getString(PrefsKeys.fileOpenAction);
+    if (stored == null) return 'ask';
+    if (stored != 'ask' && stored != 'open' && stored != 'download') {
+      logWarn('Unknown stored file open action "$stored" — using ask');
+      return 'ask';
+    }
+    return stored;
   }
 
   static Future<void> setFileOpenAction(String action) async {

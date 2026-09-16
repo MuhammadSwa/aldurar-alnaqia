@@ -95,15 +95,11 @@ Future<void> _writeConfig() async {
   // Single serialization path: typed settings -> native map. The native
   // service must never observe half-saved coordinates/timezone/method, so
   // all writers go through `savePrayerSettings` (one refresh per save).
+  // Policy is always-exact: alertable prayers wake the device on time.
   final settings = SharedPreferencesService.loadPrayerSettings();
-  final map = settings.toNativeMap();
   await prefs.setString(
     PrefsKeys.prayerNativeConfig,
-    jsonEncode({
-      ...map,
-      // Phase 5 policy flag: exact alarms only for alertable prayers.
-      'preciseAlerts': prefs.getBool(PrefsKeys.prayerPreciseAlerts) ?? true,
-    }),
+    jsonEncode(settings.toNativeMap()),
   );
 }
 

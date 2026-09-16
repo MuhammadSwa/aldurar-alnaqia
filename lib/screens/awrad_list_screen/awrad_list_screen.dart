@@ -26,7 +26,8 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
   @override
   Widget build(BuildContext context) {
     void handleSearch(String query) {
-      final zikr = resolveZikr(query);
+      final id = zikrIdForTitle(query) ?? query;
+      final zikr = resolveZikr(id);
       if (zikr == null) return;
       ZikrDetailTarget(branch: ZikrBranch.awrad, zikrId: zikr.id).go(context);
     }

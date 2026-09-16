@@ -31,7 +31,9 @@ android {
         applicationId = "com.dorar.yosriya"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Breaking change: minSdk 24 (Android 7.0). Drops API 21-23 so
+    // pre-N branches (e.g. the Chronometer fallback) are deleted.
+    minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

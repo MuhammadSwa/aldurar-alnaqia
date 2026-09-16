@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/router/app_router.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 
@@ -31,14 +32,8 @@ void main() {
       });
     }
 
-    test('legacy Arabic title still round-trips (backward compat)', () {
-      const title = 'ورد الأساس';
-      final location = router.namedLocation(
-        'homeZikrPage',
-        pathParameters: {'zikr': title},
-      );
-      final uri = Uri.parse(location);
-      expect(uri.pathSegments.last, title);
+    test('unknown title no longer resolves (id-only routes)', () {
+      expect(resolveZikr('ورد الأساس'), isNull);
     });
 
     test('pdf viewer book title round-trips', () {

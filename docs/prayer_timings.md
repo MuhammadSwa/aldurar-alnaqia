@@ -49,9 +49,8 @@ minutes for `tehran` until adhan2 is upgraded.
 
 - Display countdown is a system `Chronometer`: SystemUI ticks it with zero
   app wakeups.
-- **Exact alarms** (`setExactAndAllowWhileIdle`) fire only for alertable
-  prayers (never sunrise/midnight) and only when the user enabled
-  "تنبيه دقيق عند دخول الوقت" (default on). Everything else uses inexact
+- **Exact alarms** (`setExactAndAllowWhileIdle`) fire for alertable
+  prayers (never sunrise/midnight). Everything else uses inexact
   `setAndAllowWhileIdle`.
 - Concurrent refreshes (save + alarm + boot) are serialized with a `Mutex`
   and coalesced — no overlapping notify/alarm cycles.

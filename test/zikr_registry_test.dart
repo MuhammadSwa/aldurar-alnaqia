@@ -33,16 +33,22 @@ void main() {
       }
     });
 
-    test('titles resolve to stable ids', () {
-      expect(resolveZikr('ورد الأساس')?.id, 'wird-asas');
+    test('ids resolve by id only (no title fallback)', () {
       expect(resolveZikr('wird-asas')?.id, 'wird-asas');
-      expect(resolveCollection('قصائد')?.id, 'qasaed');
+      expect(resolveZikr('ورد الأساس'), isNull);
+      expect(resolveCollection('qasaed')?.id, 'qasaed');
+      expect(resolveCollection('قصائد'), isNull);
     });
 
-    test('duplicate hilya title resolves to the canonical audio entry', () {
-      final zikr = resolveZikr('الحلية والنسب النبوي الشريف');
-      expect(zikr?.id, 'hilya-nasab');
-      expect(zikr?.hasAudio, isTrue);
+    test('search title maps to id once at the search edge', () {
+      expect(zikrIdForTitle('ورد الأساس'), 'wird-asas');
+      expect(zikrIdForTitle('no-such-title'), isNull);
+    });
+
+    test('duplicate hilya title maps to the canonical audio entry', () {
+      final id = zikrIdForTitle('الحلية والنسب النبوي الشريف');
+      expect(id, 'hilya-nasab');
+      expect(zikrById[id]?.hasAudio, isTrue);
     });
 
     test('week wird ids all resolve', () {
@@ -70,7 +76,7 @@ void main() {
 
     test('search suggestions cover every zikr', () {
       final titles = allZikrTitles();
-      expect(titles.length, zikrByTitle.length);
+      expect(titles.length, zikrById.length);
       for (final z in zikrById.values) {
         expect(titles, contains(z.title));
       }
