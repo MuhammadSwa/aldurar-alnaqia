@@ -41,11 +41,21 @@ get curated overrides in ``AR_OVERRIDES``.
 Usage::
 
     python3 tool/build_cities.py [--work-dir /tmp/citydata] [--force]
+        [--alternates PATH]
 
 The script downloads (once, cached in ``work-dir``):
   * https://download.geonames.org/export/dump/cities15000.zip  (CC BY 4.0)
   * https://raw.githubusercontent.com/umpirsky/country-list/master/data/ar/country.json  (MIT)
   * https://raw.githubusercontent.com/umpirsky/country-list/master/data/en/country.json  (MIT)
+
+Arabic city names come from ``alternateNamesV2.zip`` (same license), which
+is NOT auto-downloaded (~200 MB). Download it once from:
+
+  * https://download.geonames.org/export/dump/alternateNamesV2.zip
+
+and pass ``--alternates PATH`` (or answer the prompt). Only rows with
+``isolanguage == 'ar'`` are used, so non-Arabic languages written in
+Arabic script can no longer win over the real Arabic name.
 """
 
 from __future__ import annotations
@@ -61,6 +71,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = REPO_ROOT / "assets" / "data" / "cities.json"
 
 CITIES_URL = "https://download.geonames.org/export/dump/cities15000.zip"
+ALTERNATES_URL = "https://download.geonames.org/export/dump/alternateNamesV2.zip"
 COUNTRIES_AR_URL = (
     "https://raw.githubusercontent.com/umpirsky/country-list/master"
     "/data/ar/country.json"
@@ -127,11 +138,11 @@ def score_candidate(name: str) -> int:
     return score
 
 
-def best_arabic_name(alternates_raw: str) -> str | None:
-    """Pick one clean Modern Standard Arabic name, or None."""
+def best_arabic_name_from_list(raw_names: list[str]) -> str | None:
+    """Pick one clean Modern Standard Arabic name from raw candidates."""
     seen: set[str] = set()
     candidates: list[str] = []
-    for raw in alternates_raw.split(","):
+    for raw in raw_names:
         if not ARABIC_SCRIPT.search(raw):
             continue
         name = clean_candidate(raw)
@@ -149,6 +160,26 @@ def best_arabic_name(alternates_raw: str) -> str | None:
         candidates = short
     candidates.sort(key=lambda n: (-score_candidate(n), len(n.split(" ")), len(n)))
     return candidates[0]
+
+
+def best_arabic_name(alternates_raw: str) -> str | None:
+    """Legacy fallback: pick a name from the mixed-language ``alternatenames``
+    column of ``cities15000.txt`` (no language tags)."""
+    return best_arabic_name_from_list(alternates_raw.split(","))
+
+
+def best_arabic_name_preferred(names: list[tuple[str, bool]]) -> str | None:
+    """Pick from language-filtered (``isolanguage == 'ar'``) alternates.
+
+    Preferred/official names win; remaining candidates use the same
+    clean + score logic as the legacy path.
+    """
+    preferred = [n for n, is_pref in names if is_pref]
+    if preferred:
+        hit = best_arabic_name_from_list(preferred)
+        if hit is not None:
+            return hit
+    return best_arabic_name_from_list([n for n, _ in names])
 
 
 # Curated Arabic names for Egyptian towns that have NO Arabic alternate in
@@ -195,6 +226,100 @@ AR_OVERRIDES: dict[tuple[str, str], str] = {
 }
 
 
+# --- alternateNamesV2 (language-tagged Arabic names) -------------------------
+
+import io
+
+
+def resolve_alternates_path(cli_value: str | None) -> Path:
+    """Return the local ``alternateNamesV2`` file, prompting if needed.
+
+    Never downloads it (~200 MB); tells the user where to get it instead.
+    """
+    if cli_value:
+        p = Path(cli_value).expanduser()
+        if p.is_file():
+            return p
+        raise SystemExit(
+            f"error: alternateNamesV2 file not found: {p}\n"
+            f"download it from {ALTERNATES_URL} and pass --alternates PATH"
+        )
+    # Convenience: user keeps it next to the repo (../alternateNamesV2.zip).
+    for candidate in (
+        REPO_ROOT.parent / "alternateNamesV2.zip",
+        REPO_ROOT / "alternateNamesV2.zip",
+    ):
+        if candidate.is_file():
+            print(f"  reuse {candidate}")
+            return candidate
+    try:
+        answer = input(
+            "Path to alternateNamesV2.zip "
+            f"(download from {ALTERNATES_URL}): "
+        ).strip()
+    except EOFError:
+        raise SystemExit(
+            "error: alternateNamesV2.zip is required.\n"
+            f"download it from {ALTERNATES_URL} and re-run with "
+            "--alternates PATH"
+        )
+    if not answer:
+        raise SystemExit(
+            "error: alternateNamesV2.zip is required.\n"
+            f"download it from {ALTERNATES_URL} and re-run with "
+            "--alternates PATH"
+        )
+    p = Path(answer).expanduser()
+    if not p.is_file():
+        raise SystemExit(
+            f"error: file not found: {p}\n"
+            f"download it from {ALTERNATES_URL}"
+        )
+    return p
+
+
+def load_arabic_alternates(path: Path) -> dict[int, list[tuple[str, bool]]]:
+    """Map geonameid -> [(arabic name, isPreferred)] for ``isolanguage=='ar'``.
+
+    Accepts the ``.zip`` (containing ``alternateNamesV2.txt``) or a plain
+    extracted ``.txt``. Streams line-by-line to stay lean on large files.
+    Columns: alternateNameId, geonameid, isolanguage, name, isPreferred, ...
+    """
+    out: dict[int, list[tuple[str, bool]]] = {}
+
+    def feed(lines) -> None:
+        for line in lines:
+            if not line or line.startswith("#"):
+                continue
+            f = line.split("\t")
+            if len(f) < 5 or f[2] != "ar":
+                continue
+            try:
+                gid = int(f[1])
+            except ValueError:
+                continue
+            name = f[3].strip()
+            if not name:
+                continue
+            out.setdefault(gid, []).append((name, f[4] == "1"))
+
+    print(f"  reading Arabic alternates from {path.name} ...")
+    if path.suffix == ".zip":
+        with zipfile.ZipFile(path) as zf:
+            txts = [n for n in zf.namelist() if n.endswith(".txt")]
+            # The zip also bundles iso-languagecodes.txt; want the data file.
+            names = [n for n in txts if "alternateNames" in n] or txts
+            if not names:
+                raise SystemExit(f"error: no .txt inside {path}")
+            with zf.open(names[0]) as raw:
+                feed(io.TextIOWrapper(raw, encoding="utf-8"))
+    else:
+        with open(path, encoding="utf-8") as fh:
+            feed(fh)
+    print(f"  Arabic alternate names for {len(out)} places")
+    return out
+
+
 # --- Download helpers ------------------------------------------------------
 
 
@@ -212,7 +337,11 @@ def download(url: str, dest: Path, force: bool = False) -> Path:
 # --- Main ------------------------------------------------------------------
 
 
-def build(work_dir: Path, force: bool = False) -> dict:
+def build(
+    work_dir: Path,
+    force: bool = False,
+    alternates: dict[int, list[tuple[str, bool]]] | None = None,
+) -> dict:
     cities_zip = download(CITIES_URL, work_dir / "cities15000.zip", force)
     ar_path = download(COUNTRIES_AR_URL, work_dir / "countries_ar.json", force)
     en_path = download(COUNTRIES_EN_URL, work_dir / "countries_en.json", force)
@@ -234,13 +363,23 @@ def build(work_dir: Path, force: bool = False) -> dict:
         f = line.split("\t")
         # GeoNames dump columns: 0 id, 1 name, 2 asciiname, 3 alternates,
         # 4 lat, 5 lng, 8 country code, 14 population, 17 timezone.
+        try:
+            geonameid = int(f[0])
+        except ValueError:
+            geonameid = -1
         asciiname = f[2] or f[1]
         country = f[8]
         try:
             population = int(f[14] or 0)
         except ValueError:
             population = 0
-        ar = best_arabic_name(f[3])
+        # Language-tagged names first; legacy mixed-language column only
+        # as a fallback for ids missing from alternateNamesV2.
+        ar: str | None = None
+        if alternates is not None and geonameid in alternates:
+            ar = best_arabic_name_preferred(alternates[geonameid])
+        if ar is None:
+            ar = best_arabic_name(f[3])
         if ar is None:
             ar = AR_OVERRIDES.get((asciiname, country))
         if ar is None:
@@ -301,10 +440,15 @@ def main() -> None:
                         default=Path("/tmp/opencode/citydata"))
     parser.add_argument("--force", action="store_true",
                         help="re-download cached source files")
+    parser.add_argument("--alternates", type=str, default=None,
+                        help="path to alternateNamesV2.zip "
+                             "(prompted if omitted)")
     args = parser.parse_args()
 
     print("Building offline city database ...")
-    data = build(args.work_dir, args.force)
+    alternates_path = resolve_alternates_path(args.alternates)
+    alternates = load_arabic_alternates(alternates_path)
+    data = build(args.work_dir, args.force, alternates)
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as fh:
         json.dump(data, fh, ensure_ascii=False, separators=(",", ":"))
