@@ -45,6 +45,18 @@ class _FakePrayerNotifier extends PrayerTimingsNotifier {
   }
 }
 
+/// Notifier stub with a settable target: reproduces first setup
+/// (null → first prayer) without prefs or timers.
+class _MutablePrayerNotifier extends PrayerTimingsNotifier {
+  @override
+  PrayerState build() =>
+      PrayerState(nextPrayerInfo: (null, ''), isInitialized: true);
+
+  void setNext(DateTime time, String name) {
+    state = state.copyWith(nextPrayerInfo: (time, name));
+  }
+}
+
 void main() {
   setUpAll(() => tzdata.initializeTimeZones());
 
@@ -92,8 +104,7 @@ void main() {
 
   group('NextPrayerCountdown', () {
     testWidgets('shows next name and ticks without touching provider',
-        (tester) async {
-      var buildCount = 0;
+        (tester) async {      var buildCount = 0;
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -123,6 +134,41 @@ void main() {
         lessThan(5),
         reason: 'parent rebuilt every second: ticker leaked upward',
       );
+    });
+
+    testWidgets('starts ticking when target appears after mount',
+        (tester) async {
+      // Reproduces first-time setup: widget mounts with no target (user has
+      // not saved settings yet), then حفظ publishes the first prayer.
+      // Before the fix the ticker never started → frozen "00:00:00".
+      late _MutablePrayerNotifier notifier;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            prayerProvider.overrideWith(() {
+              notifier = _MutablePrayerNotifier();
+              return notifier;
+            }),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: NextPrayerCountdown()),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('خطأ في حساب أوقات الصلاة'), findsOneWidget);
+
+      notifier.setNext(
+        DateTime.now().add(const Duration(hours: 1)),
+        'الظهر',
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+
+      expect(find.text('الظهر'), findsOneWidget);
+      expect(find.textContaining('بعد'), findsOneWidget);
+      expect(find.textContaining('00:00:00'), findsNothing);
     });
   });
 

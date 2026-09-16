@@ -87,6 +87,21 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
         ref.watch(prayerProvider.select((s) => s.isInitialized));
     final next = ref.watch(prayerProvider.select((s) => s.nextPrayerInfo));
 
+    // The ticker re-syncs only while it runs. If the target appeared while
+    // it was idle (first setup: null → first prayer), (re)start it. The
+    // field write here is safe; timer work is deferred past build.
+    if (next.$1 != _target) {
+      if (next.$1 == null) {
+        _target = null;
+        _timer?.cancel();
+      } else {
+        _target = next.$1;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _startTimer();
+        });
+      }
+    }
+
     return SizedBox(
       height: 100, // Fixed height
       child: Card(
