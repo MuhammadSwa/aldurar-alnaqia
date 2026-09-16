@@ -31,7 +31,6 @@ dependencies:
   intl: ^0.20.0
   go_router: ^17.0.0
   shared_preferences: ^2.2.3
-  # TODO: get rid of provider?
   geolocator: ^14.0.0
   hijri: ^3.0.0
   # flutter_local_notifications: ^17.1.0
