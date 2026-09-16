@@ -7,21 +7,21 @@ import 'download_controller.dart';
 // themselves (those live in [DownloaderService]).
 
 class DownloadManagerData {
-  /// Groups narrations by collection for the audio tab.
+  /// Groups narrations by section for the audio tab. Sections derive from
+  /// [audioSections]; only items with audio are listed.
   static Map<String, List<DownloadItem>> loadAudioSections() {
     final loadedAudio = <String, List<DownloadItem>>{};
-    for (var entry in azkarWithNarrations.entries) {
-      final items = entry.value
-          .where((zikr) => zikr.url != null && zikr.url!.isNotEmpty)
+    for (final section in audioSections) {
+      final items = section.withAudio
           .map((zikr) => DownloadItem(
-                id: zikr.title,
+                id: zikr.id,
                 title: zikr.title,
                 url: zikr.url!,
                 type: DownloadType.narrations,
               ))
           .toList();
       if (items.isNotEmpty) {
-        loadedAudio[entry.key] = items;
+        loadedAudio[section.title] = items;
       }
     }
     return loadedAudio;

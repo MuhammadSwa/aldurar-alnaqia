@@ -84,15 +84,15 @@ class _DayAzkarListState extends ConsumerState<DayAzkarList> {
     // the day the home screen and todaysZikr route selected — otherwise the
     // Yousria wird would disappear between Maghrib and midnight.
     final bool isToday = widget.dayNum == islamicWeekdayNow();
-    final titles = WeekCollectionAzkar.getDay(widget.dayNum, isToday: isToday);
+    final zikrIds = WeekCollectionAzkar.getDay(widget.dayNum, isToday: isToday);
     final listView = AzkarListViewWidget(
-      titles: titles,
+      zikrIds: zikrIds,
       barTitle: 'الأذكار',
-      targetBuilder: (title, index) => ZikrDetailTarget(
+      targetBuilder: (zikrId, index) => ZikrDetailTarget(
         branch: widget.branch,
-        title: title,
+        zikrId: zikrId,
         pagePrefix: widget.detailPagePrefix,
-        titles: titles,
+        zikrIds: zikrIds,
         index: index,
       ),
     );

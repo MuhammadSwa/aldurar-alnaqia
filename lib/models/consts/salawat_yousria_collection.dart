@@ -12,6 +12,7 @@ const salawatYousriaCollection = [
 ];
 
 const day1Yousria = Zikr(
+    id: 'yousria-day-1',
     title: 'صلوات اليوم الأول',
     url:
         'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_1.mp3',
@@ -65,6 +66,7 @@ const day1Yousria = Zikr(
   ''');
 
 const day2Yousria = Zikr(
+    id: 'yousria-day-2',
     title: 'صلوات اليوم الثاني',
     url:
         'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_2.mp3',
@@ -120,6 +122,7 @@ const day2Yousria = Zikr(
   ''');
 
 const day3Yousria = Zikr(
+    id: 'yousria-day-3',
     title: 'صلوات اليوم الثالث',
     url:
         'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_3.mp3',
@@ -162,6 +165,7 @@ const day3Yousria = Zikr(
   ''');
 
 const day4Yousria = Zikr(
+    id: 'yousria-day-4',
     title: 'صلوات اليوم الرابع',
     url:
         'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_4.mp3',
@@ -225,6 +229,7 @@ const day4Yousria = Zikr(
   ''');
 
 const day5Yousria = Zikr(
+    id: 'yousria-day-5',
     title: 'صلوات اليوم الخامس',
     url:
         'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_5.mp3',
@@ -282,6 +287,7 @@ const day5Yousria = Zikr(
   ''');
 
 const day6Yousria = Zikr(
+    id: 'yousria-day-6',
     title: 'صلوات اليوم السادس',
     url:
         'https://archive.org/download/alsalawat_alyosriah_4/alsalawat_alyosriah_6.mp3',
@@ -333,6 +339,7 @@ const day6Yousria = Zikr(
   ''');
 
 const salawatYousriaIntro = Zikr(
+    id: 'yousria-intro',
     title: 'مقدمة الصلوات اليسرية',
     footer:
         '[1]: متفق عليه، البخاري: 2/981، برقم (2585)، مسلم: 4/2062، برقم: (2677).',
@@ -361,6 +368,7 @@ const salawatYousriaIntro = Zikr(
 ''');
 
 const asmaaAllahHadith = Zikr(
+    id: 'asma-allah-hadith',
     title: 'حديث أسماء الله الحسنى من سنن الترمذي',
     footer: '[1]: أخرجه الترمذي (12/489) برقم (3894).',
     content: '''
@@ -369,6 +377,7 @@ const asmaaAllahHadith = Zikr(
 ''');
 
 const salawatYousria = Zikr(
+    id: 'yousria-salawat',
     title: 'الصلوات اليسرية على خير البرية',
     notes: 'تُقرأ يوميًّا',
     url:

@@ -1,48 +1,52 @@
-import 'package:aldurar_alnaqia/models/consts/ahzab_alshazly_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/azkar_algomari_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/azkar_morning_evening_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
-import 'package:aldurar_alnaqia/models/consts/ibn_ata_allah.dart';
-import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart' as yousria_cycle;
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart' show YousriaDayInfo;
 
+/// Composition of the 7 day-wirds from stable zikr ids.
+///
+/// To change a day's wird, edit the id lists below. Display titles,
+/// search and audio all resolve through [zikrById], so nothing else
+/// needs a manual entry.
 class WeekCollectionAzkar {
-  static final head = <String>[
-    alwazifaZarouquia.title,
-    almusabaeat.title,
-    alasas.title,
+  static const head = <String>[
+    'wazifa-zarouqiyya',
+    'musabbaat-ashr',
+    'wird-asas',
   ];
-  static final tail = <String>[
-    alhyliaAndNasab.title,
-    khitamFawatih.title,
-  ];
-
-  static final collection = <List<String>>[
-    [hawatfAlhaqaeq.title, monagaIbnAtaAllah.title, hizbAlnasr.title],
-    [hizbAlbar.title],
-    [
-      manzoumaAsmaaHosna.title,
-      for (var i = 0; i < chosenSalawatCollection.length; i++)
-        chosenSalawatCollection[i].title,
-    ],
-    [poemBordaBosiri.title],
-    [
-      alfathAlsedeqy.title,
-      poemModaria.title,
-      poemMohamadia.title,
-      poemmadhWithQuarn.title
-    ],
-    [hizbAlbahr.title, hizbAlnawawi.title],
-    [poemMonfarigaGazali.title, poemMonfarigaNahawi.title, poemBanatSuad.title],
+  static const tail = <String>[
+    'hilya-nasab',
+    'khitam-fawatih',
   ];
 
-  static List<String> getDay(int day, {required isToday}) {
+  /// Index 0 = Monday (day 1) .. index 6 = Sunday (day 7).
+  static const collection = <List<String>>[
+    ['hawatif-haqaiq', 'munajat-ibn-ata-allah', 'hizb-alnasr'],
+    ['hizb-albar'],
+    ['manzuma-asma-husna', ..._chosenSalawatIds],
+    ['burda-busiri'],
+    ['fath-siddiqi', 'qasida-mudariyya', 'qasida-muhammadiyya', 'madh-quran'],
+    ['hizb-albahr', 'hizb-alnawawi'],
+    ['munfarija-ghazali', 'munfarija-nahwi', 'banat-suad'],
+  ];
+
+  static const _chosenSalawatIds = <String>[
+    'salat-shafiiyya',
+    'salat-mashishiyya',
+    'salat-nuraniyya',
+    'salat-zatiyya',
+    'salat-azimiyya',
+    'salat-anmuzajiyya',
+    'salat-qasim',
+    'salat-mutardi',
+    'salat-fatih',
+    'salat-baha',
+    'salat-muhtaj',
+  ];
+
+  static List<String> getDay(int day, {required bool isToday}) {
     if (isToday) {
-      return head + collection[day - 1] + getYousriaForToday() + tail;
+      return [...head, ...collection[day - 1], ...getYousriaForToday(), ...tail];
     }
-    return head + collection[day - 1] + tail;
+    return [...head, ...collection[day - 1], ...tail];
   }
 
   // --- Backward-compat forwarders (logic lives in yousria_cycle.dart) ---

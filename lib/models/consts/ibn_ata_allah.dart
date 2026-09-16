@@ -5,6 +5,7 @@ const ibnAtaAllahCollection = <Zikr>[
   hawatfAlhaqaeq,
 ];
 const monagaIbnAtaAllah = Zikr(
+    id: 'munajat-ibn-ata-allah',
     title: 'مناجاة سيدي ابن عطاء الله السكندري',
     notes: '''
 مناجاةٌ سيدي ابنِ عطاءِ اللهِ السَّكَنْدَرِيِّ رضي الله عنه
@@ -54,6 +55,7 @@ const monagaIbnAtaAllah = Zikr(
 ''');
 
 const hawatfAlhaqaeq = Zikr(
+    id: 'hawatif-haqaiq',
     title: 'هواتف الحقائق',
     notes: '''
 هَوَاتِفُ الْحَقَائِقِ لِلْإِمَامِ ابْنِ عَطَاءِ اللهِ السَّكَنْدَرِيِّ فِي مُنَاجَاةِ الْحَقِّ تَبَارَكَ وَتَعَالَى لِعَبْدِهِ الْمُؤْمِنِ عَلَى أَلْسُنِ هَوَاتِفِ الْحَقَائِقِ فِي شَأْنِ التَّدْبِيرِ وَالرِّزْقِ

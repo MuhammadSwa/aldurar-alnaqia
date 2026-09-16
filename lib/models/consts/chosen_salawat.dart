@@ -15,6 +15,7 @@ const chosenSalawatCollection = [
 ];
 
 const salahAnmozagia = Zikr(
+    id: 'salat-anmuzajiyya',
     title: 'الصلاة الأنموذجية',
     notes:
         'الصَّلَاةُ الأُنْمُوذَجِيَّةُ لِسَيِّدِي أَبِي الفَيْضِ مُحَمَّد بْنِ عَبْدِ الكَبِيِر الكَتَّانِي رضي اللَّه عنه',
@@ -25,6 +26,7 @@ const salahAnmozagia = Zikr(
     ''');
 
 const salahAzimia = Zikr(
+    id: 'salat-azimiyya',
     title: 'الصلاة العظيمية',
     notes:
         'الصَّلَاةُ الْعَظِيمِيَّةُ لِسَيِّدِي أَحْمَدِ بْنِ إِدْرِيس رضي الله عنه',
@@ -35,6 +37,7 @@ const salahAzimia = Zikr(
     ''');
 
 const salahIbnBashish = Zikr(
+    id: 'salat-mashishiyya',
     title: 'الصلاة المشيشية',
     notes: 'صَلَاةُ سَيِّدِي ابْنِ مَشِيش رضي الله عنه',
     url:
@@ -48,6 +51,7 @@ const salahIbnBashish = Zikr(
 ''');
 
 const salahAlbaha = Zikr(
+    id: 'salat-baha',
     title: 'صلاة البهاء',
     url:
         "https://archive.org/download/chosen_salwat/%D8%B5%D9%84%D8%A7%D8%A9%20%D8%A7%D9%84%D8%A8%D9%87%D8%A7%D8%A1.mp3",
@@ -56,6 +60,7 @@ const salahAlbaha = Zikr(
 ''');
 
 const salahAlfateh = Zikr(
+    id: 'salat-fatih',
     title: 'صلاة الفاتح',
     url:
         "https://archive.org/download/chosen_salwat/%D8%B5%D9%84%D8%A7%D8%A9%20%D8%A7%D9%84%D9%81%D8%A7%D8%AA%D8%AD.mp3",
@@ -64,6 +69,7 @@ const salahAlfateh = Zikr(
 ''');
 
 const salahAlmohtag = Zikr(
+    id: 'salat-muhtaj',
     title: 'صلاة المحتاج',
     url:
         "https://archive.org/download/chosen_salwat/%D8%B5%D9%84%D8%A7%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D8%A7%D8%AC.mp3",
@@ -72,6 +78,7 @@ const salahAlmohtag = Zikr(
 ''');
 
 const salahAlmotardy = Zikr(
+    id: 'salat-mutardi',
     title: 'صلاة المتردي',
     notes:
         'صَلَاةُ الْمُتَرَدِّي لِسَيِّدِي أَبِي الْفَيْضِ مُحَمَّدِ بْنِ عَبْدِ الْكَبِيرِ الْكَتَّانِي رضي الله عنه',
@@ -82,6 +89,7 @@ const salahAlmotardy = Zikr(
 ''');
 
 const salahNoorania = Zikr(
+    id: 'salat-nuraniyya',
     title: 'الصلاة النورانية',
     notes:
         '«الصَّلَاةُ النُّورَانِيَّةُ » لِسَيِّدِي أَحْمَدِ الْبَدَوِي رضي الله عنه',
@@ -94,6 +102,7 @@ const salahNoorania = Zikr(
 ''');
 
 const salahAlqasm = Zikr(
+    id: 'salat-qasim',
     title: 'صلاة القاسم',
     notes:
         '«صَلَاةُ الْقَاسِمِ» لِسَيِّدِي أَبِي الْفَيْضِ مُحَمَّدِ بْنِ عَبْدِ الْكَبِيرِ الْكَتَّانِي رضي الله عنه',
@@ -104,6 +113,7 @@ const salahAlqasm = Zikr(
 ''');
 
 const salahAlshafia = Zikr(
+    id: 'salat-shafiiyya',
     title: 'الصلاة الشافعية',
     notes:
         '''«الصَّلَاةُ الشَّافِعَيَّةُ» لِلْإِمَامِ الشَّافِعِيِّ رضي الله عنه
@@ -116,6 +126,7 @@ const salahAlshafia = Zikr(
 ''');
 
 const salahZatia = Zikr(
+    id: 'salat-zatiyya',
     title: 'الصلاة الذاتية',
     notes:
         '«الصَّلَاةُ الذَّاتِيَّةُ » لِسَيِّدِي إِبْرَاهِيمَ الدُّسُوقِي رضي الله عنه',

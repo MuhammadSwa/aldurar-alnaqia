@@ -15,6 +15,8 @@ const alhadraCollection = <Zikr>[
 ];
 
 const alhyliaAndNasab = Zikr(
+    id: 'hilya-nasab',
+    kind: ZikrKind.hilyaNasab,
     title: 'الحلية والنسب النبوي الشريف',
     content: '',
     url:
@@ -22,6 +24,7 @@ const alhyliaAndNasab = Zikr(
 );
 
 const hadraPrayerAfterAzkar = Zikr(
+    id: 'hadra-khitam-salat',
     title: 'ختام الصلاة',
     url:
         "https://archive.org/download/hadra_yousria/%D8%AE%D8%AA%D8%A7%D9%85_%D8%A7%D9%84%D8%B5%D9%84%D8%A7%D8%A9_%D8%A7%D9%84%D8%AD%D8%B6%D8%B1%D8%A9.mp3",
@@ -59,6 +62,7 @@ const hadraPrayerAfterAzkar = Zikr(
 ''');
 
 const yaRasoulAllah = Zikr(
+    id: 'ya-rasul-allah',
     title: 'يا رسول الله انظر حالنا',
     content: '''
 يا رسول الله، انظر حالنا، يا حبيب الله، اسمع قَالنَا، إنَّي في بحر هَمٍّ مُغْرِقٍ، خُذ بيدي، سَهِّل أَحوالنا.

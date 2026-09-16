@@ -7,6 +7,7 @@ const khitamAlSalahCollection = <Zikr>[
 ];
 
 const khitamMaghribFajr = Zikr(
+    id: 'khitam-maghrib-fajr',
     title: 'ورد ختام صلاة المغرب والفجر',
     notes:
         'أوراد ختام الصلوات لفضيلة مولانا الشيخ يسري السيد جبر الحسني حفظه الله تعالى ورعاه ونفعنا به في الدارين آمين',
@@ -64,6 +65,7 @@ const khitamMaghribFajr = Zikr(
 );
 
 const khitamIshaDhuhr = Zikr(
+    id: 'khitam-isha-zuhr',
     title: 'ورد ختام صلاة العشاء والظهر',
     content: '''
 أستغفر الله (٣ مرات)
@@ -99,6 +101,7 @@ const khitamIshaDhuhr = Zikr(
 );
 
 const khitamAsr = Zikr(
+    id: 'khitam-asr',
     title: 'ورد ختام صلاة العصر',
     content: '''
 أستغفر الله (٣ مرات)

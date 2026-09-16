@@ -16,8 +16,6 @@ import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
-import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart'
     show islamicWeekdayNow;
@@ -207,14 +205,17 @@ class AppRouter {
       path: RoutePaths.zikrCollectionSegment,
       name: RouteNames.zikrCollection(branch),
       pageBuilder: (context, state) {
-        final collection = state.pathParameters['collection']!;
-        final azkarTitles = azkarCollections.getAzkarTitles(collection);
+        final collectionId = state.pathParameters['collection']!;
+        final collection = resolveCollection(collectionId);
+        final collectionTitle = collection?.title ?? collectionId;
+        final zikrIds = collectionZikrIds(collectionId);
 
         return RouteTransitions.slideTransition(
           ZikrCollectionScreen(
             branch: branch,
-            collection: collection,
-            azkarTitles: azkarTitles,
+            collection: collectionTitle,
+            collectionId: collection?.id ?? collectionId,
+            zikrIds: zikrIds,
           ),
         );
       },
@@ -235,35 +236,36 @@ class AppRouter {
       path: RoutePaths.zikrSegment,
       name: RouteNames.zikrPage(pagePrefix),
       pageBuilder: (context, state) {
-        final zikr = state.pathParameters['zikr']!;
+        final zikrId = state.pathParameters['zikr']!;
 
-        final (titles, index) = _parseZikrExtras(state.extra);
+        final (zikrIds, index) = _parseZikrExtras(state.extra);
 
-        // When opened from a list with swipe context (titles + index),
+        // When opened from a list with swipe context (ids + index),
         // always go through the slidable screen — even for special
         // compositions like Hilya/Sanad — so the user can swipe to
         // neighbouring azkar. SlidableZikrScreen renders their PDF
         // content internally.
-        if (titles != null &&
+        if (zikrIds != null &&
             index != null &&
             index >= 0 &&
-            index < titles.length) {
+            index < zikrIds.length) {
           return RouteTransitions.slideTransition(
-            ZikrScreen(title: zikr, titles: titles, index: index),
+            ZikrScreen(zikrId: zikrId, zikrIds: zikrIds, index: index),
           );
         }
 
         // Handle special standalone compositions (no swipe context,
         // e.g. opened from search or a deep link).
-        if (zikr == alhyliaAndNasab.title) {
+        final resolved = resolveZikr(zikrId);
+        if (resolved?.kind == ZikrKind.hilyaNasab) {
           return RouteTransitions.slideTransition(const HeliaNasabScreen());
         }
-        if (zikr == sanadAltareeqa.title) {
+        if (resolved?.kind == ZikrKind.tareeqaSanad) {
           return RouteTransitions.slideTransition(const TareeqaSanadScreen());
         }
 
         return RouteTransitions.slideTransition(
-          ZikrScreen(title: zikr, titles: titles, index: index),
+          ZikrScreen(zikrId: zikrId, zikrIds: zikrIds, index: index),
         );
       },
     );
@@ -291,17 +293,17 @@ class AppRouter {
   }
 
   /// Typed extras parsing for zikr detail pages. Accepts both the typed
-  /// [ZikrRouteExtra] and legacy map extras.
+  /// [ZikrRouteExtra] and legacy map extras ({'titles'|'zikrIds', 'index'}).
   static (List<String>?, int?) _parseZikrExtras(Object? extra) {
     if (extra is ZikrRouteExtra) {
-      return (extra.titles, extra.index);
+      return (extra.zikrIds, extra.index);
     }
     if (extra is Map) {
-      final t = extra['titles'];
+      final t = extra['zikrIds'] ?? extra['titles'];
       final i = extra['index'];
-      final titles = t is List ? t.whereType<String>().toList() : null;
+      final ids = t is List ? t.whereType<String>().toList() : null;
       final index = i is int ? i : null;
-      return (titles, index);
+      return (ids, index);
     }
     return (null, null);
   }

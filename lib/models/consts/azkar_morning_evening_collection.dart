@@ -11,10 +11,13 @@ const morningEveningAzkarCollection = [
 ];
 
 // TODO: fix this mess :(
-const alhylia = Zikr(title: 'الحلية والنسب النبوي الشريف', content: '');
+const alhylia = Zikr(
+    id: 'hilya-nasab-text',
+    kind: ZikrKind.hilyaNasab,title: 'الحلية والنسب النبوي الشريف', content: '');
 
 // === alasas
 const alasas = Zikr(
+    id: 'wird-asas',
     title: 'ورد الأساس',
     notes:
         'بعد صلاة الصبح إلى ما قبل الظهر ومثله بعد صلاة المغرب إلى ما قبل الفجر وتقضيه إذا فاتك.',
@@ -30,6 +33,7 @@ const alasas = Zikr(
 
 // === AlwazifaZarouquia ===
 const alwazifaZarouquia = Zikr(
+    id: 'wazifa-zarouqiyya',
   title: 'الوظيفة الزروقية',
   notes:
       'الوظيفةُ الزَّرُّوقِيَّةُ المسماة بـ (سفينة النجا لمن إلى الله التجا) لسيدي أحمد زَرٌّوق\nتقرأ بعد صلاة الصبح وبعد صلاة العصر',
@@ -154,6 +158,7 @@ const alwazifaZarouquia = Zikr(
 
 // === almusabaeat ===
 const almusabaeat = Zikr(
+    id: 'musabbaat-ashr',
     title: 'المسبعات العشر',
     notes: 'تُقْرَأُ قَبْلَ الشُّرُوقِ وَقَبْلَ الغُرُوبِ',
     url:
@@ -182,6 +187,7 @@ const almusabaeat = Zikr(
   ''');
 
 const khitamFawatih = Zikr(
+    id: 'khitam-fawatih',
     title: 'ختام الورد والحضرة (الفواتح)',
     url:
         "https://archive.org/download/hadra_yousria/%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%AA%D8%AD.mp3",

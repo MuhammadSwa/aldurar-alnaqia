@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart' show migrateBookmark;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 
@@ -185,7 +186,21 @@ class SharedPreferencesService {
   }
 
   static List<String> getBookmarks() {
-    return _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
+    final stored =
+        _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
+    // One-time migration: legacy Arabic titles -> stable ids. Persisted
+    // back so the migration runs once per device.
+    var changed = false;
+    final migrated = <String>[];
+    for (final bookmark in stored) {
+      final next = migrateBookmark(bookmark);
+      if (next != bookmark) changed = true;
+      if (!migrated.contains(next)) migrated.add(next);
+    }
+    if (changed) {
+      _sharedPreferences?.setStringList(PrefsKeys.bookmarks, migrated);
+    }
+    return migrated;
   }
 
   static void setBookmarks(List<String> bookmarks) {

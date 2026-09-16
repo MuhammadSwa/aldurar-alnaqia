@@ -7,31 +7,39 @@ void main() {
 
   final router = AppRouter.createRouter();
 
-  group('named locations round-trip Arabic path parameters exactly once', () {
-    const titlesWithTrickyCharacters = <String>[
-      'ورد يوم الإثنين',
-      'الحضرة الصديقية',
-      'صلوات مختارة على النبي ﷺ',
-      'ورد عصر الجمعة (تقرأ مرة)',
-      '100% مضمونة؟',
+  group('named locations round-trip path parameters exactly once', () {
+    const idsWithTrickyCharacters = <String>[
+      'wird-asas',
+      'yousria-day-1',
+      'salat-anmuzajiyya',
+      'dalayil-hizb-1',
+      'hilya-nasab',
+      'sanad-tariqa',
     ];
 
-    for (final title in titlesWithTrickyCharacters) {
-      test('"$title" survives encode -> decode', () {
+    for (final id in idsWithTrickyCharacters) {
+      test('"$id" survives encode -> decode', () {
         final location = router.namedLocation(
           'homeZikrPage',
-          pathParameters: {'zikr': title},
+          pathParameters: {'zikr': id},
         );
 
         final uri = Uri.parse(location);
-        // Uri.pathSegments returns percent-decoded segments. Equaling the
-        // raw title proves go_router encoded it exactly ONCE (a manually
-        // pre-encoded or double-encoded value would not round-trip).
         expect(uri.pathSegments.first, 'home');
         expect(uri.pathSegments[uri.pathSegments.length - 2], 'zikr');
-        expect(uri.pathSegments.last, title);
+        expect(uri.pathSegments.last, id);
       });
     }
+
+    test('legacy Arabic title still round-trips (backward compat)', () {
+      const title = 'ورد الأساس';
+      final location = router.namedLocation(
+        'homeZikrPage',
+        pathParameters: {'zikr': title},
+      );
+      final uri = Uri.parse(location);
+      expect(uri.pathSegments.last, title);
+    });
 
     test('pdf viewer book title round-trips', () {
       const bookTitle =
@@ -70,8 +78,8 @@ void main() {
             return router.namedLocation(
               name,
               pathParameters: isCollectionNested
-                  ? {'collection': 'قصائد', 'zikr': 'x'}
-                  : {'zikr': 'x'},
+                  ? {'collection': 'qasaed', 'zikr': 'banat-suad'}
+                  : {'zikr': 'wird-asas'},
             );
           },
           returnsNormally,
@@ -86,7 +94,7 @@ void main() {
         expect(
           () => router.namedLocation(
             RouteNames.zikrCollection(branch),
-            pathParameters: {'collection': 'قصائد'},
+            pathParameters: {'collection': 'qasaed'},
           ),
           returnsNormally,
         );

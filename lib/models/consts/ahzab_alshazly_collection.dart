@@ -9,6 +9,7 @@ const ahzabCollection = <Zikr>[
 
 // === Hizb albahr ===
 const hizbAlbahr = Zikr(
+    id: 'hizb-albahr',
     title: 'حزب البحر',
     notes: 'يقرأ مرَّة يوميًّا',
     url:
@@ -61,6 +62,7 @@ const hizbAlbahr = Zikr(
 ''');
 
 const hizbAlbar = Zikr(
+    id: 'hizb-albar',
   title: 'حزب البر (الحزب الكبير)',
   notes: 'يقرأ الثلاثاء صباحًا جماعة بمسجد الأشراف.',
   url:
@@ -90,6 +92,7 @@ const hizbAlbar = Zikr(
 );
 
 const hizbAlnasr = Zikr(
+    id: 'hizb-alnasr',
   title: 'حزب النصر',
   url:
       "https://archive.org/download/dorar_audio/%D8%AD%D8%B2%D8%A8%20%D8%A7%D9%84%D9%86%D8%B5%D8%B1.mp3",
@@ -112,6 +115,7 @@ const hizbAlnasr = Zikr(
 );
 
 const hizbAlnawawi = Zikr(
+    id: 'hizb-alnawawi',
     title: 'حزب الإمام النووي',
     notes:
         'حزب الإمام النووي رضي الله عنه\nيُقْرَأُ مَرَّةً يوميًّا، وَيُفَضَّلُ صَبَاحًا',

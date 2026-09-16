@@ -12,14 +12,14 @@ class AppNav {
   static void goToZikr(
     BuildContext context,
     ZikrBranch branch,
-    String title, {
-    List<String>? titles,
+    String zikrId, {
+    List<String>? zikrIds,
     int? index,
   }) {
     ZikrDetailTarget(
       branch: branch,
-      title: title,
-      titles: titles,
+      zikrId: zikrId,
+      zikrIds: zikrIds,
       index: index,
     ).go(context);
   }

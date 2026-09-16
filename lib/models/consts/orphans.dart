@@ -1,6 +1,7 @@
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
 const adabAltareeqa = Zikr(
+    id: 'adab-tariqa',
     title: 'آداب الطريقة اليسرية الصديقية',
     notes:
         'آداب الطريقة اليسرية الصديقية للسيد عبدالله الصديق الغماري رضي الله عنه',
@@ -23,6 +24,7 @@ const adabAltareeqa = Zikr(
     );
 
 const waseyaGamea = Zikr(
+    id: 'wasiyya-jamia',
     title: 'وصية جامعة',
     notes:
         'وصية جامعة لجملة من الواجبات والآداب في رسالةٍ كتبها مولانا وإمامُنا ومُنْشِئُ طريقتِنا العارفُ الأكبرُ سيدي الشيخ السيد محمد بن الصديق لأهل مدينة العرائش بالمغرب الأقصى',
@@ -43,6 +45,8 @@ const waseyaGamea = Zikr(
 ''');
 
 const sanadAltareeqa = Zikr(
+    id: 'sanad-tariqa',
+    kind: ZikrKind.tareeqaSanad,
     title: 'إسناد الطريقة اليسرية',
     notes: 'إسناد الطريقة اليسرية الصديقية الدرقاوية الشاذلية',
     content: '''
@@ -93,6 +97,7 @@ const sanadAltareeqa = Zikr(
 ''');
 
 const asrGomaa = Zikr(
+    id: 'wird-asr-jumua',
     title: 'ورد عصر يوم الجمعة',
     notes: 'يقرأ ما بين عصر الجمعة إلى مغربها',
     url:

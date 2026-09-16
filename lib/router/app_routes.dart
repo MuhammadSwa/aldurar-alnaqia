@@ -9,10 +9,11 @@ import 'package:go_router/go_router.dart';
 //  * Widgets NEVER build location strings themselves. Either use one of the
 //    typed [ZikrTarget]s / [AppRoutes] builders, or navigate by route NAME
 //    via `goNamed`/`pushNamed`.
-//  * Path parameters (Arabic titles, collection names, ...) are always passed
-//    RAW to go_router; it encodes them when building the location and decodes
-//    them in `state.pathParameters`. Never call Uri.encode/decodeComponent
-//    manually — doing both sides causes double-encoding bugs.
+//  * Path parameters (`:zikr`, `:collection`) carry stable ASCII ids
+//    ([Zikr.id], [ZikrCollection.id]). Legacy Arabic titles still resolve
+//    via [resolveZikr]/[resolveCollection] for old bookmarks and links.
+//    Always pass values RAW to go_router; it encodes them when building
+//    the location and decodes them in `state.pathParameters`.
 //  * Non-ASCII segments must only travel through named routes or the
 //    builders below, never hand-concatenated strings.
 // ---------------------------------------------------------------------------
@@ -84,9 +85,9 @@ enum ZikrBranch {
 
 /// Typed extras contract for zikr detail pages.
 class ZikrRouteExtra {
-  final List<String>? titles;
+  final List<String>? zikrIds;
   final int? index;
-  const ZikrRouteExtra({this.titles, this.index});
+  const ZikrRouteExtra({this.zikrIds, this.index});
 }
 
 /// Centralized location builders. Only ASCII-safe segments may be
@@ -123,30 +124,31 @@ sealed class ZikrTarget {
 }
 
 /// Opens a single zikr's detail page under [branch]'s nested
-/// `zikr/:zikr` route identified by [pagePrefix]. When [titles] and [index]
-/// are provided the page becomes swipeable across [titles].
+/// `zikr/:zikr` route identified by [pagePrefix]. [zikrId] is the stable
+/// id from [Zikr.id] (legacy Arabic titles still resolve). When [zikrIds]
+/// and [index] are provided the page becomes swipeable across [zikrIds].
 class ZikrDetailTarget extends ZikrTarget {
   const ZikrDetailTarget({
     required this.branch,
-    required this.title,
+    required this.zikrId,
     this.pagePrefix,
     this.collection,
-    this.titles,
+    this.zikrIds,
     this.index,
   });
 
   final ZikrBranch branch;
-  final String title;
+  final String zikrId;
 
   /// Route-name prefix of the exact nested zikr page to open. Defaults to
   /// the branch root page (e.g. `homeZikrPage`).
   final String? pagePrefix;
 
-  /// Collection name when opening from inside a collection listing; the
+  /// Collection id when opening from inside a collection listing; the
   /// collection-nested zikr route requires its `:collection` parameter.
   final String? collection;
 
-  final List<String>? titles;
+  final List<String>? zikrIds;
   final int? index;
 
   @override
@@ -154,9 +156,9 @@ class ZikrDetailTarget extends ZikrTarget {
     context.goNamed(
       RouteNames.zikrPage(pagePrefix ?? branch.namePrefix),
       pathParameters: collection == null
-          ? {'zikr': title}
-          : {'collection': collection!, 'zikr': title},
-      extra: ZikrRouteExtra(titles: titles, index: index),
+          ? {'zikr': zikrId}
+          : {'collection': collection!, 'zikr': zikrId},
+      extra: ZikrRouteExtra(zikrIds: zikrIds, index: index),
     );
   }
 }

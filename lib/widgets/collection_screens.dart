@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
@@ -10,30 +11,21 @@ class WeekCollectionScreen extends StatelessWidget {
 
   final ZikrBranch branch;
 
-  static const Map<int, String> daysAzkarTitles = {
-    6: 'ورد يوم السبت',
-    7: 'ورد يوم الأحد',
-    1: 'ورد يوم الإثنين',
-    2: 'ورد يوم الثلاثاء',
-    3: 'ورد يوم الأربعاء',
-    4: 'ورد يوم الخميس',
-    5: 'ورد يوم الجمعة',
-  };
-
   @override
   Widget build(BuildContext context) {
+    final days = dayWirdTitles.keys.toList()..sort();
     return Scaffold(
       appBar: AppBar(
         title: const Text('أوراد الأسبوع'),
       ),
       body: ListView.builder(
-        itemCount: daysAzkarTitles.length,
+        itemCount: days.length,
         itemBuilder: (context, index) {
-          final day = daysAzkarTitles.keys.elementAt(index);
-          final title = daysAzkarTitles[day]!;
+          final day = days[index];
 
           return ZikrListViewTile(
-            title: title,
+            zikrId: dayWirdBookmarkId(day),
+            title: dayWirdTitles[day],
             target: DayWirdTarget(branch, day: day),
           );
         },
@@ -48,12 +40,14 @@ class ZikrCollectionScreen extends StatelessWidget {
     super.key,
     required this.branch,
     required this.collection,
-    required this.azkarTitles,
+    required this.collectionId,
+    required this.zikrIds,
   });
 
   final ZikrBranch branch;
   final String collection;
-  final List<String> azkarTitles;
+  final String collectionId;
+  final List<String> zikrIds;
 
   @override
   Widget build(BuildContext context) {
@@ -62,14 +56,14 @@ class ZikrCollectionScreen extends StatelessWidget {
         title: Text(collection),
       ),
       body: AzkarListViewWidget(
-        titles: azkarTitles,
+        zikrIds: zikrIds,
         barTitle: collection,
-        targetBuilder: (title, index) => ZikrDetailTarget(
+        targetBuilder: (zikrId, index) => ZikrDetailTarget(
           branch: branch,
-          title: title,
+          zikrId: zikrId,
           pagePrefix: RouteNames.zikrCollection(branch),
-          collection: collection,
-          titles: azkarTitles,
+          collection: collectionId,
+          zikrIds: zikrIds,
           index: index,
         ),
       ),

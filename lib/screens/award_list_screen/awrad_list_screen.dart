@@ -1,5 +1,4 @@
 import 'package:aldurar_alnaqia/my_drawer.dart';
-import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
@@ -19,9 +18,13 @@ class AwradListScreen extends ConsumerStatefulWidget {
 class _AwradListScreenState extends ConsumerState<AwradListScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  late final List<String> collectionTitles =
-      azkarCollections.getTitles().sublist(0, 9);
-  late final List<String> azkarTitles = orphanAzkar.getTitles();
+  /// Displayed collections in registry order, excluding tarajem (shown
+  /// as its own tile below, matching the previous layout).
+  late final List<String> collectionIds = [
+    for (final c in allCollections)
+      if (c.id != 'tarajem') c.id,
+  ];
+  late final List<String> zikrIds = [for (final z in orphanZikrs) z.id];
 
   @override
   void initState() {
@@ -45,8 +48,9 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
   @override
   Widget build(BuildContext context) {
     void handleSearch(String query) {
-      // Typed target keeps encoding + route names in one place.
-      ZikrDetailTarget(branch: ZikrBranch.awrad, title: query).go(context);
+      final zikr = resolveZikr(query);
+      if (zikr == null) return;
+      ZikrDetailTarget(branch: ZikrBranch.awrad, zikrId: zikr.id).go(context);
     }
 
     return Scaffold(
@@ -61,7 +65,7 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
           SearchWidget(
             onSearch: handleSearch,
             hintText: 'بحث في الأوراد',
-            suggestions: allAzkar.getTitles(),
+            suggestions: allZikrTitles(),
           ),
         ],
       ),
@@ -70,39 +74,30 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
         child: Column(
           children: [
             const ZikrListViewTile(
+                zikrId: weekCollectionBookmarkId,
                 title: 'أوراد الأسبوع',
                 target: WeekCollectionTarget(ZikrBranch.awrad)),
             AzkarListViewWidget(
-              titles: collectionTitles,
+              zikrIds: collectionIds,
               barTitle: 'الأذكار',
               scrollable: false,
               targetBuilder: buildCollectionTarget,
             ),
-            // TODO: hack asrGomma should be on top of taragm, util i rethink of better implementation
             AzkarListViewWidget(
-              titles: [asrGomaa.title],
+              zikrIds: zikrIds,
               barTitle: 'الأذكار',
               scrollable: false,
-              targetBuilder: buildAsrGomaaTarget,
-            ),
-
-            AzkarListViewWidget(
-              titles: azkarTitles,
-              barTitle: 'الأذكار',
-              scrollable: false,
-              targetBuilder: (title, index) => ZikrDetailTarget(
+              targetBuilder: (zikrId, index) => ZikrDetailTarget(
                 branch: ZikrBranch.awrad,
-                title: title,
-                titles: azkarTitles,
+                zikrId: zikrId,
+                zikrIds: zikrIds,
                 index: index,
               ),
             ),
-
-            // TODO: hack
             // Opens the tarajem collection listing; its own tiles then open
             // individual zikr pages under the collection's nested route.
             const AzkarListViewWidget(
-              titles: ['تراجم رجال الطريقة'],
+              zikrIds: ['tarajem'],
               barTitle: 'الأذكار',
               scrollable: false,
               targetBuilder: buildTarajemTarget,
@@ -114,14 +109,10 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
   }
 
   static ZikrCollectionViewTarget buildCollectionTarget(
-          String title, int index) =>
-      ZikrCollectionViewTarget(ZikrBranch.awrad, collection: title);
+          String collectionId, int index) =>
+      ZikrCollectionViewTarget(ZikrBranch.awrad, collection: collectionId);
 
   static ZikrCollectionViewTarget buildTarajemTarget(
-          String title, int index) =>
-      ZikrCollectionViewTarget(ZikrBranch.awrad, collection: title);
-
-  static ZikrDetailTarget buildAsrGomaaTarget(String title, int index) {
-    return ZikrDetailTarget(branch: ZikrBranch.awrad, title: title);
-  }
+          String collectionId, int index) =>
+      ZikrCollectionViewTarget(ZikrBranch.awrad, collection: collectionId);
 }

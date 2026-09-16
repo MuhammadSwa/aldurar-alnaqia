@@ -12,6 +12,7 @@ const dalayilAlkhayratCollection = [
 
 
 const dalayilHizb1 = Zikr(
+    id: 'dalayil-hizb-1',
     title: 'الحزب الأول ورد يوم الاثنين',
     url:
         'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_mon.mp3',
@@ -111,6 +112,7 @@ const dalayilHizb1 = Zikr(
 ''');
 
 const dalayilHizb2 = Zikr(
+    id: 'dalayil-hizb-2',
     title: 'الحزب الثاني ورد يوم الثلاثاء',
     url:
         'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_tue.mp3',
@@ -151,6 +153,7 @@ const dalayilHizb2 = Zikr(
 ''');
 
 const dalayilHizb3 = Zikr(
+    id: 'dalayil-hizb-3',
     title: 'الحزب الثالث ورد يوم الأربعاء',
     url:
         'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_wed.mp3',
@@ -203,6 +206,7 @@ const dalayilHizb3 = Zikr(
 ''');
 
 const dalayilHizb4 = Zikr(
+    id: 'dalayil-hizb-4',
     title: 'الحزب الرابع ورد يوم الخميس',
     url:
         'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_thu.mp3',
@@ -261,6 +265,7 @@ const dalayilHizb4 = Zikr(
     ''');
 
 const dalayilHizb5 = Zikr(
+    id: 'dalayil-hizb-5',
     title: 'الحزب الخامس ورد يوم الجمعة',
     url:
         'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_fri.mp3',
@@ -335,6 +340,7 @@ const dalayilHizb5 = Zikr(
     ''');
 
 const dalayilHizb6 = Zikr(
+    id: 'dalayil-hizb-6',
     title: 'الحزب السادس ورد يوم السبت',
     url:
         'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_sat.mp3',
@@ -382,6 +388,7 @@ const dalayilHizb6 = Zikr(
 ''');
 
 const dalayilHizb7 = Zikr(
+    id: 'dalayil-hizb-7',
     title: 'الحزب السابع ورد يوم الأحد',
     url:
         'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_sun.mp3',

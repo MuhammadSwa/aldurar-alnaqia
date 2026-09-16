@@ -13,6 +13,7 @@ const poemsCollection = [
 ];
 
 const poemmadhWithQuarn = Zikr(
+    id: 'madh-quran',
     title: 'مدح النبي ﷺ بأسماء سور القرآن',
     notes: '''
 هِيَ قَصِيدَةٌ لِلشَّاعِرِ أَبُو عَبْدِ اللهِ شَمْسِ الدِّينِ مُحَمَّدِ بْنِ أَحْمَدَ بْنِ عَلِيٍّ الْهَوَّارِيِّ الْمَالِكِي الْأَندَلُسِيِّ النَّحْوِي رضي الله عنه الْمَعْرُوفِ بِـ «ابْنِ جَابِرٍ» يَمْدَحُ النَّبِيَّ الْأَعْظَمَ صلى الله عليه وسلم بِالتَّوْرِيَةِ بِسُوَرِ الْقُرْآنِ كُلِّهَا.
@@ -88,6 +89,7 @@ const poemmadhWithQuarn = Zikr(
 ''');
 
 const poemModaria = Zikr(
+    id: 'qasida-mudariyya',
     title: 'القصيدة الْمضَرِيَّة في الصلاة على خير البرية',
     notes: '''
 القصيدة الْمضَرِيَّة في الصلاة على خير البرية للإمام البوصيري رضي الله عنه
@@ -141,6 +143,7 @@ const poemModaria = Zikr(
 ''');
 
 const poemMohamadia = Zikr(
+    id: 'qasida-muhammadiyya',
     title: 'القصيدة المحمدية',
     url:
         "https://archive.org/download/dorar_audio/%D8%A7%D9%84%D9%82%D8%B5%D9%8A%D8%AF%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D9%85%D8%AF%D9%8A%D8%A9.mp3",
@@ -169,6 +172,7 @@ const poemMohamadia = Zikr(
 ''');
 
 const poemBordaBosiri = Zikr(
+    id: 'burda-busiri',
     title: 'بردة الإمام البوصيري',
     notes: '''
 بردة الإمام البوصيري رضي الله عنه
@@ -359,6 +363,7 @@ const poemBordaBosiri = Zikr(
 ''');
 
 const manzoumaAsmaaHosna = Zikr(
+    id: 'manzuma-asma-husna',
   title: 'منظومة أسماء الله الحسنى',
   notes: '''
 منظومة أسماء الله الحسنى لسيدي أحمد الدردير رضي الله عنه
@@ -444,6 +449,7 @@ const manzoumaAsmaaHosna = Zikr(
 );
 
 const poemMonfarigaGazali = Zikr(
+    id: 'munfarija-ghazali',
     title: 'القصيدة المنفرجة للإمام الغزالي',
     notes: '''
 القصيدة المنفرجة المنسوبة للإمام أبي حامد الغزالي
@@ -516,6 +522,7 @@ const poemMonfarigaGazali = Zikr(
 ''');
 
 const poemMonfarigaNahawi = Zikr(
+    id: 'munfarija-nahwi',
     title: 'القصيدة المنفرجة لابن النحوي',
     notes: '''
 القصيدة المنفرجة المنسوبة لابن نحوي رضي الله عنه
@@ -576,6 +583,7 @@ const poemMonfarigaNahawi = Zikr(
 ''');
 
 const poemBanatSuad = Zikr(
+    id: 'banat-suad',
     title: 'قصيدة بانت سعاد',
     notes: '''
 قصيدةُ (بانت سعاد) لكعب بن زهير رضى الله عنه
@@ -889,6 +897,7 @@ const poemBanatSuad = Zikr(
 ''');
 
 const duaaEstighatha = Zikr(
+    id: 'dua-istighatha',
   title: 'دعاء الاستغاثة',
   notes: '''
  دعاء الاستغاثة للعارف بالله سيدي محمد بن ناصر الدِّرْعِيِّ رضي الله عنه المتوفى 1085هـ دفين زاوية بتَا مَكْرُوت بالمغرب الأقصى

@@ -8,12 +8,18 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 class YousriaDayInfo {
   const YousriaDayInfo({
     required this.dayNumber,
+    required this.zikrId,
     required this.title,
     required this.startDate,
   });
 
   /// 1..6
   final int dayNumber;
+
+  /// Stable zikr id of today's part.
+  final String zikrId;
+
+  /// Display title of today's part.
   final String title;
   final DateTime startDate;
 }
@@ -37,14 +43,15 @@ YousriaDayInfo getYousriaDayInfo() {
   final diff = effectiveDay.difference(startingDay).inDays;
   final dayNumber = (diff % 6 + 6) % 6 + 1;
   // salawatYousriaCollection: 0 intro, 1 asmaa, 2..7 day1..day6.
-  final title = salawatYousriaCollection[dayNumber + 1].title;
+  final zikr = salawatYousriaCollection[dayNumber + 1];
   return YousriaDayInfo(
     dayNumber: dayNumber,
-    title: title,
+    zikrId: zikr.id,
+    title: zikr.title,
     startDate: startingDay,
   );
 }
 
 List<String> getYousriaForToday() {
-  return <String>[getYousriaDayInfo().title];
+  return <String>[getYousriaDayInfo().zikrId];
 }

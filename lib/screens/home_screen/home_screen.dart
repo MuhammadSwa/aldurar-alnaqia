@@ -43,8 +43,10 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void handleSearch(String query) {
-    // Typed target keeps encoding + route names in one place.
-    ZikrDetailTarget(branch: ZikrBranch.home, title: query).go(context);
+    // Search suggestions are display titles; resolve to the stable id.
+    final zikr = resolveZikr(query);
+    if (zikr == null) return;
+    ZikrDetailTarget(branch: ZikrBranch.home, zikrId: zikr.id).go(context);
   }
 
   @override
@@ -65,7 +67,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           SearchWidget(
             onSearch: handleSearch,
             hintText: 'بحث في الأوراد',
-            suggestions: allAzkar.getTitles(),
+            suggestions: allZikrTitles(),
           ),
         ],
       ),
@@ -110,7 +112,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     AppNav.goToZikr(
                       context,
                       ZikrBranch.home,
-                      dalayilAlkhayratCollection[dayIndex].title,
+                      dalayilAlkhayratCollection[dayIndex].id,
                     );
                   },
                 ),
@@ -129,35 +131,33 @@ class _HomePageState extends ConsumerState<HomePage> {
 class BookmarksTilesHomeScreen extends ConsumerWidget {
   const BookmarksTilesHomeScreen({super.key});
 
-  static const azkarDayTitlesToNum = <String, int>{
-    'ورد يوم الإثنين': 1,
-    'ورد يوم الثلاثاء': 2,
-    'ورد يوم الأربعاء': 3,
-    'ورد يوم الخميس': 4,
-    'ورد يوم الجمعة': 5,
-    'ورد يوم السبت': 6,
-    'ورد يوم الأحد': 7,
-  };
+  static int? _dayFromBookmark(String bookmark) {
+    if (!bookmark.startsWith('day-wird-')) return null;
+    final day = int.tryParse(bookmark.split('-').last);
+    if (day != null && dayWirdTitles.containsKey(day)) return day;
+    return null;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookmarks = ref.watch(bookmarksProvider);
 
     // see if a bookmark is collection or orphan
-    final List<String> collectionTitles = [];
-    final List<String> orphanTitles = [];
-    final List<String> azkarOfDays = [];
+    final List<String> collectionIds = [];
+    final List<String> orphanIds = [];
+    final List<int> azkarOfDays = [];
     var weekAzkarBookmarked = false;
 
     for (var bookmark in bookmarks) {
-      if (azkarDayTitlesToNum.keys.contains(bookmark)) {
-        azkarOfDays.add(bookmark);
-      } else if (bookmark == 'أوراد الأسبوع') {
+      final day = _dayFromBookmark(bookmark);
+      if (day != null) {
+        azkarOfDays.add(day);
+      } else if (bookmark == weekCollectionBookmarkId) {
         weekAzkarBookmarked = true;
-      } else if (azkarCollections.azkarCategList.keys.contains(bookmark)) {
-        collectionTitles.add(bookmark);
+      } else if (collectionById.containsKey(bookmark)) {
+        collectionIds.add(bookmark);
       } else {
-        orphanTitles.add(bookmark);
+        orphanIds.add(bookmark);
       }
     }
 
@@ -167,31 +167,33 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
           children: [
             if (weekAzkarBookmarked) ...{
               const ZikrListViewTile(
+                  zikrId: weekCollectionBookmarkId,
                   title: 'أوراد الأسبوع',
                   target: WeekCollectionTarget(ZikrBranch.home)),
             },
             if (bookmarks.isNotEmpty) ...{
               for (var day in azkarOfDays) ...{
                 ZikrListViewTile(
-                    title: day,
-                    target: DayWirdTarget(ZikrBranch.home,
-                        day: azkarDayTitlesToNum[day]!)),
+                    zikrId: dayWirdBookmarkId(day),
+                    title: dayWirdTitles[day],
+                    target: DayWirdTarget(ZikrBranch.home, day: day)),
               },
               AzkarListViewWidget(
-                titles: collectionTitles,
+                zikrIds: collectionIds,
                 barTitle: 'الأذكار',
                 scrollable: false,
-                targetBuilder: (title, index) =>
-                    ZikrCollectionViewTarget(ZikrBranch.home, collection: title),
+                targetBuilder: (collectionId, index) =>
+                    ZikrCollectionViewTarget(ZikrBranch.home,
+                        collection: collectionId),
               ),
               AzkarListViewWidget(
-                titles: orphanTitles,
+                zikrIds: orphanIds,
                 barTitle: 'الأذكار',
                 scrollable: false,
-                targetBuilder: (title, index) => ZikrDetailTarget(
+                targetBuilder: (zikrId, index) => ZikrDetailTarget(
                   branch: ZikrBranch.home,
-                  title: title,
-                  titles: orphanTitles,
+                  zikrId: zikrId,
+                  zikrIds: orphanIds,
                   index: index,
                 ),
               ),

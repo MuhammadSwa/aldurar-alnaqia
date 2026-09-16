@@ -1,5 +1,3 @@
-import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,12 +9,12 @@ import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/zikr_inline_text.dar
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_blocks.dart';
 
 class SlidableZikrScreen extends StatefulWidget {
-  final List<String> allTitles;
+  final List<String> zikrIds;
   final int initialIndex;
 
   const SlidableZikrScreen({
     super.key,
-    required this.allTitles,
+    required this.zikrIds,
     required this.initialIndex,
   });
 
@@ -26,21 +24,21 @@ class SlidableZikrScreen extends StatefulWidget {
 
 class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
   late PageController _pageController;
-  late String _currentTitle;
+  late String _currentId;
   late Zikr _currentZikr;
 
   @override
   void initState() {
     super.initState();
-    final safeIndex = widget.initialIndex.clamp(0, widget.allTitles.length - 1);
+    final safeIndex = widget.initialIndex.clamp(0, widget.zikrIds.length - 1);
     _pageController = PageController(initialPage: safeIndex);
     _updateCurrentZikr(safeIndex);
   }
 
   void _updateCurrentZikr(int index) {
-    _currentTitle = widget.allTitles[index];
+    _currentId = widget.zikrIds[index];
     _currentZikr =
-        allAzkar.azkarCategMap[_currentTitle] ?? allAzkar.azkarCategMap.values.first;
+        resolveZikr(_currentId) ?? zikrById.values.first;
   }
 
   @override
@@ -53,11 +51,11 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentTitle),
+        title: Text(_currentZikr.title),
         actions: [
           // The action button updates reactively based on the current Zikr
           PlayAudioBtnZikrPage(
-            id: _currentZikr.title,
+            id: _currentZikr.id,
             title: _currentZikr.title,
             url: _currentZikr.url,
           ),
@@ -65,7 +63,7 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
       ),
       body: PageView.builder(
         controller: _pageController,
-        itemCount: widget.allTitles.length,
+        itemCount: widget.zikrIds.length,
         // This callback updates the AppBar title when you swipe to a new page
         onPageChanged: (index) {
           setState(() {
@@ -77,15 +75,15 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
         // Scaffold) so every page — including the initial one — stays
         // swipeable inside this outer PageView.
         itemBuilder: (context, index) {
-          if (widget.allTitles[index] == alhyliaAndNasab.title) {
-            return const HeliaNasabContent();
+          final zikr = resolveZikr(widget.zikrIds[index]);
+          switch (zikr?.kind) {
+            case ZikrKind.hilyaNasab:
+              return const HeliaNasabContent();
+            case ZikrKind.tareeqaSanad:
+              return const TareeqaSanadContent();
+            default:
+              return ZikrContentWidget(zikrId: widget.zikrIds[index]);
           }
-          if (widget.allTitles[index] == sanadAltareeqa.title) {
-            return const TareeqaSanadContent();
-          }
-          return ZikrContentWidget(
-            title: widget.allTitles[index],
-          );
         },
       ),
     );
@@ -95,30 +93,30 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
 class ZikrScreen extends StatelessWidget {
   const ZikrScreen({
     super.key,
-    required this.title,
-    this.titles,
+    required this.zikrId,
+    this.zikrIds,
     this.index,
   });
 
-  final String title;
+  final String zikrId;
   final int? index;
-  final List<String>? titles;
+  final List<String>? zikrIds;
 
   @override
   Widget build(BuildContext context) {
-    if (titles != null &&
+    if (zikrIds != null &&
         index != null &&
         index! >= 0 &&
-        index! < titles!.length) {
-      return SlidableZikrScreen(allTitles: titles!, initialIndex: index!);
+        index! < zikrIds!.length) {
+      return SlidableZikrScreen(zikrIds: zikrIds!, initialIndex: index!);
     }
-    // Find the specific Zikr data using the title; show a friendly page
-    // instead of crashing when the title is unknown (e.g. from search).
-    final Zikr? zikr = allAzkar.azkarCategMap[title];
+    // Find the specific Zikr data using the id; show a friendly page
+    // instead of crashing when the id is unknown (e.g. from search).
+    final Zikr? zikr = resolveZikr(zikrId);
 
     if (zikr == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(title)),
+        appBar: AppBar(title: Text(zikrId)),
         body: const Center(
           child: Text('لم يتم العثور على هذا الذكر',
               style: TextStyle(fontSize: 18)),
@@ -130,29 +128,32 @@ class ZikrScreen extends StatelessWidget {
       appBar: AppBar(
         actions: [
           PlayAudioBtnZikrPage(
-            id: zikr.title,
+            id: zikr.id,
             title: zikr.title,
             url: zikr.url,
           ),
         ],
         title: Text(
-          title,
+          zikr.title,
         ),
       ),
       body: ZikrContentWidget(
-        title: zikr.title,
+        zikrId: zikr.id,
       ),
     );
   }
 }
 
 class ZikrContentWidget extends ConsumerWidget {
-  const ZikrContentWidget({super.key, required this.title});
-  final String title;
+  const ZikrContentWidget({super.key, required this.zikrId});
+  final String zikrId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final Zikr zikr = allAzkar.azkarCategMap[title]!;
+    final Zikr? zikr = resolveZikr(zikrId);
+    if (zikr == null) {
+      return const Center(child: Text('لم يتم العثور على هذا الذكر'));
+    }
     final fontSize = ref.watch(fontSizeProvider);
     final blocks = parseZikrBlocks(zikr.content);
 

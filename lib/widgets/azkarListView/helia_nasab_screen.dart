@@ -1,10 +1,9 @@
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
-import 'package:aldurar_alnaqia/models/consts/alhadra_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
 
 /// Opens a bundled PDF via Flutter's asset bundle instead of
@@ -20,22 +19,28 @@ Future<PdfDocument> _openBundledPdf(String assetPath) {
   return PdfDocument.openData(bytes);
 }
 
+/// Canonical hilya zikr (asset filename is the Arabic title).
+Zikr get _hilya => zikrById['hilya-nasab']!;
+
+/// Canonical sanad zikr (asset filename is the Arabic title).
+Zikr get _sanad => zikrById['sanad-tariqa']!;
+
 class HeliaNasabScreen extends StatelessWidget {
   const HeliaNasabScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final title = alhyliaAndNasab.title;
+    final zikr = _hilya;
     return Scaffold(
         appBar: AppBar(
           actions: [
             PlayAudioBtnZikrPage(
-              id: title,
-              title: title,
-              url: alhyliaAndNasab.url,
+              id: zikr.id,
+              title: zikr.title,
+              url: zikr.url,
             ),
           ],
-          title: Text(title),
+          title: Text(zikr.title),
         ),
         body: const HeliaNasabContent());
   }
@@ -57,7 +62,7 @@ class _HeliaNasabContentState extends State<HeliaNasabContent> {
   void initState() {
     super.initState();
     _controller = PdfControllerPinch(
-      document: _openBundledPdf('assets/pdfs/${alhyliaAndNasab.title}.pdf'),
+      document: _openBundledPdf('assets/pdfs/${_hilya.title}.pdf'),
     );
   }
 
@@ -80,10 +85,8 @@ class TareeqaSanadScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = sanadAltareeqa.title;
-
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(_sanad.title)),
       body: const TareeqaSanadContent(),
     );
   }
@@ -105,7 +108,7 @@ class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
   void initState() {
     super.initState();
     _controller = PdfControllerPinch(
-      document: _openBundledPdf('assets/pdfs/${sanadAltareeqa.title}.pdf'),
+      document: _openBundledPdf('assets/pdfs/${_sanad.title}.pdf'),
     );
   }
 
@@ -117,7 +120,6 @@ class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
 
   @override
   Widget build(BuildContext context) {
-    final title = sanadAltareeqa.title;
     // NOTE: PdfViewPinch has its own vertical scrollable. It must NOT be
     // nested inside a SingleChildScrollView (or under another scrollable
     // like ZikrContentWidget's) — the outer scroll steals the gestures so
@@ -158,7 +160,7 @@ class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
             index: _showPdf ? 0 : 1,
             children: [
               AppPdfView(controller: _controller),
-              ZikrContentWidget(title: title),
+              const ZikrContentWidget(zikrId: 'sanad-tariqa'),
             ],
           ),
         ),
