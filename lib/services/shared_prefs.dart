@@ -30,6 +30,11 @@ abstract final class PrefsKeys {
   static const String bookOpenActionLegacy = 'book_open_action';
   static const String prayerForegroundEnabled = 'prayer_foreground_enabled';
   static const String prayerNativeConfig = 'prayer_native_config';
+  static const String prefsVersion = 'prefs_version';
+
+  /// Current prefs schema version. Bump when adding a one-time migration in
+  /// [_migrateIfNeeded] so it runs once per install.
+  static const int currentPrefsVersion = 1;
 
   static String pdfLastPage(String title) => 'pdf_last_page_$title';
 }
@@ -41,6 +46,44 @@ class SharedPreferencesService {
 
   Future<void> init() async {
     _sharedPreferences = await SharedPreferences.getInstance();
+    await _migrateIfNeeded();
+  }
+
+  /// Runs pending one-time migrations, then stamps the version so they never
+  /// run again. v1 consolidates:
+  /// - `adaptive_theme` package JSON -> [PrefsKeys.themeMode]
+  /// - `audio_open_action` / `book_open_action` -> [PrefsKeys.fileOpenAction]
+  static Future<void> _migrateIfNeeded() async {
+    final prefs = _sharedPreferences;
+    if (prefs == null) return;
+    final version = prefs.getInt(PrefsKeys.prefsVersion) ?? 0;
+    if (version >= PrefsKeys.currentPrefsVersion) return;
+
+    // --- v1: legacy theme mode ---
+    if (prefs.getString(PrefsKeys.themeMode) == null) {
+      final migrated = _migrateLegacyAdaptiveThemeMode();
+      if (migrated != null) {
+        await prefs.setString(PrefsKeys.themeMode, migrated);
+      }
+    }
+    await prefs.remove(_legacyAdaptiveThemeKey);
+
+    // --- v1: legacy file-open action (normalize 'stream' -> 'open') ---
+    if (prefs.getString(PrefsKeys.fileOpenAction) == null) {
+      final legacyAudio = prefs.getString(PrefsKeys.audioOpenActionLegacy);
+      final legacyBook = prefs.getString(PrefsKeys.bookOpenActionLegacy);
+      final legacy = legacyAudio ?? legacyBook;
+      if (legacy != null) {
+        await prefs.setString(
+          PrefsKeys.fileOpenAction,
+          legacy == 'stream' ? 'open' : legacy,
+        );
+      }
+    }
+    await prefs.remove(PrefsKeys.audioOpenActionLegacy);
+    await prefs.remove(PrefsKeys.bookOpenActionLegacy);
+
+    await prefs.setInt(PrefsKeys.prefsVersion, PrefsKeys.currentPrefsVersion);
   }
 
   static double getLatitude() {
@@ -186,8 +229,7 @@ class SharedPreferencesService {
   }
 
   static List<String> getBookmarks() {
-    final stored =
-        _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
+    final stored = _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
     // One-time migration: legacy Arabic titles -> stable ids. Persisted
     // back so the migration runs once per device.
     var changed = false;
@@ -230,7 +272,9 @@ class SharedPreferencesService {
     final dayMidnight =
         DateTime(startingDay.year, startingDay.month, startingDay.day);
     _sharedPreferences?.setString(
-        PrefsKeys.yousriaStartingDay, dayMidnight.toIso8601String(),);
+      PrefsKeys.yousriaStartingDay,
+      dayMidnight.toIso8601String(),
+    );
   }
 
   /// First launch has no stored beginning — default to today's midnight and
@@ -247,7 +291,9 @@ class SharedPreferencesService {
     final now = DateTime.now();
     final todayMidnight = DateTime(now.year, now.month, now.day);
     _sharedPreferences?.setString(
-        PrefsKeys.yousriaStartingDay, todayMidnight.toIso8601String(),);
+      PrefsKeys.yousriaStartingDay,
+      todayMidnight.toIso8601String(),
+    );
     return todayMidnight;
   }
 
@@ -258,7 +304,9 @@ class SharedPreferencesService {
 
   static Future<void> setYousriaBannerDismissed(bool dismissed) async {
     await _sharedPreferences?.setBool(
-        PrefsKeys.yousriaBannerDismissed, dismissed,);
+      PrefsKeys.yousriaBannerDismissed,
+      dismissed,
+    );
   }
 
   // --- Theme mode preference: 'light' | 'dark' | 'system' ---
@@ -269,17 +317,10 @@ class SharedPreferencesService {
   static const _legacyAdaptiveThemeKey = 'adaptive_theme_preferences';
 
   /// Raw stored value. Kept string-based so this service does not depend
-  /// on Flutter material; providers map it to [ThemeMode].
+  /// on Flutter material; providers map it to [ThemeMode]. Legacy installs
+  /// are migrated once in [_migrateIfNeeded] during [init].
   static String getThemeMode() {
-    final current = _sharedPreferences?.getString(PrefsKeys.themeMode);
-    if (current != null) return current;
-    final migrated = _migrateLegacyAdaptiveThemeMode();
-    if (migrated != null) {
-      _sharedPreferences?.setString(PrefsKeys.themeMode, migrated);
-      _sharedPreferences?.remove(_legacyAdaptiveThemeKey);
-      return migrated;
-    }
-    return 'system';
+    return _sharedPreferences?.getString(PrefsKeys.themeMode) ?? 'system';
   }
 
   static Future<void> setThemeMode(String mode) async {
@@ -333,17 +374,9 @@ class SharedPreferencesService {
 
   // --- File open action preference: 'ask' | 'open' | 'download' ---
   // Single preference shared by audio and books for non-downloaded files.
+  // Legacy installs are migrated once in [_migrateIfNeeded] during [init].
   static String getFileOpenAction() {
-    final current = _sharedPreferences?.getString(PrefsKeys.fileOpenAction);
-    if (current != null) return current;
-    // Migrate pre-unified prefs: prefer the audio choice, then the book one.
-    final legacyAudio =
-        _sharedPreferences?.getString(PrefsKeys.audioOpenActionLegacy);
-    if (legacyAudio != null) return legacyAudio;
-    final legacyBook =
-        _sharedPreferences?.getString(PrefsKeys.bookOpenActionLegacy);
-    if (legacyBook != null) return legacyBook;
-    return 'ask';
+    return _sharedPreferences?.getString(PrefsKeys.fileOpenAction) ?? 'ask';
   }
 
   static Future<void> setFileOpenAction(String action) async {

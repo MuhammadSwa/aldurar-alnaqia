@@ -1,4 +1,4 @@
-import 'package:aldurar_alnaqia/utils/show_snackbar.dart';
+import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,8 +18,9 @@ class BookmarkButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isBookmarked =
-        ref.watch(bookmarksProvider.select((bookmarks) => bookmarks.contains(bookmarkId)));
+    final isBookmarked = ref.watch(
+      bookmarksProvider.select((bookmarks) => bookmarks.contains(bookmarkId)),
+    );
 
     return IconButton(
       highlightColor: Colors.lightGreenAccent,
@@ -30,12 +31,11 @@ class BookmarkButton extends ConsumerWidget {
         // Call the callback if provided
         onBookmarkToggled?.call(wasBookmark);
 
-        // Show snackbar if enabled
+        // Show snackbar if enabled (helper hides the current one first).
         if (showSnackBarBool) {
           final message = wasBookmark
               ? 'تم الحذف من المحفوظات'
               : 'تم الإضافة إلى المحفوظات';
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           showSnackBar(context, message);
         }
       },

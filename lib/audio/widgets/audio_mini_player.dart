@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:aldurar_alnaqia/audio/widgets/speed_slider_dialog.dart';
-import 'package:aldurar_alnaqia/utils/show_snackbar.dart';
+import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 
 /// Compact playback bar shown above the bottom navigation while a
 /// narration is loaded.

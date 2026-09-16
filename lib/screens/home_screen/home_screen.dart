@@ -1,4 +1,3 @@
-import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
@@ -21,27 +20,6 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
-    });
-  }
-
-  @override
-  void dispose() {
-    try {
-      ref.read(drawerRegistryProvider).unregisterScaffoldKey(_scaffoldKey);
-    } catch (_) {
-      // Registry already disposed; ignore.
-    }
-    super.dispose();
-  }
-
   void handleSearch(String query) {
     // Search suggestions are display titles; resolve to the stable id.
     final zikr = resolveZikr(query);
@@ -56,13 +34,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     final dayIndex = islamicWeekday - 1;
 
     return Scaffold(
-      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('الدرر النقية'),
         leading: IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            tooltip: 'فتح القائمة',),
+          icon: const Icon(Icons.menu),
+          onPressed: () =>
+              ref.read(rootScaffoldKeyProvider).currentState?.openDrawer(),
+          tooltip: 'فتح القائمة',
+        ),
         actions: [
           SearchWidget(
             onSearch: handleSearch,
@@ -71,7 +50,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ],
       ),
-      drawer: const MyDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -118,7 +96,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ],
             ),
-
             const Divider(),
             const BookmarksTilesHomeScreen(),
           ],
@@ -162,49 +139,53 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
     }
 
     return SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            if (weekAzkarBookmarked) ...{
-              const ZikrListViewTile(
-                  zikrId: weekCollectionBookmarkId,
-                  title: 'أوراد الأسبوع',
-                  target: WeekCollectionTarget(ZikrBranch.home),),
-            },
-            if (bookmarks.isNotEmpty) ...{
-              for (var day in azkarOfDays) ...{
-                ZikrListViewTile(
-                    zikrId: dayWirdBookmarkId(day),
-                    title: dayWirdTitles[day],
-                    target: DayWirdTarget(ZikrBranch.home, day: day),),
-              },
-              AzkarListViewWidget(
-                zikrIds: collectionIds,
-                barTitle: 'الأذكار',
-                scrollable: false,
-                targetBuilder: (collectionId, index) =>
-                    ZikrCollectionViewTarget(ZikrBranch.home,
-                        collection: collectionId,),
+      physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          if (weekAzkarBookmarked) ...{
+            const ZikrListViewTile(
+              zikrId: weekCollectionBookmarkId,
+              title: 'أوراد الأسبوع',
+              target: WeekCollectionTarget(ZikrBranch.home),
+            ),
+          },
+          if (bookmarks.isNotEmpty) ...{
+            for (var day in azkarOfDays) ...{
+              ZikrListViewTile(
+                zikrId: dayWirdBookmarkId(day),
+                title: dayWirdTitles[day],
+                target: DayWirdTarget(ZikrBranch.home, day: day),
               ),
-              AzkarListViewWidget(
+            },
+            AzkarListViewWidget(
+              zikrIds: collectionIds,
+              barTitle: 'الأذكار',
+              scrollable: false,
+              targetBuilder: (collectionId, index) => ZikrCollectionViewTarget(
+                ZikrBranch.home,
+                collection: collectionId,
+              ),
+            ),
+            AzkarListViewWidget(
+              zikrIds: orphanIds,
+              barTitle: 'الأذكار',
+              scrollable: false,
+              targetBuilder: (zikrId, index) => ZikrDetailTarget(
+                branch: ZikrBranch.home,
+                zikrId: zikrId,
                 zikrIds: orphanIds,
-                barTitle: 'الأذكار',
-                scrollable: false,
-                targetBuilder: (zikrId, index) => ZikrDetailTarget(
-                  branch: ZikrBranch.home,
-                  zikrId: zikrId,
-                  zikrIds: orphanIds,
-                  index: index,
-                ),
+                index: index,
               ),
-            } else ...{
-              // TODO: design empty state
-              const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [Text('المحفوظات فارغة'), Icon(Icons.bookmark_remove)],
-              ),
-            },
-          ],
-        ),);
+            ),
+          } else ...{
+            // TODO: design empty state
+            const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [Text('المحفوظات فارغة'), Icon(Icons.bookmark_remove)],
+            ),
+          },
+        ],
+      ),
+    );
   }
 }

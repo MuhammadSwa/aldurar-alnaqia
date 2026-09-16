@@ -1,4 +1,3 @@
-import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
@@ -19,8 +18,6 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   late final List<DownloadItem> bookItems = booksTitles.entries.map((entry) {
     return DownloadItem(
       // Use the book title as the unique and consistent ID
@@ -32,38 +29,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }).toList();
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      try {
-        ref.read(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
-      } catch (_) {
-        // Registry not ready; ignore.
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    try {
-      ref.read(drawerRegistryProvider).unregisterScaffoldKey(_scaffoldKey);
-    } catch (_) {
-      // Registry already disposed; ignore.
-    }
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: const MyDrawer(),
       appBar: AppBar(
         title: const Text('المكتبة'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          onPressed: () =>
+              ref.read(rootScaffoldKeyProvider).currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
       ),
@@ -89,8 +62,10 @@ class _BookListTile extends ConsumerWidget {
       item: item,
       builder: (context, ref, downloader, isDownloading, isDownloaded) {
         return ListTile(
-          title: Text(item.title,
-              style: const TextStyle(fontWeight: FontWeight.bold),),
+          title: Text(
+            item.title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           leading: _buildLeadingIcon(
             context: context,
             isDownloading: isDownloading,

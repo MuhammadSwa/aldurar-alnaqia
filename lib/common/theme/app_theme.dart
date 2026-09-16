@@ -60,13 +60,6 @@ abstract final class AppTheme {
       bodyMediumColor: Colors.black,
       bodySmallColor: Colors.grey.shade600,
       labelSmallColor: Colors.grey.shade600,
-      iconColor: Colors.green.shade900,
-      navIconColor: Colors.green.shade900,
-      // NOTE: light intentionally has no titleSmall override and uses the
-      // default toolbar height — preserved from the previous theme set.
-      titleSmallFontSize: null,
-      appBarToolbarHeight: null,
-      appBarTitleHeight: null,
     );
   }
 
@@ -79,11 +72,6 @@ abstract final class AppTheme {
       bodyMediumColor: null,
       bodySmallColor: Colors.grey.shade400,
       labelSmallColor: null,
-      iconColor: Colors.green.shade700,
-      navIconColor: Colors.green,
-      titleSmallFontSize: 17,
-      appBarToolbarHeight: 60,
-      appBarTitleHeight: 2,
     );
   }
 
@@ -96,11 +84,6 @@ abstract final class AppTheme {
     required Color? bodyMediumColor,
     required Color? bodySmallColor,
     required Color? labelSmallColor,
-    required Color? iconColor,
-    required Color? navIconColor,
-    required double? titleSmallFontSize,
-    required double? appBarToolbarHeight,
-    required double? appBarTitleHeight,
   }) {
     return ThemeData(
       useMaterial3: true,
@@ -121,10 +104,8 @@ abstract final class AppTheme {
         ),
         // used for title in timingsScreen
         titleMedium: const TextStyle(fontSize: 20),
-        // used for title in timingsScreen dialog (dark only)
-        titleSmall: titleSmallFontSize == null
-            ? null
-            : TextStyle(fontSize: titleSmallFontSize),
+        // Same size in both brightnesses (was dark-only 17).
+        titleSmall: const TextStyle(fontSize: 17),
         // for numbering e.g. (12.)
         labelSmall: TextStyle(
           fontWeight: FontWeight.bold,
@@ -139,18 +120,18 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        toolbarHeight: appBarToolbarHeight,
+        toolbarHeight: 60,
         titleTextStyle: TextStyle(
           fontFamily: fontFamily,
           fontSize: 24,
-          height: appBarTitleHeight,
           color: scheme.onSecondaryContainer,
         ),
         iconTheme: IconThemeData(color: scheme.onSecondaryContainer),
-        actionsIconTheme:
-            IconThemeData(color: scheme.onSecondaryContainer),
+        actionsIconTheme: IconThemeData(color: scheme.onSecondaryContainer),
       ),
-      iconTheme: IconThemeData(color: iconColor),
+      // Scheme-derived so both brightnesses adapt (was green[900] light vs
+      // green[700] dark).
+      iconTheme: IconThemeData(color: scheme.primary),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
           padding: WidgetStateProperty.all<EdgeInsets>(
@@ -186,7 +167,7 @@ abstract final class AppTheme {
       visualDensity: VisualDensity.comfortable,
       listTileTheme: ListTileThemeData(
         enableFeedback: true,
-        iconColor: Colors.green[700],
+        iconColor: scheme.primary,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 10,
           vertical: 4,
@@ -202,7 +183,7 @@ abstract final class AppTheme {
         indicatorColor: scheme.primary,
         surfaceTintColor: Colors.green.shade900,
         iconTheme: WidgetStatePropertyAll(
-          IconThemeData(color: navIconColor),
+          IconThemeData(color: scheme.onSecondaryContainer),
         ),
         labelTextStyle: WidgetStatePropertyAll(
           TextStyle(

@@ -1,4 +1,3 @@
-import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
@@ -16,8 +15,6 @@ class AwradListScreen extends ConsumerStatefulWidget {
 }
 
 class _AwradListScreenState extends ConsumerState<AwradListScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   /// Displayed collections in registry order, excluding tarajem (shown
   /// as its own tile below, matching the previous layout).
   late final List<String> collectionIds = [
@@ -25,25 +22,6 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
       if (c.id != 'tarajem') c.id,
   ];
   late final List<String> zikrIds = [for (final z in orphanZikrs) z.id];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
-    });
-  }
-
-  @override
-  void dispose() {
-    try {
-      ref.read(drawerRegistryProvider).unregisterScaffoldKey(_scaffoldKey);
-    } catch (_) {
-      // Registry already disposed; ignore.
-    }
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,13 +32,14 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
     }
 
     return Scaffold(
-      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('أوراد الطريقة'),
         leading: IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            tooltip: 'فتح القائمة',),
+          icon: const Icon(Icons.menu),
+          onPressed: () =>
+              ref.read(rootScaffoldKeyProvider).currentState?.openDrawer(),
+          tooltip: 'فتح القائمة',
+        ),
         actions: [
           SearchWidget(
             onSearch: handleSearch,
@@ -69,14 +48,14 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
           ),
         ],
       ),
-      drawer: const MyDrawer(),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const ZikrListViewTile(
-                zikrId: weekCollectionBookmarkId,
-                title: 'أوراد الأسبوع',
-                target: WeekCollectionTarget(ZikrBranch.awrad),),
+              zikrId: weekCollectionBookmarkId,
+              title: 'أوراد الأسبوع',
+              target: WeekCollectionTarget(ZikrBranch.awrad),
+            ),
             AzkarListViewWidget(
               zikrIds: collectionIds,
               barTitle: 'الأذكار',
@@ -109,10 +88,14 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
   }
 
   static ZikrCollectionViewTarget buildCollectionTarget(
-          String collectionId, int index,) =>
+    String collectionId,
+    int index,
+  ) =>
       ZikrCollectionViewTarget(ZikrBranch.awrad, collection: collectionId);
 
   static ZikrCollectionViewTarget buildTarajemTarget(
-          String collectionId, int index,) =>
+    String collectionId,
+    int index,
+  ) =>
       ZikrCollectionViewTarget(ZikrBranch.awrad, collection: collectionId);
 }

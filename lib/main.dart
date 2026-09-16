@@ -41,13 +41,15 @@ Future<ProviderContainer> _bootstrap() async {
 
   await SharedPreferencesService().init();
 
-  final container = ProviderContainer(overrides: [
-    storageProvider.overrideWithValue(await StorageService().init()),
-    if (audioHandler != null)
-      audioEngineProvider.overrideWithValue(
-        JustAudioEngine(notifications: audioHandler),
-      ),
-  ],);
+  final container = ProviderContainer(
+    overrides: [
+      storageProvider.overrideWithValue(await StorageService().init()),
+      if (audioHandler != null)
+        audioEngineProvider.overrideWithValue(
+          JustAudioEngine(notifications: audioHandler),
+        ),
+    ],
+  );
 
   return container;
 }
@@ -129,6 +131,12 @@ class _MyAppState extends ConsumerState<MyApp> {
     final fontSize = ref.watch(fontSizeProvider);
     return MaterialApp.router(
       routerConfig: router,
+      // Single RTL source for the whole app (Arabic-first UI); replaces the
+      // Directionality wrappers previously copy-pasted per screen/dialog.
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: child!,
+      ),
       scrollBehavior: AppScrollBehavior(),
       title: 'الطريقة اليسرية',
       debugShowCheckedModeBanner: false,

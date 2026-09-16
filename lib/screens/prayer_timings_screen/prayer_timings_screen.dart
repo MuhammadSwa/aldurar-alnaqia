@@ -1,5 +1,4 @@
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
-import 'package:aldurar_alnaqia/my_drawer.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/day_name.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_action_buttons.dart';
@@ -22,9 +21,6 @@ class PrayerTimingsScreen extends ConsumerStatefulWidget {
 }
 
 class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
-  // The ScaffoldKey should be part of the State, not static.
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   // True while the native prayer service is starting/stopping after a bell
   // tap — shows a spinner until the notification actually appears/disappears.
   bool _togglingNotification = false;
@@ -38,23 +34,8 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      try {
-        ref.read(drawerRegistryProvider).registerScaffoldKey(_scaffoldKey);
-      } catch (_) {
-        // Registry not ready; ignore.
-      }
       _maybeAutoShowSettingsDialog();
     });
-  }
-
-  @override
-  void dispose() {
-    try {
-      ref.read(drawerRegistryProvider).unregisterScaffoldKey(_scaffoldKey);
-    } catch (_) {
-      // Registry already disposed; ignore.
-    }
-    super.dispose();
   }
 
   void _maybeAutoShowSettingsDialog() {
@@ -84,12 +65,12 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
       _maybeAutoShowSettingsDialog();
     });
     return Scaffold(
-      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('مواقيت الصلاة'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          onPressed: () =>
+              ref.read(rootScaffoldKeyProvider).currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
         actions: [
@@ -99,9 +80,8 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
               builder: (context, snapshot) {
                 final enabled = snapshot.data ?? false;
                 return IconButton(
-                  tooltip: enabled
-                      ? 'إيقاف إشعار المواقيت'
-                      : 'تشغيل إشعار المواقيت',
+                  tooltip:
+                      enabled ? 'إيقاف إشعار المواقيت' : 'تشغيل إشعار المواقيت',
                   icon: _togglingNotification
                       ? const SizedBox(
                           width: 22,
@@ -130,7 +110,6 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
             ),
         ],
       ),
-      drawer: const MyDrawer(),
       body: const SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
         child: Column(

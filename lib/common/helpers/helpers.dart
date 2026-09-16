@@ -1,11 +1,4 @@
-// TODO: use enums instead of strings
-
-enum Day { sat, sun, mon, tue, wed, thu, fri }
-
-// num,ara - 7: الأحد
-int todaysNum() {
-  return DateTime.now().weekday;
-}
+// Weekday names for display (Gregorian Monday-first index: weekday - 1).
 
 const arabicWeekdays = <String>[
   'الإثنين',

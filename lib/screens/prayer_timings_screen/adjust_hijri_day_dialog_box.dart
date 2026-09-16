@@ -1,4 +1,4 @@
-import 'package:aldurar_alnaqia/utils/show_snackbar.dart';
+import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

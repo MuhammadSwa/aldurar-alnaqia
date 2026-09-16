@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -76,8 +77,8 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
 
       if (await storage.exists(DownloadType.books, _title)) {
         isLocal = true;
-        document =
-            await PdfDocument.openFile(storage.pathFor(DownloadType.books, _title));
+        document = await PdfDocument.openFile(
+            storage.pathFor(DownloadType.books, _title),);
       } else {
         // NOTE: temp previews intentionally stay on foreground HttpClient via
         // [BookTempLoader] and do NOT use `background_downloader`. The offline
@@ -144,11 +145,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       if (lastPage > 1) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context)
-            ..removeCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(content: Text('تمت المتابعة من الصفحة $lastPage')),
-            );
+          showSnackBar(context, 'تمت المتابعة من الصفحة $lastPage');
         });
       }
     } catch (e) {
@@ -176,17 +173,15 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   void _downloadForOffline() {
     final url = _url;
     if (url == null) return;
-    ref.read(downloaderProvider).startDownload(DownloadItem(
-          id: _title,
-          title: _title,
-          url: url,
-          type: DownloadType.books,
-        ),);
-    ScaffoldMessenger.of(context)
-      ..removeCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(content: Text('بدأ تحميل الكتاب للقراءة دون إنترنت')),
-      );
+    ref.read(downloaderProvider).startDownload(
+          DownloadItem(
+            id: _title,
+            title: _title,
+            url: url,
+            type: DownloadType.books,
+          ),
+        );
+    showSnackBar(context, 'بدأ تحميل الكتاب للقراءة دون إنترنت');
   }
 
   Future<void> _openInBrowser() async {
@@ -219,11 +214,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     if (!mounted) return;
     if (page == null) return;
     if (page < 1 || page > total) {
-      ScaffoldMessenger.of(context)
-        ..removeCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('رقم الصفحة يجب أن يكون بين 1 و $total')),
-        );
+      showSnackBar(context, 'رقم الصفحة يجب أن يكون بين 1 و $total');
       return;
     }
     final controller = _controller;
@@ -236,11 +227,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..removeCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(content: Text('تعذر الانتقال إلى الصفحة')),
-        );
+      showSnackBar(context, 'تعذر الانتقال إلى الصفحة');
     }
   }
 

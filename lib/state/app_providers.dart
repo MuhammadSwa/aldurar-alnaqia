@@ -18,41 +18,15 @@ final downloaderProvider = Provider<DownloaderService>((ref) {
   return service;
 });
 
-/// Registry of scaffold keys so drawers can be closed globally before
-/// switching bottom-nav branches.
-class DrawerRegistry {
-  final List<GlobalKey<ScaffoldState>> _scaffoldKeys = [];
-
-  void registerScaffoldKey(GlobalKey<ScaffoldState> key) {
-    if (!_scaffoldKeys.contains(key)) {
-      _scaffoldKeys.add(key);
-    }
-  }
-
-  void unregisterScaffoldKey(GlobalKey<ScaffoldState> key) {
-    _scaffoldKeys.remove(key);
-  }
-
-  bool get hasOpenDrawer {
-    for (final key in _scaffoldKeys) {
-      if (key.currentState?.isDrawerOpen == true) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  void closeAllDrawers() {
-    for (final key in _scaffoldKeys) {
-      if (key.currentState?.isDrawerOpen == true) {
-        key.currentState?.closeDrawer();
-      }
-    }
-  }
-}
-
-final drawerRegistryProvider = Provider<DrawerRegistry>((ref) {
-  return DrawerRegistry();
+/// Key of the single [Scaffold] in [MainWrapper] that owns the app drawer
+/// and the bottom [NavigationBar].
+///
+/// Branch screens open it via `ref.read(rootScaffoldKeyProvider)` instead of
+/// owning per-screen keys — previously each branch registered its own key in
+/// a `DrawerRegistry` so the bottom nav could close drawers before `goBranch`
+/// (with a 300ms delay). One owner removes the registry and the delay.
+final rootScaffoldKeyProvider = Provider<GlobalKey<ScaffoldState>>((ref) {
+  return GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 });
 
 // ---------------------------------------------------------------------------
@@ -63,6 +37,12 @@ class FontSizeNotifier extends Notifier<double> {
   @override
   double build() => SharedPreferencesService.getFontSize();
 
+  /// Live preview while dragging (no disk write).
+  void preview(double newSize) {
+    state = newSize;
+  }
+
+  /// Persisted change (slider release / dialog close).
   void change(double newSize) {
     SharedPreferencesService.setFontSize(newSize);
     state = newSize;
@@ -134,7 +114,8 @@ class YousriaBeginningNotifier extends Notifier<DateTime> {
 
 final yousriaBeginningProvider =
     NotifierProvider<YousriaBeginningNotifier, DateTime>(
-        YousriaBeginningNotifier.new,);
+  YousriaBeginningNotifier.new,
+);
 
 /// What should happen when the user opens a file (audio or book) that
 /// is not downloaded yet.
@@ -173,14 +154,16 @@ class FileOpenActionNotifier extends Notifier<FileOpenAction> {
 
   Future<void> set(FileOpenAction action) async {
     await SharedPreferencesService.setFileOpenAction(
-        action.toStorageString(),);
+      action.toStorageString(),
+    );
     state = action;
   }
 }
 
 final fileOpenActionProvider =
     NotifierProvider<FileOpenActionNotifier, FileOpenAction>(
-        FileOpenActionNotifier.new,);
+  FileOpenActionNotifier.new,
+);
 
 // ---------------------------------------------------------------------------
 // Theme mode (persisted via SharedPreferences; replaces `adaptive_theme`)
@@ -202,10 +185,6 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
     await SharedPreferencesService.setThemeMode(mode.toStorageString());
     state = mode;
   }
-
-  /// Advance light -> dark -> system -> light (used by the toggle button,
-  /// which shows a distinct icon per mode).
-  Future<void> cycle() => set(state.next);
 }
 
 final themeModeProvider =
@@ -229,15 +208,6 @@ extension ThemeModeStorage on ThemeMode {
       ThemeMode.light => 'light',
       ThemeMode.dark => 'dark',
       ThemeMode.system => 'system',
-    };
-  }
-
-  /// Next mode in the toggle-button cycle: light -> dark -> system.
-  ThemeMode get next {
-    return switch (this) {
-      ThemeMode.light => ThemeMode.dark,
-      ThemeMode.dark => ThemeMode.system,
-      ThemeMode.system => ThemeMode.light,
     };
   }
 }
