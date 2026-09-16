@@ -134,7 +134,7 @@ class YousriaBeginningNotifier extends Notifier<DateTime> {
 
 final yousriaBeginningProvider =
     NotifierProvider<YousriaBeginningNotifier, DateTime>(
-        YousriaBeginningNotifier.new);
+        YousriaBeginningNotifier.new,);
 
 /// What should happen when the user opens a file (audio or book) that
 /// is not downloaded yet.
@@ -173,14 +173,14 @@ class FileOpenActionNotifier extends Notifier<FileOpenAction> {
 
   Future<void> set(FileOpenAction action) async {
     await SharedPreferencesService.setFileOpenAction(
-        action.toStorageString());
+        action.toStorageString(),);
     state = action;
   }
 }
 
 final fileOpenActionProvider =
     NotifierProvider<FileOpenActionNotifier, FileOpenAction>(
-        FileOpenActionNotifier.new);
+        FileOpenActionNotifier.new,);
 
 // ---------------------------------------------------------------------------
 // Theme mode (persisted via SharedPreferences; replaces `adaptive_theme`)

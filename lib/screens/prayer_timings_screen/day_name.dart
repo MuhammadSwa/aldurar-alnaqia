@@ -77,8 +77,8 @@ class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
 
     tz.TZDateTime nextMaghrib = maghribTime;
     if (now.isAfter(maghribTime)) {
-      final tomorrowsPrayers = PrayerTimeings.getPrayersTimings(
-          forDate: now.add(const Duration(days: 1)));
+      final tomorrowsPrayers = PrayerTimings.getPrayersTimings(
+          forDate: now.add(const Duration(days: 1)),);
       if (tomorrowsPrayers?.maghrib != null) {
         nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers!.maghrib, tz.local);
       } else {

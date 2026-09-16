@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
     show normalizeArabic;
 import 'package:aldurar_alnaqia/models/azkar_models.dart' show resolveZikr;
-import 'package:aldurar_alnaqia/widgets/azkarListView/bookmark_button.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart';
 import 'package:flutter/material.dart';
 
 // SearchWidget remains the same
@@ -127,7 +127,7 @@ class _SearchModalState extends State<SearchModal> {
         // Filter suggestions based on the normalized query
         _filteredSuggestions = widget.suggestions!
             .where((suggestion) => _normalizeArabic(suggestion.toLowerCase())
-                .contains(normalizedQuery))
+                .contains(normalizedQuery),)
             .toList();
       }
     });

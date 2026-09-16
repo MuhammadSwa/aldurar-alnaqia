@@ -1,4 +1,4 @@
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/georgian_date_widget.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/gregorian_date_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
 import 'package:flutter/material.dart';
 
@@ -28,8 +28,8 @@ class PrayerDateRow extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.all(8.0),
               child: Center(
-                // Use our new, efficient Georgian Date widget.
-                child: GeorgianDateWidget(),
+                // Use our new, efficient Gregorian Date widget.
+                child: GregorianDateWidget(),
               ),
             ),
           ),

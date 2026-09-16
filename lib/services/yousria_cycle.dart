@@ -30,7 +30,7 @@ DateTime _midnight(DateTime d) => DateTime(d.year, d.month, d.day);
 /// midnight the Islamic day has already advanced to tomorrow.
 DateTime islamicEffectiveDate() {
   final now = DateTime.now();
-  final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
+  final maghrib = PrayerTimings.getPrayersTimings()?.maghrib;
   return islamic_date.islamicEffectiveDate(now: now, maghrib: maghrib);
 }
 

@@ -116,7 +116,7 @@ class JustAudioEngine implements AudioEngine {
             playing ? EnginePlaybackState.playing : EnginePlaybackState.paused;
       }
       _emit(EnginePlaybackChanged(mapped));
-    }));
+    }),);
 
     _subscriptions.add(
       _player.playbackEventStream.listen(
@@ -154,7 +154,7 @@ class JustAudioEngine implements AudioEngine {
       position: _player.position,
       buffered: _player.bufferedPosition,
       duration: _player.duration ?? Duration.zero,
-    ));
+    ),);
   }
 
   /// The bundled cover image, extracted to a real file once.

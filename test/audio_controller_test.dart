@@ -70,7 +70,7 @@ AudioTrack trackFor({String id = 'zikr-1'}) => AudioTrack(
     );
 
 ProviderContainer makeContainer(FakeEngine engine,
-    {StorageService? storage}) {
+    {StorageService? storage,}) {
   return ProviderContainer(
     overrides: [
       audioEngineProvider.overrideWithValue(engine),
@@ -117,7 +117,7 @@ void main() {
       position: Duration(seconds: 5),
       buffered: Duration(seconds: 30),
       duration: Duration(minutes: 20),
-    ));
+    ),);
     await Future<void>.delayed(Duration.zero);
 
     final state = container.read(audioProvider);
@@ -176,7 +176,7 @@ void main() {
     await container.read(audioProvider.notifier).playTrack(trackFor());
 
     expect(engine.loads, hasLength(2),
-        reason: 'local attempt + one remote fallback');
+        reason: 'local attempt + one remote fallback',);
     expect(engine.loads[0].isLocal, isTrue);
     expect(engine.loads[1].isLocal, isFalse);
     expect(container.read(audioProvider).status, isNot(AudioStatus.error));

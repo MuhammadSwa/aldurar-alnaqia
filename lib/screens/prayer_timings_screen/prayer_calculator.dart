@@ -11,8 +11,8 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 /// [PrayerTimingsNotifier] (in `prayer_timings_controller.dart`) owns timers
 /// and UI state; everything that touches `adhan_dart` lives here so it can
 /// be unit-tested without a `ProviderContainer`.
-class PrayerTimeings {
-  const PrayerTimeings._();
+class PrayerTimings {
+  const PrayerTimings._();
 
   /// Factories per stored method key. Replaces the 12-branch switch.
   static final Map<String, CalculationParameters Function()> _methodFactories =
@@ -122,9 +122,10 @@ class PrayerTimeings {
 }
 
 /// Maps English prayer names from the library to Arabic.
+/// Note: 'fajrAfter' (tomorrow's Fajr) is normalized to 'fajr' by the
+/// caller before lookup, so no separate entry is needed.
 const Map<String, String> _arabicPrayerNames = {
   'fajr': 'الفجر',
-  'fajrafter': 'الفجر',
   'sunrise': 'الشروق',
   'dhuhr': 'الظهر',
   'asr': 'العصر',
@@ -140,7 +141,7 @@ String arabicPrayerName(String englishName) {
 /// computed without needing a running notifier — safe for routing.
 int islamicWeekdayNow() {
   final now = tz.TZDateTime.now(tz.local);
-  final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
+  final maghrib = PrayerTimings.getPrayersTimings()?.maghrib;
   if (maghrib == null) return now.weekday;
   final maghribTime = tz.TZDateTime.from(maghrib, tz.local);
   return islamic_date.islamicWeekday(now: now, maghrib: maghribTime);

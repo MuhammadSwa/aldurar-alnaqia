@@ -31,7 +31,7 @@ Future<Position> determinePosition() async {
       // returned true). According to Android guidelines
       // your App should show an explanatory UI now.
       return Future.error(
-          const PermissionDeniedException('Location permissions are denied'));
+          const PermissionDeniedException('Location permissions are denied'),);
     }
   }
 
@@ -39,7 +39,7 @@ Future<Position> determinePosition() async {
     // Permissions are denied forever, handle appropriately.
     // The UI will have to guide the user to the app settings.
     return Future.error(const PermissionDeniedException(
-        'Location permissions are permanently denied, we cannot request permissions.'));
+        'Location permissions are permanently denied, we cannot request permissions.',),);
   }
 
   // When we reach here, permissions are granted and we can
@@ -49,7 +49,7 @@ Future<Position> determinePosition() async {
 
 class LocationButtonWidget extends StatefulWidget {
   const LocationButtonWidget(
-      {super.key, required this.onGettingLocation, this.hasLocation = false});
+      {super.key, required this.onGettingLocation, this.hasLocation = false,});
   final Function({required String latitude, required String longitude})
       onGettingLocation;
   final bool hasLocation;
@@ -124,7 +124,7 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
             context: context,
             builder: (builder) =>
                 const AlertWidget(msg: 'حدث خطأ غير متوقع أثناء تحديد الموقع.'),
-          ));
+          ),);
         }
     } finally {
       if (mounted) {
@@ -145,19 +145,19 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: colorScheme.onPrimary),
+                  strokeWidth: 2, color: colorScheme.onPrimary,),
             )
           : Icon(widget.hasLocation ? Icons.check_circle : Icons.location_on),
       label: Text(widget.hasLocation
           ? 'تم تحديد الموقع'
-          : 'تحديد الموقع تلقائياً'),
+          : 'تحديد الموقع تلقائياً',),
       onPressed: () {
         if (AppPlatform.isLinux) {
           showDialog(
               context: context,
               builder: (builder) => const AlertWidget(
                   msg:
-                      'خاصية التحديد التلقائي للإحداثيات غير مدعومة في لينكس'));
+                      'خاصية التحديد التلقائي للإحداثيات غير مدعومة في لينكس',),);
           return;
         }
         if (!_isLoading) {

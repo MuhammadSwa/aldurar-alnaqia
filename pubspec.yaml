@@ -60,6 +60,8 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3
 
  # flutter pub run flutter_launcher_icons
+  plugin_platform_interface: any
+  url_launcher_platform_interface: any
 flutter_launcher_icons:
   # android: "launcher_icon"
   android: true

@@ -42,7 +42,7 @@ class HeliaNasabScreen extends StatelessWidget {
           ],
           title: Text(zikr.title),
         ),
-        body: const HeliaNasabContent());
+        body: const HeliaNasabContent(),);
   }
 }
 

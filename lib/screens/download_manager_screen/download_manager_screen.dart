@@ -1,10 +1,10 @@
 // lib/screens/download_manager_screen/download_manager_screen.dart
-import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_controller.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'download_controller.dart';
-import 'download_manager_controller.dart';
 
 class DownloadManagerTile extends ConsumerWidget {
   const DownloadManagerTile({
@@ -91,7 +91,7 @@ class _DeleteButton extends StatelessWidget {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.error,
-                    foregroundColor: colorScheme.onError),
+                    foregroundColor: colorScheme.onError,),
                 onPressed: () {
                   onDelete();
                   Navigator.of(dialogContext).pop();
@@ -255,7 +255,7 @@ class _AudioTab extends StatelessWidget {
             .map((entry) => DownloadSection(
                   title: entry.key,
                   items: entry.value,
-                ))
+                ),)
             .toList(),
       ),
     );

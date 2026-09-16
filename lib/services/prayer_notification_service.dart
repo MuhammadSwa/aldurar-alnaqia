@@ -102,7 +102,7 @@ Future<void> _writeConfig() async {
         prefs.getString(PrefsKeys.highLatitudeRule) ?? 'middle_of_night',
     'timezone': prefs.getString(PrefsKeys.timezone) ?? '',
     'hijriOffset': prefs.getInt(PrefsKeys.hijriDayOffset) ?? 0,
-  }));
+  }),);
 }
 
 void _startNativeService() {

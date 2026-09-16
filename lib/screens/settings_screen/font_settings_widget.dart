@@ -45,9 +45,9 @@ class FontSizeSettingsWidget extends ConsumerWidget {
                           ),
                         ),
                       );
-                    });
+                    },);
               },
-              icon: const Icon(Icons.format_size))
+              icon: const Icon(Icons.format_size),),
         ],
       ),
     );

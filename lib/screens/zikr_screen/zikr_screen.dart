@@ -1,4 +1,4 @@
-import 'package:aldurar_alnaqia/widgets/azkarListView/helia_nasab_screen.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
@@ -119,7 +119,7 @@ class ZikrScreen extends StatelessWidget {
         appBar: AppBar(title: Text(zikrId)),
         body: const Center(
           child: Text('لم يتم العثور على هذا الذكر',
-              style: TextStyle(fontSize: 18)),
+              style: TextStyle(fontSize: 18),),
         ),
       );
     }
@@ -174,7 +174,7 @@ class ZikrContentWidget extends ConsumerWidget {
           for (var i = 0; i < blocks.length; i++) ...[
             if (i > 0)
               SizedBox(
-                  height: _gapBefore(blocks[i - 1], blocks[i], fontSize)),
+                  height: _gapBefore(blocks[i - 1], blocks[i], fontSize),),
             _blockWidget(blocks[i]),
           ],
           if (zikr.footer != '') ...[
@@ -187,7 +187,7 @@ class ZikrContentWidget extends ConsumerWidget {
           ],
         ],
       ),
-    ));
+    ),);
   }
 
   /// Tighter rhythm inside a qasida; airier spacing around prose/headings.

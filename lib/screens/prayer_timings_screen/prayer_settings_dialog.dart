@@ -67,7 +67,7 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
   }
 
   void onGettingLocation(
-      {required String latitude, required String longitude}) {
+      {required String latitude, required String longitude,}) {
     final lat = double.tryParse(latitude);
     final lng = double.tryParse(longitude);
     if (lat == null || lng == null) return;
@@ -147,7 +147,7 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
                 const SizedBox(height: 8),
                 LocationButtonWidget(
                     onGettingLocation: onGettingLocation,
-                    hasLocation: _hasLocation && _isGpsLocation),
+                    hasLocation: _hasLocation && _isGpsLocation,),
                 if (_showLocationError)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),

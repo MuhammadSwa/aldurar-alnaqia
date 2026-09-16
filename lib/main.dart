@@ -47,7 +47,7 @@ Future<ProviderContainer> _bootstrap() async {
       audioEngineProvider.overrideWithValue(
         JustAudioEngine(notifications: audioHandler),
       ),
-  ]);
+  ],);
 
   return container;
 }

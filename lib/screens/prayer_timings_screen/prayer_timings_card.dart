@@ -27,7 +27,7 @@ class PrayerTimingsCard extends ConsumerWidget {
 
         // --- OPTIMIZATION: Expensive calculations are done here.
         // This block only runs when `prayerTimings` changes, NOT every second.
-        final timezonedPrayerTimes = PrayerTimeings.getAllPrayerTimes();
+        final timezonedPrayerTimes = PrayerTimings.getAllPrayerTimes();
         if (timezonedPrayerTimes == null) {
           return _buildPlaceholderTable(context);
         }
@@ -39,14 +39,14 @@ class PrayerTimingsCard extends ConsumerWidget {
           _PrayerTime('العشاء', timezonedPrayerTimes['isha']!),
           _PrayerTime(
               'منتصف الليل', sunnahTimes?['middleOfNight'] ?? placeholderTime,
-              isSunnah: true),
+              isSunnah: true,),
           _PrayerTime('الثلث الأخير',
               sunnahTimes?['lastThirdOfNight'] ?? placeholderTime,
-              isSunnah: true),
+              isSunnah: true,),
           _PrayerTime('الفجر', timezonedPrayerTimes['fajr']!),
           _PrayerTime('الشروق', timezonedPrayerTimes['sunrise']!),
           _PrayerTime('الضحى', sunnahTimes?['duha'] ?? placeholderTime,
-              isSunnah: true),
+              isSunnah: true,),
           _PrayerTime('الظهر', timezonedPrayerTimes['dhuhr']!),
           _PrayerTime('العصر', timezonedPrayerTimes['asr']!),
         ];
@@ -57,7 +57,7 @@ class PrayerTimingsCard extends ConsumerWidget {
                 color: Theme.of(context)
                     .colorScheme
                     .outline
-                    .withValues(alpha: 0.2)),
+                    .withValues(alpha: 0.2),),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Table(
@@ -74,20 +74,20 @@ class PrayerTimingsCard extends ConsumerWidget {
             }).toList(),
           ),
         );
-      }),
+      },),
     );
   }
 
   // --- REFACTORED: This is now a "dumb" builder method ---
   // It receives all the data it needs and contains NO reactive code.
   TableRow _buildTableRow(
-      BuildContext context, _PrayerTime prayer, bool isNextPrayer) {
+      BuildContext context, _PrayerTime prayer, bool isNextPrayer,) {
     final Color? rowColor = isNextPrayer
         ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
         : null;
     final border = BorderSide(
         color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-        width: 0.5);
+        width: 0.5,);
 
     return TableRow(
       children: [
@@ -115,7 +115,7 @@ class PrayerTimingsCard extends ConsumerWidget {
             style: const TextStyle(
                 fontSize: 16,
                 fontFamily: 'monospace',
-                fontWeight: FontWeight.normal),
+                fontWeight: FontWeight.normal,),
             textAlign: TextAlign.center,
           ),
         ),
@@ -142,7 +142,7 @@ class PrayerTimingsCard extends ConsumerWidget {
       decoration: BoxDecoration(
         border: Border.all(
             color:
-                Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+                Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Table(
@@ -164,14 +164,14 @@ class PrayerTimingsCard extends ConsumerWidget {
   }
 
   Map<String, tz.TZDateTime>? _calculateSunnahTimes(
-      Map<String, tz.TZDateTime> todaysPrayerTimes) {
+      Map<String, tz.TZDateTime> todaysPrayerTimes,) {
     final maghrib = todaysPrayerTimes['maghrib'];
     final sunrise = todaysPrayerTimes['sunrise'];
     if (maghrib == null || sunrise == null) return null;
 
     final tomorrow = tz.TZDateTime.now(tz.local).add(const Duration(days: 1));
     final tomorrowsPrayers =
-        PrayerTimeings.getPrayersTimings(forDate: tomorrow);
+        PrayerTimings.getPrayersTimings(forDate: tomorrow);
     final fajrTomorrow = tomorrowsPrayers?.fajr;
     if (fajrTomorrow == null) return null;
 
@@ -186,7 +186,7 @@ class PrayerTimingsCard extends ConsumerWidget {
     return {
       'middleOfNight': middleOfNight,
       'lastThirdOfNight': lastThirdOfNight,
-      'duha': duhaTime
+      'duha': duhaTime,
     };
   }
 

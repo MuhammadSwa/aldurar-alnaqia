@@ -230,7 +230,7 @@ class SharedPreferencesService {
     final dayMidnight =
         DateTime(startingDay.year, startingDay.month, startingDay.day);
     _sharedPreferences?.setString(
-        PrefsKeys.yousriaStartingDay, dayMidnight.toIso8601String());
+        PrefsKeys.yousriaStartingDay, dayMidnight.toIso8601String(),);
   }
 
   /// First launch has no stored beginning — default to today's midnight and
@@ -247,7 +247,7 @@ class SharedPreferencesService {
     final now = DateTime.now();
     final todayMidnight = DateTime(now.year, now.month, now.day);
     _sharedPreferences?.setString(
-        PrefsKeys.yousriaStartingDay, todayMidnight.toIso8601String());
+        PrefsKeys.yousriaStartingDay, todayMidnight.toIso8601String(),);
     return todayMidnight;
   }
 
@@ -258,7 +258,7 @@ class SharedPreferencesService {
 
   static Future<void> setYousriaBannerDismissed(bool dismissed) async {
     await _sharedPreferences?.setBool(
-        PrefsKeys.yousriaBannerDismissed, dismissed);
+        PrefsKeys.yousriaBannerDismissed, dismissed,);
   }
 
   // --- Theme mode preference: 'light' | 'dark' | 'system' ---

@@ -23,7 +23,7 @@ class BookErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.cloud_off_outlined,
-                size: 64, color: colorScheme.onSurfaceVariant),
+                size: 64, color: colorScheme.onSurfaceVariant,),
             const SizedBox(height: 16),
             const Text(
               'تعذّر فتح الكتاب',

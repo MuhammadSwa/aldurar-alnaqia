@@ -23,7 +23,7 @@ void showSliderDialog({
                   style: const TextStyle(
                       fontFamily: 'Fixed',
                       fontWeight: FontWeight.bold,
-                      fontSize: 24.0)),
+                      fontSize: 24.0,),),
               Slider(
                 divisions: divisions,
                 min: min,

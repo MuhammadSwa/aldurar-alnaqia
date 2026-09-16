@@ -15,7 +15,7 @@ import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 export 'prayer_calculator.dart'
-    show PrayerTimeings, arabicPrayerName, islamicWeekdayNow;
+    show PrayerTimings, arabicPrayerName, islamicWeekdayNow;
 
 /// Immutable snapshot of everything the prayer UI needs.
 class PrayerState {
@@ -89,7 +89,7 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     // 2. Determine the next prayer and its time.
     // 3. Schedule the timer for the Islamic day change (at Maghrib).
     // 4. Start/restart the 1-second countdown timer.
-    final prayers = PrayerTimeings.getPrayersTimings();
+    final prayers = PrayerTimings.getPrayersTimings();
     state = state.copyWith(prayerTimings: prayers);
     _updateNextPrayerInfo();
     _updateAndScheduleDayChange();
@@ -254,8 +254,8 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     tz.TZDateTime nextMaghrib = tz.TZDateTime.from(prayers.maghrib, tz.local);
 
     if (now.isAfter(nextMaghrib)) {
-      final tomorrowsPrayers = PrayerTimeings.getPrayersTimings(
-          forDate: now.add(const Duration(days: 1)));
+      final tomorrowsPrayers = PrayerTimings.getPrayersTimings(
+          forDate: now.add(const Duration(days: 1)),);
       if (tomorrowsPrayers != null) {
         nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers.maghrib, tz.local);
       } else {
@@ -275,4 +275,4 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
 }
 
 final prayerProvider = NotifierProvider<PrayerTimingsNotifier, PrayerState>(
-    PrayerTimingsNotifier.new);
+    PrayerTimingsNotifier.new,);

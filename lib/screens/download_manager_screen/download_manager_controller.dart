@@ -1,7 +1,7 @@
 // lib/screens/download_manager_screen/download_manager_controller.dart
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
-import 'download_controller.dart';
 
 // NOTE: pure data helpers for the download manager screen, not the downloads
 // themselves (those live in [DownloaderService]).
@@ -18,7 +18,7 @@ class DownloadManagerData {
                 title: zikr.title,
                 url: zikr.url!,
                 type: DownloadType.narrations,
-              ))
+              ),)
           .toList();
       if (items.isNotEmpty) {
         loadedAudio[section.title] = items;

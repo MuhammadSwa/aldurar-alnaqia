@@ -14,7 +14,7 @@ class AudioMiniPlayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final track = ref.watch(
-        audioProvider.select((s) => s.isVisible ? s.track : null));
+        audioProvider.select((s) => s.isVisible ? s.track : null),);
     if (track == null) return const SizedBox.shrink();
 
     // Green-tinted container derived from the app's Material3 color scheme,
@@ -178,7 +178,7 @@ class _TransportRow extends ConsumerWidget {
   }
 
   Widget _buildPrimaryButton(
-      BuildContext context, WidgetRef ref, AudioStatus status) {
+      BuildContext context, WidgetRef ref, AudioStatus status,) {
     final controller = ref.read(audioProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -224,14 +224,14 @@ class SpeedSliderButton extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return IconButton(
-      icon: Text("$speed x",
+      icon: Text('$speed x',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: colorScheme.onSecondaryContainer,
-          )),
+          ),),
       onPressed: () => showSliderDialog(
         context: context,
-        title: "تعديل السرعة",
+        title: 'تعديل السرعة',
         divisions: 10,
         min: 0.5,
         max: 1.5,

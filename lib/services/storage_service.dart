@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
-import '../models/download_models.dart';
+import 'package:aldurar_alnaqia/models/download_models.dart';
 
 /// StorageService centralizes where we keep persistent files
 /// (e.g., downloaded books and narrations) under the app's

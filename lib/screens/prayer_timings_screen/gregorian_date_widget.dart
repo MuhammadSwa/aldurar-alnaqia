@@ -4,14 +4,14 @@ import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
 import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-class GeorgianDateWidget extends StatefulWidget {
-  const GeorgianDateWidget({super.key});
+class GregorianDateWidget extends StatefulWidget {
+  const GregorianDateWidget({super.key});
 
   @override
-  State<GeorgianDateWidget> createState() => _GeorgianDateWidgetState();
+  State<GregorianDateWidget> createState() => _GregorianDateWidgetState();
 }
 
-class _GeorgianDateWidgetState extends State<GeorgianDateWidget> {
+class _GregorianDateWidgetState extends State<GregorianDateWidget> {
   late tz.TZDateTime _currentDate;
   Timer? _timer;
 

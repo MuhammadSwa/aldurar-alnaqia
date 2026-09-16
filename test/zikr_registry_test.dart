@@ -43,7 +43,7 @@ void main() {
         isNull,
       );
       expect(migrateBookmark('أوارد سيدي عبد الله بن الصديق الغماري'),
-          'gomari');
+          'gomari',);
     });
 
     test('duplicate hilya title resolves to the canonical audio entry', () {
@@ -79,7 +79,7 @@ void main() {
         }
       }
       final total = audioSections.fold<int>(
-          0, (sum, s) => sum + s.withAudio.length);
+          0, (sum, s) => sum + s.withAudio.length,);
       expect(total, greaterThan(0));
     });
 

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class CalcMethodDropDown extends StatefulWidget {
   const CalcMethodDropDown(
-      {super.key, required this.onSelect, this.initialMethod});
+      {super.key, required this.onSelect, this.initialMethod,});
   final Function(String) onSelect;
 
   /// Previously saved method key — pre-selects it instead of starting empty.

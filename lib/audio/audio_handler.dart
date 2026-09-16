@@ -127,7 +127,7 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
       bufferedPosition: player?.bufferedPosition ?? Duration.zero,
       speed: player?.speed ?? 1.0,
       queueIndex: 0,
-    ));
+    ),);
   }
 
   AudioProcessingState _mapProcessing(ProcessingState? state) {

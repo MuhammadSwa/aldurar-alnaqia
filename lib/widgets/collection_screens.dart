@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
 
 /// Lists the seven day-wirds of a branch ('أوراد الأسبوع').
 class WeekCollectionScreen extends StatelessWidget {

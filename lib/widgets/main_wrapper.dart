@@ -73,22 +73,22 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
                       selectedIcon:
                           Icon(Icons.home, color: selectedIconColor),
                       icon: const Icon(Icons.home_outlined),
-                      label: 'الرئيسية'),
+                      label: 'الرئيسية',),
                   NavigationDestination(
                       icon: const Icon(Icons.timer_outlined),
                       selectedIcon:
                           Icon(Icons.timer, color: selectedIconColor),
-                      label: 'مواقيت الصلاة'),
+                      label: 'مواقيت الصلاة',),
                   NavigationDestination(
                       selectedIcon:
                           Icon(Icons.list, color: selectedIconColor),
                       icon: const Icon(Icons.list_outlined),
-                      label: 'الأوراد'),
+                      label: 'الأوراد',),
                   NavigationDestination(
                       selectedIcon:
                           Icon(Icons.book, color: selectedIconColor),
                       icon: const Icon(Icons.book_outlined),
-                      label: 'المكتبة'),
+                      label: 'المكتبة',),
                 ],
                 onDestinationSelected: (index) {
                   _goBranch(index);

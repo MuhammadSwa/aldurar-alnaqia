@@ -42,7 +42,7 @@ class MyDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     AppNav.goToDownloadManager(context, 0);
-                  }),
+                  },),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Divider(height: 1),
@@ -58,7 +58,7 @@ class MyDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     context.push(RoutePaths.social);
-                  }),
+                  },),
               _buildDrawerItem(
                   context: context,
                   icon: Image.asset(
@@ -72,8 +72,8 @@ class MyDrawer extends StatelessWidget {
                     unawaited(launchUrl(
                       Uri.parse('https://youtu.be/IyrWSL4jd00'),
                       mode: LaunchMode.externalApplication,
-                    ));
-                  }),
+                    ),);
+                  },),
 
               _buildDrawerItem(
                   context: context,
@@ -87,13 +87,13 @@ class MyDrawer extends StatelessWidget {
                     Navigator.pop(context);
                     unawaited(launchUrl(
                       Uri.parse(
-                          'https://www.youtube.com/playlist?list=PLEkQk5xrP-tkGXuZ9atE3k_7it12rUPTs'),
+                          'https://www.youtube.com/playlist?list=PLEkQk5xrP-tkGXuZ9atE3k_7it12rUPTs',),
                       mode: LaunchMode.externalApplication,
-                    ));
-                  }),
+                    ),);
+                  },),
             ],
           ),
-        ));
+        ),);
   }
 
   Widget _buildDrawerItem({

@@ -13,7 +13,7 @@ class _SocialSite {
       {required this.title,
       required this.url,
       required this.icon,
-      required this.iconColor});
+      required this.iconColor,});
 }
 
 final _sites = <_SocialSite>[
@@ -53,7 +53,7 @@ final _sites = <_SocialSite>[
         semanticLabel: 'youtube_icon',
         width: 24,
       ),
-      iconColor: Colors.transparent),
+      iconColor: Colors.transparent,),
 
   _SocialSite(
       title: 'دروس د.يسري جبر',
@@ -63,7 +63,7 @@ final _sites = <_SocialSite>[
         semanticLabel: 'youtube_icon',
         width: 24,
       ),
-      iconColor: Colors.transparent),
+      iconColor: Colors.transparent,),
 
   _SocialSite(
     title: 'حساب الساوند كلاود',
@@ -137,7 +137,7 @@ final _sites = <_SocialSite>[
       title: 'مسجد الأشراف',
       url: 'https://maps.app.goo.gl/8Eog1x4g8nQqtKSc9',
       icon: const Icon(Icons.location_on),
-      iconColor: Colors.green),
+      iconColor: Colors.green,),
   _SocialSite(
     title: 'توصية ورجاء وأمر لجميع المتابعين',
     url: 'https://youtu.be/KbQnZN5x2-g',
@@ -204,7 +204,7 @@ class SocialScreen extends StatelessWidget {
                           unawaited(launchUrl(
                             Uri.parse(site.url),
                             mode: LaunchMode.externalApplication,
-                          ));
+                          ),);
                         }
 
                         return ListTile(
@@ -212,17 +212,17 @@ class SocialScreen extends StatelessWidget {
                           title: Text(site.title),
                           trailing: IconButton(
                             style: const ButtonStyle(
-                                iconSize: WidgetStatePropertyAll(27)),
+                                iconSize: WidgetStatePropertyAll(27),),
                             color: site.iconColor,
                             icon: site.icon,
                             onPressed: openSite,
                           ),
                         );
                       },
-                    )
+                    ),
                   ],
                 ),
-              )),
-            )));
+              ),),
+            ),),);
   }
 }

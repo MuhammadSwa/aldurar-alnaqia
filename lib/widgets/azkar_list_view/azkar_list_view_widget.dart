@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
 
 /// Builds the navigation target for a tile from its stable [zikrId] and [index].
 typedef ZikrTargetBuilder = ZikrTarget Function(String zikrId, int index);
@@ -35,6 +35,6 @@ class AzkarListViewWidget extends StatelessWidget {
             zikrId: id,
             target: targetBuilder(id, index),
           );
-        });
+        },);
   }
 }

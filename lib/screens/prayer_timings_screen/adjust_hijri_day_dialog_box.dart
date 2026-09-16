@@ -12,7 +12,7 @@ HijriCalendar? hijriDayWithOffset(int offset) {
   HijriCalendar.setLocal('ar');
   final now = tz.TZDateTime.now(tz.local);
   final adjustedDate = now.add(Duration(days: offset));
-  final maghrib = PrayerTimeings.getPrayersTimings()?.maghrib;
+  final maghrib = PrayerTimings.getPrayersTimings()?.maghrib;
   if (maghrib == null) {
     // when timings aren't set, return hijriday without considering maghrib,
     return HijriCalendar.fromDate(adjustedDate);
@@ -48,7 +48,7 @@ class _AdjustHijriDayDialogboxState
           children: [
             Text(
                 'التعديل الحالي: ${_selectedOffset > 0 ? '+' : ''}$_selectedOffset يوم',
-                textAlign: TextAlign.center),
+                textAlign: TextAlign.center,),
             const SizedBox(height: 16),
             SegmentedButton<int>(
               showSelectedIcon: false,
@@ -83,6 +83,6 @@ class _AdjustHijriDayDialogboxState
             },
             child: const Text('حفظ'),
           ),
-        ]);
+        ],);
   }
 }

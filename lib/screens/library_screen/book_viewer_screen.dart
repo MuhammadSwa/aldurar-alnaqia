@@ -181,7 +181,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
           title: _title,
           url: url,
           type: DownloadType.books,
-        ));
+        ),);
     ScaffoldMessenger.of(context)
       ..removeCurrentSnackBar()
       ..showSnackBar(

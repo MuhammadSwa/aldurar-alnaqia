@@ -10,12 +10,14 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/widgets/yousria_banner.dart';
 import 'package:aldurar_alnaqia/widgets/yousria_setup_sheet.dart';
 
-export '../models/week_collection_data.dart' show WeekCollectionAzkar;
-export '../services/yousria_cycle.dart' show YousriaDayInfo;
+export 'package:aldurar_alnaqia/models/week_collection_data.dart'
+    show WeekCollectionAzkar;
+export 'package:aldurar_alnaqia/services/yousria_cycle.dart'
+    show YousriaDayInfo;
 
 class DayAzkarList extends ConsumerStatefulWidget {
   const DayAzkarList({

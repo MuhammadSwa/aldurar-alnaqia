@@ -3,7 +3,7 @@ const nabawiNasabPaths = <String>[
   'nabawi/2.jpg',
   'nabawi/3.jpg',
   'nabawi/4.jpg',
-  'nabawi/5.jpg'
+  'nabawi/5.jpg',
 ];
 
 const tareekaSanadPaths = <String>[

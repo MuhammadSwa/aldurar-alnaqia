@@ -157,7 +157,7 @@ class AudioController extends Notifier<AudioState> {
           return;
         } catch (e2, st2) {
           logError('Audio fallback stream failed for "${request.title}"',
-              e2, st2);
+              e2, st2,);
         }
       }
       _fail();

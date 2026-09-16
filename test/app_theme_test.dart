@@ -69,9 +69,9 @@ void main() {
         expect(theme.useMaterial3, isTrue);
         expect(theme.elevatedButtonTheme.style, isNotNull);
         expect(theme.navigationBarTheme.backgroundColor,
-            theme.colorScheme.secondaryContainer);
+            theme.colorScheme.secondaryContainer,);
         expect(theme.appBarTheme.backgroundColor,
-            theme.colorScheme.secondaryContainer);
+            theme.colorScheme.secondaryContainer,);
       }
     });
   });

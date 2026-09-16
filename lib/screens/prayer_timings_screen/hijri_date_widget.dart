@@ -71,7 +71,7 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
     // Get today's prayer times from the provider.
     final todaysPrayers = ref.read(prayerProvider).prayerTimings;
       if (todaysPrayers?.maghrib == null) {
-        logWarn("HijriDateWidget: Maghrib time not available. Cannot schedule update.");
+        logWarn('HijriDateWidget: Maghrib time not available. Cannot schedule update.');
       return; // Can't schedule if we don't have the time.
     }
 
@@ -82,7 +82,7 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
     // Check if today's Maghrib has already passed.
     if (maghribTime.isBefore(now)) {
       // If it passed, we need to get *tomorrow's* Maghrib time.
-      final tomorrowsPrayers = PrayerTimeings.getPrayersTimings(
+      final tomorrowsPrayers = PrayerTimings.getPrayersTimings(
         forDate: now.add(const Duration(days: 1)),
       );
         if (tomorrowsPrayers?.maghrib == null) {
@@ -104,11 +104,11 @@ class _HijriDateWidgetState extends ConsumerState<HijriDateWidget> {
     // Calculate the duration until the next Maghrib.
     final timeUntilMaghrib = maghribTime.difference(now);
 
-      logInfo("HijriDateWidget: Next Hijri day update scheduled in $timeUntilMaghrib");
+      logInfo('HijriDateWidget: Next Hijri day update scheduled in $timeUntilMaghrib');
 
     // Set a timer that will fire exactly at Maghrib.
     _maghribTimer = Timer(timeUntilMaghrib, () {
-        logInfo("HijriDateWidget: Maghrib has arrived! Updating Hijri date.");
+        logInfo('HijriDateWidget: Maghrib has arrived! Updating Hijri date.');
       // When the timer fires:
       // 1. Update the date on the screen.
       _updateHijriDate();

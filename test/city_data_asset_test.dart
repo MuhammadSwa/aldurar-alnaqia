@@ -13,7 +13,7 @@ void main() {
   test('bundled cities.json parses and searches correctly', () {
     final file = File('assets/data/cities.json');
     expect(file.existsSync(), isTrue,
-        reason: 'run `python3 tool/build_cities.py` to generate it');
+        reason: 'run `python3 tool/build_cities.py` to generate it',);
 
     final stopwatch = Stopwatch()..start();
     final directory = CityDirectory.fromJson(
@@ -61,7 +61,7 @@ void main() {
     }
     for (final timezone in timezones) {
       expect(() => tz.getLocation(timezone), returnsNormally,
-          reason: '$timezone must be supported by package:timezone');
+          reason: '$timezone must be supported by package:timezone',);
     }
 
     // ignore: avoid_print

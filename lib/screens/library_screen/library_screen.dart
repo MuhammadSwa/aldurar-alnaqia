@@ -90,7 +90,7 @@ class _BookListTile extends ConsumerWidget {
       builder: (context, ref, downloader, isDownloading, isDownloaded) {
         return ListTile(
           title: Text(item.title,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+              style: const TextStyle(fontWeight: FontWeight.bold),),
           leading: _buildLeadingIcon(
             context: context,
             isDownloading: isDownloading,

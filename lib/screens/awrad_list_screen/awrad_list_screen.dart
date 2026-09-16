@@ -4,8 +4,8 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/zikr_list_view_tile_widget.dart';
-import 'package:aldurar_alnaqia/widgets/azkarListView/azkar_list_view_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
 class AwradListScreen extends ConsumerStatefulWidget {
@@ -60,7 +60,7 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
         leading: IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            tooltip: 'فتح القائمة'),
+            tooltip: 'فتح القائمة',),
         actions: [
           SearchWidget(
             onSearch: handleSearch,
@@ -76,7 +76,7 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
             const ZikrListViewTile(
                 zikrId: weekCollectionBookmarkId,
                 title: 'أوراد الأسبوع',
-                target: WeekCollectionTarget(ZikrBranch.awrad)),
+                target: WeekCollectionTarget(ZikrBranch.awrad),),
             AzkarListViewWidget(
               zikrIds: collectionIds,
               barTitle: 'الأذكار',
@@ -109,10 +109,10 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
   }
 
   static ZikrCollectionViewTarget buildCollectionTarget(
-          String collectionId, int index) =>
+          String collectionId, int index,) =>
       ZikrCollectionViewTarget(ZikrBranch.awrad, collection: collectionId);
 
   static ZikrCollectionViewTarget buildTarajemTarget(
-          String collectionId, int index) =>
+          String collectionId, int index,) =>
       ZikrCollectionViewTarget(ZikrBranch.awrad, collection: collectionId);
 }

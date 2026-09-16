@@ -54,13 +54,13 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
     final colorScheme = Theme.of(context).colorScheme;
     return AlertDialog(
       title: Text(widget.item.title,
-          style: const TextStyle(fontSize: 18), textAlign: TextAlign.center),
+          style: const TextStyle(fontSize: 18), textAlign: TextAlign.center,),
       contentPadding: const EdgeInsets.all(16),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text('الملف غير مُحمل. الرجاء اختيار أحد الخيارات:',
-              textAlign: TextAlign.center),
+              textAlign: TextAlign.center,),
           const SizedBox(height: 20),
           _buildOptionButton(
             context,
@@ -91,7 +91,7 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
                   });
                 },
                 title: const Text('تذكر الاختيار',
-                    style: TextStyle(fontSize: 14)),
+                    style: TextStyle(fontSize: 14),),
                 controlAffinity: ListTileControlAffinity.leading,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
@@ -138,10 +138,10 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
                   children: [
                     Text(label,
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14)),
+                            fontWeight: FontWeight.bold, fontSize: 14,),),
                     Text(subtitle,
                         style: TextStyle(
-                            fontSize: 12, color: color.withValues(alpha: 0.9))),
+                            fontSize: 12, color: color.withValues(alpha: 0.9),),),
                   ],
                 ),
               ),
@@ -172,7 +172,7 @@ Future<void> showStreamOrDownloadDialog({
       showRememberOption: true,
       onRemember: (stream) {
         ref.read(fileOpenActionProvider.notifier).set(
-            stream ? FileOpenAction.open : FileOpenAction.download);
+            stream ? FileOpenAction.open : FileOpenAction.download,);
       },
       onStream: () {
         Navigator.of(dialogContext).pop();

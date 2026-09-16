@@ -53,9 +53,9 @@ void main() {
   group('normalize', () {
     test('unifies hamza/ta-marbuta/ya spellings', () {
       expect(CityDirectory.normalize('القاهرة'),
-          CityDirectory.normalize('القاهره'));
+          CityDirectory.normalize('القاهره'),);
       expect(CityDirectory.normalize('الإسكندرية'),
-          CityDirectory.normalize('الاسكندريه'));
+          CityDirectory.normalize('الاسكندريه'),);
     });
 
     test('strips diacritics and lowercases latin', () {
@@ -106,21 +106,21 @@ void main() {
     test('country name lists all cities of that country', () {
       final byArabic = directory.search('مصر');
       expect(byArabic.map((c) => c.nameEn),
-          containsAll(['Cairo', 'Alexandria', 'Madinat an Nasr']));
+          containsAll(['Cairo', 'Alexandria', 'Madinat an Nasr']),);
       expect(byArabic.map((c) => c.nameEn), isNot(contains('Springfield')));
 
       final byEnglish = directory.search('Egypt');
       expect(byEnglish.map((c) => c.nameEn),
-          containsAll(['Cairo', 'Alexandria', 'Madinat an Nasr']));
+          containsAll(['Cairo', 'Alexandria', 'Madinat an Nasr']),);
 
       expect(directory.search('United States').map((c) => c.nameEn),
-          ['Springfield']);
+          ['Springfield'],);
     });
 
     test('country prefix matches too', () {
       final results = directory.search('مص');
       expect(results.map((c) => c.nameEn),
-          containsAll(['Cairo', 'Alexandria', 'Madinat an Nasr']));
+          containsAll(['Cairo', 'Alexandria', 'Madinat an Nasr']),);
     });
 
     test('city-name match outranks country-name match', () {

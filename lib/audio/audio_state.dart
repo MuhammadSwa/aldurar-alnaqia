@@ -108,5 +108,5 @@ class AudioState {
   @override
   int get hashCode =>
       Object.hash(status, track, position, buffered, duration, speed,
-          errorMessage);
+          errorMessage,);
 }

@@ -23,7 +23,7 @@ void main() {
 
     test('keeps footnote markers inside hemistichs', () {
       final blocks = parseZikrBlocks(
-          'عَزَّتْ شَرِيعَتُهُ[^1] الْبَيْضَاءُ حِينَ أَتَى __ أَحْقَافَ بَدْرٍ');
+          'عَزَّتْ شَرِيعَتُهُ[^1] الْبَيْضَاءُ حِينَ أَتَى __ أَحْقَافَ بَدْرٍ',);
 
       final bayt = blocks.single as BaytBlock;
       expect(bayt.sadr, contains('[^1]'));
@@ -83,7 +83,7 @@ void main() {
       expect(blocks[0], isA<BaytBlock>());
       expect(blocks[1], isA<BaytBlock>());
       expect((blocks[0] as BaytBlock).sadr,
-          'فِي كُـلِّ فَاتِحَةٍ لِلْقَوْلِ مُعْتبِرَهْ');
+          'فِي كُـلِّ فَاتِحَةٍ لِلْقَوْلِ مُعْتبِرَهْ',);
     });
     test('empty content yields no blocks', () {
       expect(parseZikrBlocks(''), isEmpty);

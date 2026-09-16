@@ -53,7 +53,7 @@ class _AsrCalculationWidget extends State<AsrCalcSegmentedButton> {
               },
             );
           },
-        )
+        ),
       ],
     );
   }
