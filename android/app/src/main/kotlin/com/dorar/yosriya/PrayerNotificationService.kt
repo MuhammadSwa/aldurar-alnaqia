@@ -420,7 +420,6 @@ class PrayerNotificationService : Service() {
     }
 
     val zone = currentZone()
-    val defaultTextColor = 0xFFDDDDDD.toInt()
 
     // When the device is in an RTL locale (Arabic), LinearLayout puts slot 1 (child 0)
     // on the physical RIGHT. When in an LTR locale (English), slot 6 (child 5) is on the physical RIGHT.
@@ -451,9 +450,6 @@ class PrayerNotificationService : Service() {
       if (event.id == plan.nextId) {
         expanded.setTextColor(nameId, NEXT_PRAYER_COLOR)
         expanded.setTextColor(timeId, NEXT_PRAYER_COLOR)
-      } else {
-        expanded.setTextColor(nameId, defaultTextColor)
-        expanded.setTextColor(timeId, defaultTextColor)
       }
     }
 
