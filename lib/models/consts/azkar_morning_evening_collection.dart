@@ -6,14 +6,8 @@ const morningEveningAzkarCollection = [
   almusabaeat,
   alasas,
   almarefAlzawquia,
-  alhylia,
   khitamFawatih,
 ];
-
-// TODO: fix this mess :(
-const alhylia = Zikr(
-    id: 'hilya-nasab-text',
-    kind: ZikrKind.hilyaNasab,title: 'الحلية والنسب النبوي الشريف', content: '',);
 
 // === alasas
 const alasas = Zikr(

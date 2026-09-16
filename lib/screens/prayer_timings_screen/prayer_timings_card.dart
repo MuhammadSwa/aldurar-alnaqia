@@ -6,10 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-/// Timetable card. Renders the cached [PrayerSchedule] from provider state —
-/// no prayer calculation happens here (previously `getAllPrayerTimes()` plus
-/// tomorrow's times were recomputed inside `build()`). Rebuilds only when the
-/// schedule or the next-prayer highlight changes, never every second.
+/// Timetable card. Renders the cached [PrayerSchedule] from provider state.
+/// No prayer calculation happens here. Rebuilds only when the schedule or
+/// the next-prayer highlight changes, never every second.
 class PrayerTimingsCard extends ConsumerWidget {
   const PrayerTimingsCard({super.key});
 

@@ -11,7 +11,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialog_box.dart'
-    show hijriDayWithOffsetAt;
+    show hijriDayWithOffset;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
@@ -126,15 +126,15 @@ void main() {
     });
   });
 
-  group('hijriDayWithOffsetAt (pure, no timers)', () {
+  group('hijriDayWithOffset (pure, no timers)', () {
     test('advances one day after Maghrib', () {
       final loc = tz.getLocation('Africa/Cairo');
       final maghrib = tz.TZDateTime(loc, 2024, 6, 15, 19, 57);
       final before =
           tz.TZDateTime(loc, 2024, 6, 15, 19, 0).add(const Duration());
       final after = tz.TZDateTime(loc, 2024, 6, 15, 20, 30);
-      final a = hijriDayWithOffsetAt(offset: 0, now: before, maghrib: maghrib)!;
-      final b = hijriDayWithOffsetAt(offset: 0, now: after, maghrib: maghrib)!;
+      final a = hijriDayWithOffset(offset: 0, now: before, maghrib: maghrib);
+      final b = hijriDayWithOffset(offset: 0, now: after, maghrib: maghrib);
       final da = DateTime(a.hYear, a.hMonth, a.hDay);
       final db = DateTime(b.hYear, b.hMonth, b.hDay);
       expect(db.difference(da), const Duration(days: 1));
@@ -143,9 +143,9 @@ void main() {
     test('offset shifts days; null maghrib still works', () {
       final loc = tz.getLocation('Africa/Cairo');
       final now = tz.TZDateTime(loc, 2024, 6, 15, 12);
-      final base = hijriDayWithOffsetAt(offset: 0, now: now, maghrib: null)!;
+      final base = hijriDayWithOffset(offset: 0, now: now, maghrib: null);
       final plus =
-          hijriDayWithOffsetAt(offset: 1, now: now, maghrib: null)!;
+          hijriDayWithOffset(offset: 1, now: now, maghrib: null);
       expect(
         DateTime(plus.hYear, plus.hMonth, plus.hDay)
             .difference(DateTime(base.hYear, base.hMonth, base.hDay)),

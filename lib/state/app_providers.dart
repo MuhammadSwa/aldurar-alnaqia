@@ -131,8 +131,7 @@ enum FileOpenAction {
 
   static FileOpenAction fromString(String? value) {
     return switch (value) {
-      // 'stream' is the legacy audio value for the same behavior.
-      'open' || 'stream' => FileOpenAction.open,
+      'open' => FileOpenAction.open,
       'download' => FileOpenAction.download,
       _ => FileOpenAction.ask,
     };
@@ -166,7 +165,7 @@ final fileOpenActionProvider =
 );
 
 // ---------------------------------------------------------------------------
-// Theme mode (persisted via SharedPreferences; replaces `adaptive_theme`)
+// Theme mode (persisted via SharedPreferences)
 // ---------------------------------------------------------------------------
 
 /// The app's appearance choice. This is the single source of truth consumed

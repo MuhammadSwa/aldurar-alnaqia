@@ -40,8 +40,6 @@ class CalculationMethodInfo {
     CalculationMethodInfo(
         key: PrayerMethods.northAmerica,
         arabicName: 'الجمعية الإسلامية لأمريكا الشمالية (ISNA)',),
-    // Add 'other' if you want to allow it, though its parameters are 0 by default.
-    // CalculationMethodInfo(key: 'other', arabicName: 'أخرى (مخصص)'),
   ];
 
   static String getArabicName(String key) {

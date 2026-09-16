@@ -127,8 +127,6 @@ const dayWirdTitles = <int, String>{
 
 Map<String, Zikr> _buildZikrById() {
   final map = <String, Zikr>{};
-  // Displayed collections first so canonical entries win title ties
-  // (e.g. hilya-nasab beats the legacy hilya-nasab-text duplicate).
   for (final c in allCollections) {
     for (final z in c.items) {
       map.putIfAbsent(z.id, () => z);
@@ -147,8 +145,7 @@ Map<String, Zikr> _buildZikrById() {
 
 final zikrById = _buildZikrById();
 
-/// First-registered zikr wins on duplicate display titles (e.g. the
-/// canonical hilya-nasab beats the legacy hilya-nasab-text duplicate).
+/// First-registered zikr wins on duplicate display titles.
 final zikrByTitle = _buildZikrByTitle();
 
 Map<String, Zikr> _buildZikrByTitle() {
@@ -167,20 +164,19 @@ final collectionByTitle = <String, ZikrCollection>{
   for (final c in allCollections) c.title: c,
 };
 
-/// Accepts a stable id or (for pre-migration data / deep links) a legacy
-/// Arabic title. Returns null when unknown.
-// TODO(v2): drop the title fallback once migrated bookmarks/deep links expire.
+/// Resolves a stable id or a display title (search suggestions are titles).
+/// Returns null when unknown.
 Zikr? resolveZikr(String idOrTitle) =>
     zikrById[idOrTitle] ?? zikrByTitle[idOrTitle];
 
-/// Display title for an id (or passes legacy titles through).
+/// Display title for an id (unknown strings pass through).
 String zikrTitleOf(String idOrTitle) =>
     resolveZikr(idOrTitle)?.title ?? idOrTitle;
 
 ZikrCollection? resolveCollection(String idOrTitle) =>
     collectionById[idOrTitle] ?? collectionByTitle[idOrTitle];
 
-/// Zikr ids of a collection (accepts id or legacy title).
+/// Zikr ids of a collection (accepts id or title).
 List<String> collectionZikrIds(String collectionIdOrTitle) {
   final c = resolveCollection(collectionIdOrTitle);
   if (c == null) return const [];
@@ -190,29 +186,6 @@ List<String> collectionZikrIds(String collectionIdOrTitle) {
 /// Ordered, de-duplicated display titles for search suggestions.
 List<String> allZikrTitles() =>
     {for (final z in zikrById.values) z.title}.toList();
-
-/// One-time migration of persisted bookmarks / titles to stable ids.
-// TODO(v2): remove once v1 bookmarks have migrated.
-String migrateBookmark(String bookmark) {
-  // Already migrated.
-  if (zikrById.containsKey(bookmark) ||
-      collectionById.containsKey(bookmark) ||
-      bookmark == weekCollectionBookmarkId ||
-      bookmark.startsWith('day-wird-')) {
-    return bookmark;
-  }
-  if (bookmark == 'أوراد الأسبوع') return weekCollectionBookmarkId;
-  // Legacy typo for the gomari collection.
-  if (bookmark == 'أوارد سيدي عبد الله بن الصديق الغماري') return 'gomari';
-  for (final entry in dayWirdTitles.entries) {
-    if (entry.value == bookmark) return dayWirdBookmarkId(entry.key);
-  }
-  final collection = collectionByTitle[bookmark];
-  if (collection != null) return collection.id;
-  final zikr = zikrByTitle[bookmark];
-  if (zikr != null) return zikr.id;
-  return bookmark;
-}
 
 // ---------------------------------------------------------------------------
 // Audio sections (derived compositions, single place to edit)

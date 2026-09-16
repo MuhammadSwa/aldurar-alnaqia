@@ -1,10 +1,5 @@
-// ArabicDayNameWidget: pure renderer of the provider's Islamic weekday.
-//
-// Previously this owned its own Maghrib timer AND re-subscribed to the whole
-// prayer state, so it cancelled/rescheduled + setState every second. Now the
-// single owner (`PrayerTimingsNotifier`) flips `islamicWeekday` at Maghrib
-// via its boundary timer, and this widget only rebuilds when the weekday
-// itself changes.
+// Pure renderer of the provider's Islamic weekday: rebuilds only when the
+// weekday itself changes.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';

@@ -1,7 +1,7 @@
 // lib/widgets/hijri_date_widget.dart
 
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialog_box.dart'
-    show hijriDayWithOffsetAt;
+    show hijriDayWithOffset;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
@@ -22,14 +22,11 @@ class HijriDateWidget extends ConsumerWidget {
     final maghrib =
         ref.watch(prayerProvider.select((s) => s.schedule?.maghrib));
 
-    final hijriDate = hijriDayWithOffsetAt(
+    final hijriDate = hijriDayWithOffset(
       offset: offset,
       now: tz.TZDateTime.now(tz.local),
       maghrib: maghrib,
     );
-    if (hijriDate == null) {
-      return const SizedBox.shrink();
-    }
     // The `hijri` package names month 4 as "ربيع الثاني" — display it as
     // "ربيع الآخر" instead.
     final monthName =

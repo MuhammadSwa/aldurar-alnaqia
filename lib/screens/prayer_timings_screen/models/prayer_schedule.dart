@@ -49,9 +49,9 @@ String prayerEventArabicName(PrayerEventId id) => switch (id) {
       PrayerEventId.isha => 'العشاء',
     };
 
-/// Parses the stable ID back from the legacy English prayer-name strings
-/// returned by `adhan_dart` (`fajr`, `sunrise`, …, plus `fajrAfter` for
-/// tomorrow's Fajr). Returns null for unknown names instead of guessing.
+/// Parses the stable ID back from the English prayer-name strings returned
+/// by `adhan_dart` (`fajr`, `sunrise`, …, plus `fajrAfter` for tomorrow's
+/// Fajr). Returns null for unknown names instead of guessing.
 PrayerEventId? prayerEventIdFromLibraryName(String name) =>
     switch (name.toLowerCase()) {
       'fajr' || 'fajrafter' => PrayerEventId.fajr,
@@ -159,7 +159,7 @@ class PrayerSettings {
         longitude > 180) {
       return 'invalid coordinates ($latitude, $longitude)';
     }
-    // (0, 0) is the legacy "no location selected" sentinel.
+    // (0, 0) is the "no location selected" sentinel.
     if (latitude == 0.0 && longitude == 0.0) return 'no location selected';
     if (timezone.isEmpty) return 'missing timezone';
     try {
@@ -347,23 +347,6 @@ abstract final class PrayerScheduleCalculator {
     }
     return params;
   }
-
-  /// String-based overload for legacy callers (settings dialog preview,
-  /// compat facade). Same single table; unknown method logs + null.
-  static CalculationParameters? buildParametersForParts({
-    required String method,
-    required String madhab,
-    required double latitude,
-    required String highLatitudeRule,
-  }) =>
-      buildParameters(PrayerSettings(
-        latitude: latitude,
-        longitude: 0,
-        timezone: 'UTC',
-        method: method,
-        madhab: madhab,
-        highLatitudeRule: highLatitudeRule,
-      ),);
 
   /// Calculates [date]'s schedule in [settings.timezone]. Returns null when
   /// settings are invalid or the zone/calculation fails (logged, visible to

@@ -42,7 +42,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
     if (_hasAutoShownSettings || !mounted) return;
     final prayerState = ref.read(prayerProvider);
     if (!prayerState.isInitialized) return;
-    if (prayerState.prayerTimings != null) return;
+    if (prayerState.schedule != null) return;
     _hasAutoShownSettings = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -59,7 +59,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
     // after we've already entered the page.
     ref.listen(prayerProvider, (previous, next) {
       if (previous?.isInitialized == next.isInitialized &&
-          previous?.prayerTimings == next.prayerTimings) {
+          previous?.schedule == next.schedule) {
         return;
       }
       _maybeAutoShowSettingsDialog();

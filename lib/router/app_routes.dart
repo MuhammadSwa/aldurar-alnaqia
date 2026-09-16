@@ -10,8 +10,8 @@ import 'package:go_router/go_router.dart';
 //    typed [ZikrTarget]s / [AppRoutes] builders, or navigate by route NAME
 //    via `goNamed`/`pushNamed`.
 //  * Path parameters (`:zikr`, `:collection`) carry stable ASCII ids
-//    ([Zikr.id], [ZikrCollection.id]). Legacy Arabic titles still resolve
-//    via [resolveZikr]/[resolveCollection] for old bookmarks and links.
+//    ([Zikr.id], [ZikrCollection.id]). Display titles also resolve via
+//    [resolveZikr]/[resolveCollection] (search suggestions are titles).
 //    Always pass values RAW to go_router; it encodes them when building
 //    the location and decodes them in `state.pathParameters`.
 //  * Non-ASCII segments must only travel through named routes or the
@@ -125,7 +125,7 @@ sealed class ZikrTarget {
 
 /// Opens a single zikr's detail page under [branch]'s nested
 /// `zikr/:zikr` route identified by [pagePrefix]. [zikrId] is the stable
-/// id from [Zikr.id] (legacy Arabic titles still resolve). When [zikrIds]
+/// id from [Zikr.id]. When [zikrIds]
 /// and [index] are provided the page becomes swipeable across [zikrIds].
 class ZikrDetailTarget extends ZikrTarget {
   const ZikrDetailTarget({

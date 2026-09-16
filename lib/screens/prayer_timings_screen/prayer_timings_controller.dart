@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 // GeoNames supplies IANA timezone IDs for cities worldwide. The full database
@@ -9,14 +8,47 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
     as islamic_date;
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
-export 'prayer_calculator.dart'
-    show PrayerTimings, arabicPrayerName, islamicWeekdayNow;
+/// The current Islamic weekday (Monday=1, Sunday=7; the day flips at Maghrib).
+/// Standalone (no provider needed) for routing and list badges.
+int islamicWeekdayNow() {
+  final schedule = todayPrayerSchedule();
+  if (schedule == null) return DateTime.now().weekday;
+  final now = tz.TZDateTime.now(schedule.civilDate.location);
+  return islamic_date.islamicWeekday(now: now, maghrib: schedule.maghrib);
+}
+
+/// Today's schedule from stored settings, or null when unconfigured.
+/// Single shared entry point for non-provider callers (routing, Yousria).
+/// Never throws: returns null when prefs/tz are unavailable (e.g. tests).
+PrayerSchedule? todayPrayerSchedule() {
+  final settings = SharedPreferencesService.loadPrayerSettings();
+  final zone = settings.timezone.isEmpty ? _localZoneName() : settings.timezone;
+  if (zone == null) return null;
+  try {
+    final location = tz.getLocation(zone);
+    return PrayerScheduleCalculator.calculate(
+      settings: settings.copyWith(timezone: zone),
+      date: tz.TZDateTime.now(location),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Global local zone without throwing when the tz database is not
+/// initialized yet (unit tests, very early startup).
+String? _localZoneName() {
+  try {
+    return tz.local.name;
+  } catch (_) {
+    return null;
+  }
+}
 
 /// Immutable snapshot of everything the prayer UI needs.
 ///
@@ -26,8 +58,6 @@ export 'prayer_calculator.dart'
 /// `select()` schedule/weekday/next info therefore never rebuild every second
 /// and listeners are not woken while the user reads elsewhere.
 class PrayerState {
-  final PrayerTimes? prayerTimings;
-
   /// Typed schedule for the current civil date (today + tomorrow Fajr +
   /// Sunnah times), computed once per recalculation. The timetable card
   /// renders from this and must not recalculate times itself.
@@ -40,7 +70,6 @@ class PrayerState {
 
   // ignore: prefer_const_constructors_in_immutables
   PrayerState({
-    this.prayerTimings,
     this.schedule,
     int? islamicWeekday,
     this.nextPrayerInfo = (null, ''),
@@ -48,14 +77,12 @@ class PrayerState {
   }) : islamicWeekday = islamicWeekday ?? tz.TZDateTime.now(tz.local).weekday;
 
   PrayerState copyWith({
-    PrayerTimes? prayerTimings,
     PrayerSchedule? schedule,
     int? islamicWeekday,
     (DateTime?, String)? nextPrayerInfo,
     bool? isInitialized,
   }) {
     return PrayerState(
-      prayerTimings: prayerTimings ?? this.prayerTimings,
       schedule: schedule ?? this.schedule,
       islamicWeekday: islamicWeekday ?? this.islamicWeekday,
       nextPrayerInfo: nextPrayerInfo ?? this.nextPrayerInfo,
@@ -99,55 +126,28 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
   /// Called only when data can fundamentally change: init, settings change,
   /// event boundary, or midnight.
   void _recalculateAllPrayerData() {
-    // 1. Calculate and cache today's prayers (legacy object for existing
-    //    consumers) and the typed schedule (today + tomorrow Fajr + sunnah).
+    // 1. Calculate and cache the typed schedule (today + tomorrow Fajr +
+    //    sunnah) — the single solar calculation per cycle.
     // 2. Determine the next prayer and its time.
     // 3. Update the Islamic weekday.
     // 4. Schedule the single one-shot boundary timer.
-    final prayers = PrayerTimings.getPrayersTimings();
-    final schedule = _currentSchedule();
-    state = state.copyWith(prayerTimings: prayers, schedule: schedule);
+    final schedule = todayPrayerSchedule();
+    state = state.copyWith(schedule: schedule);
     _updateNextPrayerInfo();
     _updateIslamicWeekday();
     _scheduleBoundaryTimer();
   }
 
-  /// The typed schedule for the current civil date, or null when settings
-  /// are incomplete. Computed at most once per recalculation — never from
-  /// a widget build.
-  PrayerSchedule? _currentSchedule() {
-    final now = tz.TZDateTime.now(tz.local);
-    final settings = SharedPreferencesService.loadPrayerSettings();
-    // Fall back to tz.local's zone name when no explicit zone is stored yet
-    // (fresh installs that picked coordinates but predate zone storage).
-    final effective = settings.timezone.isEmpty
-        ? settings.copyWith(timezone: tz.local.name)
-        : settings;
-    return PrayerScheduleCalculator.calculate(settings: effective, date: now);
-  }
-
   void _updateNextPrayerInfo() {
-    final prayers = state.prayerTimings;
-    if (prayers == null) {
+    final schedule = state.schedule;
+    if (schedule == null) {
       state = state.copyWith(nextPrayerInfo: (null, ''));
       return;
     }
-    String nextPrayerNameString = prayers.nextPrayer().name;
-    DateTime nextPrayerDateTime = prayers.timeForPrayer(prayers.nextPrayer());
-
-    // The library returns 'fajrAfter' for tomorrow's Fajr. We use that.
-    if (nextPrayerNameString == 'fajrAfter') {
-      nextPrayerDateTime = prayers.fajrAfter;
-      nextPrayerNameString = 'fajr'; // Standardize the name
-    }
-
-    final tz.TZDateTime localNextPrayerTime =
-        tz.TZDateTime.from(nextPrayerDateTime, tz.local);
+    final next =
+        schedule.nextEventAt(tz.TZDateTime.now(schedule.civilDate.location));
     state = state.copyWith(
-      nextPrayerInfo: (
-        localNextPrayerTime,
-        arabicPrayerName(nextPrayerNameString)
-      ),
+      nextPrayerInfo: (next.time, next.arabicName),
     );
   }
 
@@ -164,7 +164,6 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
         now.month != schedule.civilDate.month ||
         now.day != schedule.civilDate.day;
     if (dateChanged || next == null || !next.isAfter(now)) {
-      PrayerTimings.invalidateCache();
       _recalculateAllPrayerData();
     }
   }
@@ -197,7 +196,6 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     if (!ref.mounted) return;
     _setTimezone(timezone);
 
-    PrayerTimings.invalidateCache();
     _recalculateAllPrayerData();
   }
 
@@ -207,8 +205,7 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
 
     final latitude = SharedPreferencesService.getLatitude();
     final longitude = SharedPreferencesService.getLongitude();
-    // (0, 0) is the legacy "no location selected" sentinel. Do not invent a
-    // timezone for a user who has not selected a location yet.
+    // (0, 0) means no location selected yet. Do not invent a timezone.
     if (latitude == 0.0 && longitude == 0.0) return;
     final timezone = await _resolveTimezone(
       latitude,
@@ -257,16 +254,15 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
 
   void _updateIslamicWeekday() {
     final now = tz.TZDateTime.now(tz.local);
-    final prayers = state.prayerTimings;
+    final maghrib = state.schedule?.maghrib;
 
-    if (prayers == null) {
+    if (maghrib == null) {
       state = state.copyWith(islamicWeekday: now.weekday); // Fallback
       return;
     }
 
-    final maghribTime = tz.TZDateTime.from(prayers.maghrib, tz.local);
     final effectiveDate =
-        islamic_date.islamicEffectiveDate(now: now, maghrib: maghribTime);
+        islamic_date.islamicEffectiveDate(now: now, maghrib: maghrib);
     state = state.copyWith(islamicWeekday: effectiveDate.weekday);
   }
 
@@ -297,7 +293,6 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
 
     _boundaryTimer = Timer(delay, () {
       if (ref.mounted) {
-        PrayerTimings.invalidateCache();
         _recalculateAllPrayerData();
       }
     });

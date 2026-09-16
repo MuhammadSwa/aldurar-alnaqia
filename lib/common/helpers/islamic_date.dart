@@ -1,7 +1,4 @@
 /// Islamic-day helpers: the Islamic day starts at Maghrib, not midnight.
-///
-/// Previously copy-pasted in `PrayerTimingsNotifier`, `islamicWeekdayNow`,
-/// `WeekCollectionAzkar`, `HijriDateWidget` and `ArabicDayNameWidget`.
 DateTime islamicEffectiveDate({
   required DateTime now,
   required DateTime? maghrib,

@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-import 'package:aldurar_alnaqia/models/azkar_models.dart' show migrateBookmark;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
     show PrayerSettings;
@@ -28,16 +27,9 @@ abstract final class PrefsKeys {
   static const String fontSize = 'font_size';
   static const String hijriDayOffset = 'hijri_day_offset';
   static const String fileOpenAction = 'file_open_action';
-  static const String audioOpenActionLegacy = 'audio_open_action';
-  static const String bookOpenActionLegacy = 'book_open_action';
   static const String prayerForegroundEnabled = 'prayer_foreground_enabled';
   static const String prayerNativeConfig = 'prayer_native_config';
   static const String prayerPreciseAlerts = 'prayer_precise_alerts';
-  static const String prefsVersion = 'prefs_version';
-
-  /// Current prefs schema version. Bump when adding a one-time migration in
-  /// [_migrateIfNeeded] so it runs once per install.
-  static const int currentPrefsVersion = 1;
 
   static String pdfLastPage(String title) => 'pdf_last_page_$title';
 }
@@ -49,44 +41,6 @@ class SharedPreferencesService {
 
   Future<void> init() async {
     _sharedPreferences = await SharedPreferences.getInstance();
-    await _migrateIfNeeded();
-  }
-
-  /// Runs pending one-time migrations, then stamps the version so they never
-  /// run again. v1 consolidates:
-  /// - `adaptive_theme` package JSON -> [PrefsKeys.themeMode]
-  /// - `audio_open_action` / `book_open_action` -> [PrefsKeys.fileOpenAction]
-  static Future<void> _migrateIfNeeded() async {
-    final prefs = _sharedPreferences;
-    if (prefs == null) return;
-    final version = prefs.getInt(PrefsKeys.prefsVersion) ?? 0;
-    if (version >= PrefsKeys.currentPrefsVersion) return;
-
-    // --- v1: legacy theme mode ---
-    if (prefs.getString(PrefsKeys.themeMode) == null) {
-      final migrated = _migrateLegacyAdaptiveThemeMode();
-      if (migrated != null) {
-        await prefs.setString(PrefsKeys.themeMode, migrated);
-      }
-    }
-    await prefs.remove(_legacyAdaptiveThemeKey);
-
-    // --- v1: legacy file-open action (normalize 'stream' -> 'open') ---
-    if (prefs.getString(PrefsKeys.fileOpenAction) == null) {
-      final legacyAudio = prefs.getString(PrefsKeys.audioOpenActionLegacy);
-      final legacyBook = prefs.getString(PrefsKeys.bookOpenActionLegacy);
-      final legacy = legacyAudio ?? legacyBook;
-      if (legacy != null) {
-        await prefs.setString(
-          PrefsKeys.fileOpenAction,
-          legacy == 'stream' ? 'open' : legacy,
-        );
-      }
-    }
-    await prefs.remove(PrefsKeys.audioOpenActionLegacy);
-    await prefs.remove(PrefsKeys.bookOpenActionLegacy);
-
-    await prefs.setInt(PrefsKeys.prefsVersion, PrefsKeys.currentPrefsVersion);
   }
 
   static double getLatitude() {
@@ -95,21 +49,6 @@ class SharedPreferencesService {
 
   static double getLongitude() {
     return _sharedPreferences?.getDouble(PrefsKeys.longitude) ?? 0.0;
-  }
-
-  /// Deprecated: routes through no atomic save and can expose a half-written
-  /// config to the native service. Use [savePrayerSettings] instead.
-  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
-  static void setLatitude(double lat) {
-    _sharedPreferences?.setDouble(PrefsKeys.latitude, lat);
-    unawaited(refreshPrayerNotification());
-  }
-
-  /// Deprecated: see [setLatitude].
-  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
-  static void setLongitude(double long) {
-    _sharedPreferences?.setDouble(PrefsKeys.longitude, long);
-    unawaited(refreshPrayerNotification());
   }
 
   static String getCityName() {
@@ -160,45 +99,17 @@ class SharedPreferencesService {
     }
   }
 
-  /// Deprecated: see [setLatitude].
-  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
-  static void setMethod(String method) {
-    _sharedPreferences?.setString(PrefsKeys.method, method);
-    unawaited(refreshPrayerNotification());
-  }
-
   static String getMethod() {
     return _sharedPreferences?.getString(PrefsKeys.method) ?? 'egyptian';
-  }
-
-  /// Deprecated: see [setLatitude].
-  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
-  static void setAsrCalculation(String asrCalculation) {
-    _sharedPreferences?.setString(PrefsKeys.asrCalculation, asrCalculation);
-    unawaited(refreshPrayerNotification());
   }
 
   static String getAsrCalculation() {
     return _sharedPreferences?.getString(PrefsKeys.asrCalculation) ?? 'shafi';
   }
 
-  /// Deprecated: see [setLatitude].
-  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
-  static void setHighLatitudeRule(String rule) {
-    _sharedPreferences?.setString(PrefsKeys.highLatitudeRule, rule);
-    unawaited(refreshPrayerNotification());
-  }
-
   static String getHighLatitudeRule() {
     return _sharedPreferences?.getString(PrefsKeys.highLatitudeRule) ??
         'middle_of_night';
-  }
-
-  /// Deprecated: see [setLatitude].
-  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
-  static void setTimezone(String timezone) {
-    _sharedPreferences?.setString(PrefsKeys.timezone, timezone);
-    unawaited(refreshPrayerNotification());
   }
 
   static String getTimezone() {
@@ -280,20 +191,7 @@ class SharedPreferencesService {
   }
 
   static List<String> getBookmarks() {
-    final stored = _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
-    // One-time migration: legacy Arabic titles -> stable ids. Persisted
-    // back so the migration runs once per device.
-    var changed = false;
-    final migrated = <String>[];
-    for (final bookmark in stored) {
-      final next = migrateBookmark(bookmark);
-      if (next != bookmark) changed = true;
-      if (!migrated.contains(next)) migrated.add(next);
-    }
-    if (changed) {
-      _sharedPreferences?.setStringList(PrefsKeys.bookmarks, migrated);
-    }
-    return migrated;
+    return _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
   }
 
   static void setBookmarks(List<String> bookmarks) {
@@ -362,38 +260,14 @@ class SharedPreferencesService {
 
   // --- Theme mode preference: 'light' | 'dark' | 'system' ---
 
-  /// Key used by the removed `adaptive_theme` package (v3.x stored JSON
-  /// `{"theme_mode": <index>}` with light=0, dark=1, system=2).
-  /// Kept until all pre-migration installs have launched once.
-  static const _legacyAdaptiveThemeKey = 'adaptive_theme_preferences';
-
   /// Raw stored value. Kept string-based so this service does not depend
-  /// on Flutter material; providers map it to [ThemeMode]. Legacy installs
-  /// are migrated once in [_migrateIfNeeded] during [init].
+  /// on Flutter material; providers map it to [ThemeMode].
   static String getThemeMode() {
     return _sharedPreferences?.getString(PrefsKeys.themeMode) ?? 'system';
   }
 
   static Future<void> setThemeMode(String mode) async {
     await _sharedPreferences?.setString(PrefsKeys.themeMode, mode);
-  }
-
-  /// One-time migration for installs that saved their choice via
-  /// `adaptive_theme`. Returns null when there is nothing to migrate.
-  static String? _migrateLegacyAdaptiveThemeMode() {
-    try {
-      final raw = _sharedPreferences?.getString(_legacyAdaptiveThemeKey);
-      if (raw == null || raw.isEmpty) return null;
-      final json = jsonDecode(raw) as Map<String, dynamic>;
-      return switch (json['theme_mode']) {
-        0 => 'light',
-        1 => 'dark',
-        2 => 'system',
-        _ => null,
-      };
-    } catch (_) {
-      return null;
-    }
   }
 
   static void setFontSize(double size) {
@@ -405,7 +279,6 @@ class SharedPreferencesService {
   }
 
   static void setHijriDayOffset(int offset) {
-    logInfo('setting offest to $offset');
     _sharedPreferences?.setInt(PrefsKeys.hijriDayOffset, offset);
     unawaited(refreshPrayerNotification());
   }
@@ -425,7 +298,6 @@ class SharedPreferencesService {
 
   // --- File open action preference: 'ask' | 'open' | 'download' ---
   // Single preference shared by audio and books for non-downloaded files.
-  // Legacy installs are migrated once in [_migrateIfNeeded] during [init].
   static String getFileOpenAction() {
     return _sharedPreferences?.getString(PrefsKeys.fileOpenAction) ?? 'ask';
   }

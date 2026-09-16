@@ -15,8 +15,6 @@ class PrayerDateRow extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.all(8.0),
               child: Center(
-                // The redundant GetBuilder has been removed.
-                // HijriDateWidget handles its own updates perfectly.
                 child: HijriDateWidget(),
               ),
             ),

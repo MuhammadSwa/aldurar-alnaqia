@@ -1,7 +1,8 @@
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
     as islamic_date;
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+    show todayPrayerSchedule;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 /// Which part of the 6-day Yousria cycle is read today.
@@ -29,9 +30,11 @@ DateTime _midnight(DateTime d) => DateTime(d.year, d.month, d.day);
 /// The civil date of the current *Islamic* day: between Maghrib and
 /// midnight the Islamic day has already advanced to tomorrow.
 DateTime islamicEffectiveDate() {
-  final now = DateTime.now();
-  final maghrib = PrayerTimings.getPrayersTimings()?.maghrib;
-  return islamic_date.islamicEffectiveDate(now: now, maghrib: maghrib);
+  final maghrib = todayPrayerSchedule()?.maghrib;
+  return islamic_date.islamicEffectiveDate(
+    now: DateTime.now(),
+    maghrib: maghrib,
+  );
 }
 
 /// Computes today's Yousria part (1..6) from the stored beginning day.

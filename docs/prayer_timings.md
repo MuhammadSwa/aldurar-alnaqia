@@ -41,8 +41,9 @@ minutes for `tehran` until adhan2 is upgraded.
   recalculate and never rebuild per second.
 - Settings writes are atomic: `savePrayerSettings` → one native refresh.
   Field-level setters are deprecated (half-written config risk).
-- `PrayerTimings.getPrayersTimings()` (legacy `PrayerTimes` API used by
-  routing/Yousria) is cached 60s and invalidated on every recalculation.
+- Non-provider callers (routing weekday, Yousria cycle) share one
+  `todayPrayerSchedule()` entry point — a single solar calculation per call
+  site instead of scattered `PrayerTimes` constructions.
 
 ## Native policy (Android)
 

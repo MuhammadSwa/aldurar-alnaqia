@@ -17,7 +17,7 @@ import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart'
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
     show islamicWeekdayNow;
 
 /// Provides the app-wide [GoRouter]. The app always starts at home;
@@ -292,19 +292,11 @@ class AppRouter {
     );
   }
 
-  /// Typed extras parsing for zikr detail pages. Accepts both the typed
-  /// [ZikrRouteExtra] and legacy map extras ({'titles'|'zikrIds', 'index'}).
-  // TODO(v2): drop the legacy Map/'titles' branch.
+  /// Typed extras for zikr detail pages. All navigation goes through
+  /// [ZikrRouteExtra]; anything else carries no swipe context.
   static (List<String>?, int?) _parseZikrExtras(Object? extra) {
     if (extra is ZikrRouteExtra) {
       return (extra.zikrIds, extra.index);
-    }
-    if (extra is Map) {
-      final t = extra['zikrIds'] ?? extra['titles'];
-      final i = extra['index'];
-      final ids = t is List ? t.whereType<String>().toList() : null;
-      final index = i is int ? i : null;
-      return (ids, index);
     }
     return (null, null);
   }
