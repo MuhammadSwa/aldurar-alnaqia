@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart' show migrateBookmark;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+    show PrayerSettings;
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 
 /// Centralized SharedPreferences keys. The native prayer-notification config
@@ -30,6 +32,7 @@ abstract final class PrefsKeys {
   static const String bookOpenActionLegacy = 'book_open_action';
   static const String prayerForegroundEnabled = 'prayer_foreground_enabled';
   static const String prayerNativeConfig = 'prayer_native_config';
+  static const String prayerPreciseAlerts = 'prayer_precise_alerts';
   static const String prefsVersion = 'prefs_version';
 
   /// Current prefs schema version. Bump when adding a one-time migration in
@@ -94,11 +97,16 @@ class SharedPreferencesService {
     return _sharedPreferences?.getDouble(PrefsKeys.longitude) ?? 0.0;
   }
 
+  /// Deprecated: routes through no atomic save and can expose a half-written
+  /// config to the native service. Use [savePrayerSettings] instead.
+  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
   static void setLatitude(double lat) {
     _sharedPreferences?.setDouble(PrefsKeys.latitude, lat);
     unawaited(refreshPrayerNotification());
   }
 
+  /// Deprecated: see [setLatitude].
+  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
   static void setLongitude(double long) {
     _sharedPreferences?.setDouble(PrefsKeys.longitude, long);
     unawaited(refreshPrayerNotification());
@@ -152,6 +160,8 @@ class SharedPreferencesService {
     }
   }
 
+  /// Deprecated: see [setLatitude].
+  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
   static void setMethod(String method) {
     _sharedPreferences?.setString(PrefsKeys.method, method);
     unawaited(refreshPrayerNotification());
@@ -161,6 +171,8 @@ class SharedPreferencesService {
     return _sharedPreferences?.getString(PrefsKeys.method) ?? 'egyptian';
   }
 
+  /// Deprecated: see [setLatitude].
+  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
   static void setAsrCalculation(String asrCalculation) {
     _sharedPreferences?.setString(PrefsKeys.asrCalculation, asrCalculation);
     unawaited(refreshPrayerNotification());
@@ -170,6 +182,8 @@ class SharedPreferencesService {
     return _sharedPreferences?.getString(PrefsKeys.asrCalculation) ?? 'shafi';
   }
 
+  /// Deprecated: see [setLatitude].
+  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
   static void setHighLatitudeRule(String rule) {
     _sharedPreferences?.setString(PrefsKeys.highLatitudeRule, rule);
     unawaited(refreshPrayerNotification());
@@ -180,6 +194,8 @@ class SharedPreferencesService {
         'middle_of_night';
   }
 
+  /// Deprecated: see [setLatitude].
+  @Deprecated('Use savePrayerSettings for an atomic write + single refresh')
   static void setTimezone(String timezone) {
     _sharedPreferences?.setString(PrefsKeys.timezone, timezone);
     unawaited(refreshPrayerNotification());
@@ -187,6 +203,33 @@ class SharedPreferencesService {
 
   static String getTimezone() {
     return _sharedPreferences?.getString(PrefsKeys.timezone) ?? '';
+  }
+
+  /// Whether prayer-arrival alerts may wake the device with an exact alarm.
+  /// Defaults to true (previous behavior). When false, the native service
+  /// uses inexact wakeups for all boundaries — cheaper in Doze, but arrival
+  /// alerts can arrive minutes late.
+  static bool getPrayerPreciseAlerts() {
+    return _sharedPreferences?.getBool(PrefsKeys.prayerPreciseAlerts) ?? true;
+  }
+
+  static Future<void> setPrayerPreciseAlerts(bool value) async {
+    await _sharedPreferences?.setBool(PrefsKeys.prayerPreciseAlerts, value);
+    await refreshPrayerNotification();
+  }
+
+  /// Typed snapshot of all prayer settings. Single source of defaults and
+  /// validation for the UI, the calculator, and the native bridge.
+  static PrayerSettings loadPrayerSettings() {
+    return PrayerSettings(
+      latitude: getLatitude(),
+      longitude: getLongitude(),
+      timezone: getTimezone(),
+      method: getMethod(),
+      madhab: getAsrCalculation(),
+      highLatitudeRule: getHighLatitudeRule(),
+      hijriOffset: getHijriDayOffset(),
+    );
   }
 
   /// Saves interdependent prayer settings together, then refreshes the native
@@ -199,6 +242,8 @@ class SharedPreferencesService {
     required String timezone,
     String? highLatitudeRule,
     City? city,
+    int? hijriOffset,
+    bool? preciseAlerts,
   }) async {
     final prefs = _sharedPreferences;
     if (prefs == null) return;
@@ -210,6 +255,12 @@ class SharedPreferencesService {
     await prefs.setString(PrefsKeys.timezone, timezone);
     if (highLatitudeRule != null) {
       await prefs.setString(PrefsKeys.highLatitudeRule, highLatitudeRule);
+    }
+    if (hijriOffset != null) {
+      await prefs.setInt(PrefsKeys.hijriDayOffset, hijriOffset);
+    }
+    if (preciseAlerts != null) {
+      await prefs.setBool(PrefsKeys.prayerPreciseAlerts, preciseAlerts);
     }
     if (city == null) {
       await prefs.remove(PrefsKeys.cityInfo);

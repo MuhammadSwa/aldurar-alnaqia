@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart'
-    show PrefsKeys;
+    show PrefsKeys, SharedPreferencesService;
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 // ---------------------------------------------------------------------------
@@ -92,17 +92,19 @@ Future<void> refreshPrayerNotification() async {
 
 Future<void> _writeConfig() async {
   final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(PrefsKeys.prayerNativeConfig, jsonEncode({
-    'lat': prefs.getDouble(PrefsKeys.latitude) ?? 0.0,
-    'lng': prefs.getDouble(PrefsKeys.longitude) ?? 0.0,
-    'method': prefs.getString(PrefsKeys.method) ?? 'egyptian',
-    'asrCalculation':
-        prefs.getString(PrefsKeys.asrCalculation) ?? 'shafi',
-    'highLatitudeRule':
-        prefs.getString(PrefsKeys.highLatitudeRule) ?? 'middle_of_night',
-    'timezone': prefs.getString(PrefsKeys.timezone) ?? '',
-    'hijriOffset': prefs.getInt(PrefsKeys.hijriDayOffset) ?? 0,
-  }),);
+  // Single serialization path: typed settings -> native map. The native
+  // service must never observe half-saved coordinates/timezone/method, so
+  // all writers go through `savePrayerSettings` (one refresh per save).
+  final settings = SharedPreferencesService.loadPrayerSettings();
+  final map = settings.toNativeMap();
+  await prefs.setString(
+    PrefsKeys.prayerNativeConfig,
+    jsonEncode({
+      ...map,
+      // Phase 5 policy flag: exact alarms only for alertable prayers.
+      'preciseAlerts': prefs.getBool(PrefsKeys.prayerPreciseAlerts) ?? true,
+    }),
+  );
 }
 
 void _startNativeService() {

@@ -1,21 +1,17 @@
-// Modified ArabicDayNameWidget with consistent sizing
-import 'dart:async';
-import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
-    as islamic_date;
+// ArabicDayNameWidget: pure renderer of the provider's Islamic weekday.
+//
+// Previously this owned its own Maghrib timer AND re-subscribed to the whole
+// prayer state, so it cancelled/rescheduled + setState every second. Now the
+// single owner (`PrayerTimingsNotifier`) flips `islamicWeekday` at Maghrib
+// via its boundary timer, and this widget only rebuilds when the weekday
+// itself changes.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/timezone.dart' as tz;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 
-class ArabicDayNameWidget extends ConsumerStatefulWidget {
+class ArabicDayNameWidget extends ConsumerWidget {
   const ArabicDayNameWidget({super.key});
 
-  @override
-  ConsumerState<ArabicDayNameWidget> createState() =>
-      _ArabicDayNameWidgetState();
-}
-
-class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
   static const Map<int, String> _arabicDayNames = {
     7: 'الأحد',
     1: 'الإثنين',
@@ -26,75 +22,14 @@ class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
     6: 'السبت',
   };
 
-  String? _currentDayName;
-  Timer? _updateTimer;
-
   @override
-  void initState() {
-    super.initState();
-    // React to prayer-time changes (e.g. user changes location).
-    ref.listenManual(prayerProvider, (_, __) {
-      _updateDayAndScheduleNext();
-    });
-    // Initial attempt after the first frame; the listener above retries
-    // once timings load, so no fixed millisecond delay is needed.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _updateDayAndScheduleNext();
-    });
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isInitialized =
+        ref.watch(prayerProvider.select((s) => s.isInitialized));
+    final weekday =
+        ref.watch(prayerProvider.select((s) => s.islamicWeekday));
 
-  @override
-  void dispose() {
-    _updateTimer?.cancel();
-    super.dispose();
-  }
-
-  void _updateDayAndScheduleNext() {
-    _updateTimer?.cancel();
-    final now = tz.TZDateTime.now(tz.local);
-    final todaysPrayers = ref.read(prayerProvider).prayerTimings;
-
-    if (todaysPrayers?.maghrib == null) {
-      if (mounted) {
-        setState(() {
-          _currentDayName = _arabicDayNames[now.weekday];
-        });
-      }
-      return;
-    }
-
-    final maghribTime = tz.TZDateTime.from(todaysPrayers!.maghrib, tz.local);
-    final effectiveDate = islamic_date.islamicEffectiveDate(
-      now: now,
-      maghrib: maghribTime,
-    );
-
-    if (mounted) {
-      setState(() {
-        _currentDayName = _arabicDayNames[effectiveDate.weekday] ?? '...';
-      });
-    }
-
-    tz.TZDateTime nextMaghrib = maghribTime;
-    if (now.isAfter(maghribTime)) {
-      final tomorrowsPrayers = PrayerTimings.getPrayersTimings(
-          forDate: now.add(const Duration(days: 1)),);
-      if (tomorrowsPrayers?.maghrib != null) {
-        nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers!.maghrib, tz.local);
-      } else {
-        return;
-      }
-    }
-
-    final timeUntilNextMaghrib = nextMaghrib.difference(now);
-    _updateTimer = Timer(timeUntilNextMaghrib, () {
-      _updateDayAndScheduleNext();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_currentDayName == null) {
+    if (!isInitialized) {
       return const SizedBox(
         height: 120, // Same height as NextPrayerCountdown
         child: Card(
@@ -112,7 +47,7 @@ class _ArabicDayNameWidgetState extends ConsumerState<ArabicDayNameWidget> {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             child: Text(
-              _currentDayName!,
+              _arabicDayNames[weekday] ?? '...',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontSize: 30,
                   ),

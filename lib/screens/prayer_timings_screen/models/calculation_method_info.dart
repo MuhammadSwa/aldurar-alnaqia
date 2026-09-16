@@ -1,4 +1,7 @@
 // models/calculation_method_info.dart
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+    show PrayerMethods;
+
 class CalculationMethodInfo {
   final String
       key; // These keys MUST match adhan_dart's CalculationMethod names
@@ -10,33 +13,32 @@ class CalculationMethodInfo {
   });
 
   static const List<CalculationMethodInfo> methods = [
-    // Ensure these keys match the method names in adhan_dart.CalculationMethod
-    // e.g., adhan_dart.CalculationMethod.muslimWorldLeague() means key 'muslimWorldLeague'
+    // Keys MUST match [PrayerMethods] (the cross-platform contract).
     CalculationMethodInfo(
-        key: 'muslim_world_league', arabicName: 'رابطة العالم الإسلامي',),
+        key: PrayerMethods.muslimWorldLeague, arabicName: 'رابطة العالم الإسلامي',),
     CalculationMethodInfo(
-        key: 'egyptian', arabicName: 'الهيئة المصرية العامة للمساحة',),
+        key: PrayerMethods.egyptian, arabicName: 'الهيئة المصرية العامة للمساحة',),
     CalculationMethodInfo(
-        key: 'karachi', arabicName: 'جامعة العلوم الإسلامية، كراتشي',),
+        key: PrayerMethods.karachi, arabicName: 'جامعة العلوم الإسلامية، كراتشي',),
     CalculationMethodInfo(
-        key: 'umm_al_qura', arabicName: 'جامعة أم القرى، مكة المكرمة',),
+        key: PrayerMethods.ummAlQura, arabicName: 'جامعة أم القرى، مكة المكرمة',),
     CalculationMethodInfo(
-        key: 'dubai', arabicName: 'هيئة دبي للأوقاف والشؤون الإسلامية',),
+        key: PrayerMethods.dubai, arabicName: 'هيئة دبي للأوقاف والشؤون الإسلامية',),
     CalculationMethodInfo(
-        key: 'qatar', arabicName: 'وزارة الأوقاف والشؤون الإسلامية القطرية',),
+        key: PrayerMethods.qatar, arabicName: 'وزارة الأوقاف والشؤون الإسلامية القطرية',),
     CalculationMethodInfo(
-        key: 'kuwait', arabicName: 'وزارة الأوقاف والشؤون الإسلامية الكويتية',),
+        key: PrayerMethods.kuwait, arabicName: 'وزارة الأوقاف والشؤون الإسلامية الكويتية',),
     CalculationMethodInfo(
-        key: 'moon_sighting_committee', arabicName: 'لجنة رؤية الهلال',),
+        key: PrayerMethods.moonSightingCommittee, arabicName: 'لجنة رؤية الهلال',),
     CalculationMethodInfo(
-        key: 'singapore', arabicName: 'المجلس الإسلامي في سنغافورة (MUIS)',),
+        key: PrayerMethods.singapore, arabicName: 'المجلس الإسلامي في سنغافورة (MUIS)',),
     CalculationMethodInfo(
-        key: 'turkey',
+        key: PrayerMethods.turkey,
         arabicName: 'رئاسة الشؤون الدينية التركية (ديانت)',), // Note: 'turkiye'
     CalculationMethodInfo(
-        key: 'tehran', arabicName: 'معهد الجيوفيزياء بجامعة طهران',),
+        key: PrayerMethods.tehran, arabicName: 'معهد الجيوفيزياء بجامعة طهران',),
     CalculationMethodInfo(
-        key: 'north_america',
+        key: PrayerMethods.northAmerica,
         arabicName: 'الجمعية الإسلامية لأمريكا الشمالية (ISNA)',),
     // Add 'other' if you want to allow it, though its parameters are 0 by default.
     // CalculationMethodInfo(key: 'other', arabicName: 'أخرى (مخصص)'),

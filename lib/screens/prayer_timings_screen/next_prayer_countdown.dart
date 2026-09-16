@@ -1,13 +1,91 @@
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NextPrayerCountdown extends ConsumerWidget {
+/// Countdown to the next prayer.
+///
+/// Owns its own 1-second [Timer] while mounted: navigating away disposes it,
+/// so no Dart wakeups happen while the user reads elsewhere. The global
+/// prayer state only changes at event boundaries; this widget diffs the
+/// cached target against `now` locally and asks the notifier to refresh when
+/// the target is long past (e.g. the device slept through a boundary).
+class NextPrayerCountdown extends ConsumerStatefulWidget {
   const NextPrayerCountdown({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(prayerProvider);
+  ConsumerState<NextPrayerCountdown> createState() =>
+      _NextPrayerCountdownState();
+}
+
+class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
+  Timer? _timer;
+  Duration _timeLeft = Duration.zero;
+
+  /// Target the local ticker is currently counting toward. Re-synced from
+  /// the provider on every tick (no `ref.listen` needed — the 1s cadence
+  /// picks up boundary/settings changes within a second).
+  DateTime? _target;
+
+  @override
+  void initState() {
+    super.initState();
+    _target = ref.read(prayerProvider).nextPrayerInfo.$1;
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (_target == null) return;
+    _tick();
+    // Align ticks to the wall-clock second to avoid drift.
+    final now = DateTime.now();
+    final toNextSecond =
+        Duration(milliseconds: 1000 - now.millisecond) + const Duration(milliseconds: 50);
+    _timer = Timer(toNextSecond, () {
+      if (!mounted) return;
+      _tick();
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        _tick();
+      });
+    });
+  }
+
+  void _tick() {
+    if (!mounted) return;
+    final latest = ref.read(prayerProvider).nextPrayerInfo.$1;
+    if (latest != _target) {
+      // Boundary or settings change: restart toward the new target.
+      _target = latest;
+      _startTimer();
+      return;
+    }
+    final target = _target;
+    if (target == null) return;
+    final left = target.difference(DateTime.now());
+    if (left.inSeconds < -5) {
+      // Boundary was missed (sleep/suspend): let the single owner recalc.
+      ref.read(prayerProvider.notifier).refresh();
+      return;
+    }
+    setState(() {
+      _timeLeft = left.isNegative ? Duration.zero : left;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isInitialized =
+        ref.watch(prayerProvider.select((s) => s.isInitialized));
+    final next = ref.watch(prayerProvider.select((s) => s.nextPrayerInfo));
 
     return SizedBox(
       height: 100, // Fixed height
@@ -16,7 +94,7 @@ class NextPrayerCountdown extends ConsumerWidget {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            child: !state.isInitialized
+            child: !isInitialized
                 ? const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -26,8 +104,7 @@ class NextPrayerCountdown extends ConsumerWidget {
                     ],
                   )
                 : Builder(builder: (context) {
-                    final timeLeft = state.timeLeft;
-                    final prayerName = state.nextPrayerInfo.$2;
+                    final prayerName = next.$2;
 
                     if (prayerName.isEmpty) {
                       return const Text(
@@ -52,7 +129,7 @@ class NextPrayerCountdown extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'بعد ${_formatDuration(timeLeft)}',
+                          'بعد ${_formatDuration(_timeLeft)}',
                           style: Theme.of(context).textTheme.titleMedium,
                           textAlign: TextAlign.center,
                         ),

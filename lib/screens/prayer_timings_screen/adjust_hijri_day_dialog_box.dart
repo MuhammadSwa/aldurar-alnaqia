@@ -11,8 +11,26 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.
 HijriCalendar? hijriDayWithOffset(int offset) {
   HijriCalendar.setLocal('ar');
   final now = tz.TZDateTime.now(tz.local);
-  final adjustedDate = now.add(Duration(days: offset));
   final maghrib = PrayerTimings.getPrayersTimings()?.maghrib;
+  final maghribTime =
+      maghrib == null ? null : tz.TZDateTime.from(maghrib, tz.local);
+  return hijriDayWithOffsetAt(
+    offset: offset,
+    now: now,
+    maghrib: maghribTime,
+  );
+}
+
+/// Pure core of [hijriDayWithOffset]: no prefs, no clock — the widget passes
+/// the provider's cached Maghrib so this never triggers a solar calculation
+/// or needs its own timer.
+HijriCalendar? hijriDayWithOffsetAt({
+  required int offset,
+  required DateTime now,
+  required DateTime? maghrib,
+}) {
+  HijriCalendar.setLocal('ar');
+  final adjustedDate = now.add(Duration(days: offset));
   if (maghrib == null) {
     // when timings aren't set, return hijriday without considering maghrib,
     return HijriCalendar.fromDate(adjustedDate);

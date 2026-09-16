@@ -8,6 +8,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_calculator.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
@@ -18,47 +19,60 @@ export 'prayer_calculator.dart'
     show PrayerTimings, arabicPrayerName, islamicWeekdayNow;
 
 /// Immutable snapshot of everything the prayer UI needs.
+///
+/// Deliberately has NO per-second tick field: the countdown text owns its own
+/// 1-second timer locally (see `NextPrayerCountdown`) so this state only
+/// changes at event boundaries, settings changes, or midnight. Widgets that
+/// `select()` schedule/weekday/next info therefore never rebuild every second
+/// and listeners are not woken while the user reads elsewhere.
 class PrayerState {
   final PrayerTimes? prayerTimings;
+
+  /// Typed schedule for the current civil date (today + tomorrow Fajr +
+  /// Sunnah times), computed once per recalculation. The timetable card
+  /// renders from this and must not recalculate times itself.
+  final PrayerSchedule? schedule;
 
   /// The current Islamic day of the week (Monday=1, Sunday=7).
   final int islamicWeekday;
   final (DateTime?, String) nextPrayerInfo;
-  final Duration timeLeft;
   final bool isInitialized;
 
   // ignore: prefer_const_constructors_in_immutables
   PrayerState({
     this.prayerTimings,
+    this.schedule,
     int? islamicWeekday,
     this.nextPrayerInfo = (null, ''),
-    this.timeLeft = Duration.zero,
     this.isInitialized = false,
   }) : islamicWeekday = islamicWeekday ?? tz.TZDateTime.now(tz.local).weekday;
 
   PrayerState copyWith({
     PrayerTimes? prayerTimings,
+    PrayerSchedule? schedule,
     int? islamicWeekday,
     (DateTime?, String)? nextPrayerInfo,
-    Duration? timeLeft,
     bool? isInitialized,
   }) {
     return PrayerState(
       prayerTimings: prayerTimings ?? this.prayerTimings,
+      schedule: schedule ?? this.schedule,
       islamicWeekday: islamicWeekday ?? this.islamicWeekday,
       nextPrayerInfo: nextPrayerInfo ?? this.nextPrayerInfo,
-      timeLeft: timeLeft ?? this.timeLeft,
       isInitialized: isInitialized ?? this.isInitialized,
     );
   }
 }
 
-/// Owns the day's prayer times and drives the countdown.
-/// Heavy work (solar calculation) happens only on init, settings change or
-/// day change; the per-second tick only computes a time difference.
+/// Owns the day's prayer data and the single boundary timer.
+///
+/// Heavy work (solar calculation) happens only on init, settings change,
+/// event boundary, or midnight; there is intentionally no periodic timer
+/// here. A single one-shot [_boundaryTimer] fires at the next
+/// prayer/sunrise/midnight boundary (+1s grace) and triggers a full
+/// recalculation, which also flips the Islamic weekday at Maghrib.
 class PrayerTimingsNotifier extends Notifier<PrayerState> {
-  Timer? _countdownTimer;
-  Timer? _dayChangeTimer;
+  Timer? _boundaryTimer;
 
   @override
   PrayerState build() {
@@ -68,8 +82,7 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
   }
 
   void _dispose() {
-    _countdownTimer?.cancel();
-    _dayChangeTimer?.cancel();
+    _boundaryTimer?.cancel();
   }
 
   Future<void> _initialize() async {
@@ -83,17 +96,34 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
   }
 
   /// Centralized method to recalculate all prayer data.
-  /// Called only when data can fundamentally change.
+  /// Called only when data can fundamentally change: init, settings change,
+  /// event boundary, or midnight.
   void _recalculateAllPrayerData() {
-    // 1. Calculate and cache prayer times for the current day.
+    // 1. Calculate and cache today's prayers (legacy object for existing
+    //    consumers) and the typed schedule (today + tomorrow Fajr + sunnah).
     // 2. Determine the next prayer and its time.
-    // 3. Schedule the timer for the Islamic day change (at Maghrib).
-    // 4. Start/restart the 1-second countdown timer.
+    // 3. Update the Islamic weekday.
+    // 4. Schedule the single one-shot boundary timer.
     final prayers = PrayerTimings.getPrayersTimings();
-    state = state.copyWith(prayerTimings: prayers);
+    final schedule = _currentSchedule();
+    state = state.copyWith(prayerTimings: prayers, schedule: schedule);
     _updateNextPrayerInfo();
-    _updateAndScheduleDayChange();
-    _startCountdownTimer();
+    _updateIslamicWeekday();
+    _scheduleBoundaryTimer();
+  }
+
+  /// The typed schedule for the current civil date, or null when settings
+  /// are incomplete. Computed at most once per recalculation — never from
+  /// a widget build.
+  PrayerSchedule? _currentSchedule() {
+    final now = tz.TZDateTime.now(tz.local);
+    final settings = SharedPreferencesService.loadPrayerSettings();
+    // Fall back to tz.local's zone name when no explicit zone is stored yet
+    // (fresh installs that picked coordinates but predate zone storage).
+    final effective = settings.timezone.isEmpty
+        ? settings.copyWith(timezone: tz.local.name)
+        : settings;
+    return PrayerScheduleCalculator.calculate(settings: effective, date: now);
   }
 
   void _updateNextPrayerInfo() {
@@ -121,27 +151,22 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     );
   }
 
-  void _startCountdownTimer() {
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!ref.mounted) {
-        timer.cancel();
-        return;
-      }
-      final nextPrayerTime = state.nextPrayerInfo.$1;
-
-      if (nextPrayerTime == null) return;
-
-      final now = tz.TZDateTime.now(tz.local);
-      var newTimeLeft = nextPrayerTime.difference(now);
-
-      // If time is up, it's time to recalculate the *next* prayer.
-      if (newTimeLeft.isNegative) {
-        _updateNextPrayerInfo();
-        newTimeLeft = Duration.zero;
-      }
-      state = state.copyWith(timeLeft: newTimeLeft);
-    });
+  /// Public refresh for lifecycle edges (e.g. the countdown widget noticing
+  /// its target is long past while the boundary timer was suspended).
+  /// Cheap: no-ops unless the next event or civil date actually changed.
+  void refresh() {
+    if (!ref.mounted) return;
+    final next = state.nextPrayerInfo.$1;
+    final now = tz.TZDateTime.now(tz.local);
+    final schedule = state.schedule;
+    final dateChanged = schedule == null ||
+        now.year != schedule.civilDate.year ||
+        now.month != schedule.civilDate.month ||
+        now.day != schedule.civilDate.day;
+    if (dateChanged || next == null || !next.isAfter(now)) {
+      PrayerTimings.invalidateCache();
+      _recalculateAllPrayerData();
+    }
   }
 
   Future<void> setPrayerSettings({
@@ -151,6 +176,7 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     required String asrCalc,
     String? highLatitudeRule,
     City? city,
+    bool? preciseAlerts,
   }) async {
     final timezone = await _resolveTimezone(lat, long, city);
     if (timezone == null) {
@@ -166,10 +192,12 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
       timezone: timezone,
       highLatitudeRule: highLatitudeRule,
       city: city,
+      preciseAlerts: preciseAlerts,
     );
     if (!ref.mounted) return;
     _setTimezone(timezone);
 
+    PrayerTimings.invalidateCache();
     _recalculateAllPrayerData();
   }
 
@@ -242,32 +270,34 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     state = state.copyWith(islamicWeekday: effectiveDate.weekday);
   }
 
-  /// Schedules a SINGLE timer to fire at the next Maghrib (battery friendly).
-  void _updateAndScheduleDayChange() {
-    _updateIslamicWeekday();
-    _dayChangeTimer?.cancel();
-
-    final prayers = state.prayerTimings;
-    if (prayers == null) return;
+  /// Schedules the SINGLE one-shot timer for the next boundary (next
+  /// prayer/sunrise or midnight, whichever comes first, +1s grace).
+  /// Battery-friendly: ~7 wakeups/day instead of 86,400.
+  void _scheduleBoundaryTimer() {
+    _boundaryTimer?.cancel();
 
     final now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime nextMaghrib = tz.TZDateTime.from(prayers.maghrib, tz.local);
+    final candidates = <tz.TZDateTime>[];
 
-    if (now.isAfter(nextMaghrib)) {
-      final tomorrowsPrayers = PrayerTimings.getPrayersTimings(
-          forDate: now.add(const Duration(days: 1)),);
-      if (tomorrowsPrayers != null) {
-        nextMaghrib = tz.TZDateTime.from(tomorrowsPrayers.maghrib, tz.local);
-      } else {
-        return;
-      }
-    }
+    final next = state.nextPrayerInfo.$1;
+    if (next != null) candidates.add(tz.TZDateTime.from(next, tz.local));
 
-    final timeUntilNextMaghrib = nextMaghrib.difference(now);
+    // Midnight rollover for the new civil date even when the next prayer is
+    // hours away (e.g. after Isha the next event is tomorrow's Fajr, but the
+    // timetable must still refresh at midnight).
+    candidates.add(
+      tz.TZDateTime(tz.local, now.year, now.month, now.day + 1)
+          .add(const Duration(seconds: 1)),
+    );
 
-    _dayChangeTimer = Timer(timeUntilNextMaghrib, () {
-      // Once Maghrib hits, recalculate everything for the new Islamic day.
+    final future = candidates.where((t) => t.isAfter(now)).toList();
+    if (future.isEmpty) return;
+    future.sort();
+    final delay = future.first.difference(now) + const Duration(seconds: 1);
+
+    _boundaryTimer = Timer(delay, () {
       if (ref.mounted) {
+        PrayerTimings.invalidateCache();
         _recalculateAllPrayerData();
       }
     });

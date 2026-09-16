@@ -4,7 +4,23 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
     as islamic_date;
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+    show
+        PrayerEventId,
+        PrayerMadhabs,
+        PrayerScheduleCalculator,
+        prayerEventArabicName,
+        prayerEventIdFromLibraryName;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+
+export 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+    show
+        PrayerEventId,
+        PrayerSettings,
+        PrayerSchedule,
+        PrayerEvent,
+        prayerEventArabicName,
+        prayerConfigVersion;
 
 /// Pure prayer-time calculation. No Riverpod, no widgets.
 ///
@@ -14,53 +30,40 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 class PrayerTimings {
   const PrayerTimings._();
 
-  /// Factories per stored method key. Replaces the 12-branch switch.
-  static final Map<String, CalculationParameters Function()> _methodFactories =
-      {
-    'egyptian': CalculationMethodParameters.egyptian,
-    'karachi': CalculationMethodParameters.karachi,
-    'muslim_world_league': CalculationMethodParameters.muslimWorldLeague,
-    'dubai': CalculationMethodParameters.dubai,
-    'qatar': CalculationMethodParameters.qatar,
-    'kuwait': CalculationMethodParameters.kuwait,
-    'turkey': CalculationMethodParameters.turkiye,
-    'tehran': CalculationMethodParameters.tehran,
-    'singapore': CalculationMethodParameters.singapore,
-    'umm_al_qura': CalculationMethodParameters.ummAlQura,
-    'north_america': CalculationMethodParameters.northAmerica,
-    'moon_sighting_committee':
-        CalculationMethodParameters.moonsightingCommittee,
-  };
-
-  static final Map<String, HighLatitudeRule> _highLatitudeRules = {
-    'middle_of_night': HighLatitudeRule.middleOfTheNight,
-    'seventh_of_night': HighLatitudeRule.seventhOfTheNight,
-    'twilight_angle': HighLatitudeRule.twilightAngle,
-  };
+  /// Last today-only calculation, cached for 60s so same-frame callers
+  /// (router weekday, yousria cycle, hijri label) share one solar calc
+  /// instead of each triggering their own.
+  static PrayerTimes? _cachedTimings;
+  static String _cachedFingerprint = '';
+  static DateTime _cachedAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   /// Builds calculation params from explicit values (testable, no prefs).
+  ///
+  /// Unknown [method] is logged and falls back to `other()` so the UI can
+  /// still render *something*; the pure [PrayerScheduleCalculator] used by
+  /// the schedule path instead returns null (see its contract).
   static CalculationParameters buildParameters({
     required String method,
     required String asrCalc,
     required double latitude,
     required String highLatitudeRule,
   }) {
-    final factory = _methodFactories[method];
-    final params =
-        factory != null ? factory() : CalculationMethodParameters.other();
-
-    params.madhab = asrCalc == 'shafi' ? Madhab.shafi : Madhab.hanafi;
-
-    if (latitude.abs() > 48.0) {
-      params.highLatitudeRule = _highLatitudeRules[highLatitudeRule] ??
-          HighLatitudeRule.middleOfTheNight;
-    }
-    return params;
+    return PrayerScheduleCalculator.buildParametersForParts(
+          method: method,
+          madhab: asrCalc == 'shafi' ? PrayerMadhabs.shafi : PrayerMadhabs.hanafi,
+          latitude: latitude,
+          highLatitudeRule: highLatitudeRule,
+        ) ??
+        CalculationMethodParameters.other();
   }
 
   /// Reads settings from [SharedPreferencesService] and calculates times
   /// for [forDate] (defaults to now, timezone-aware via `tz.local`).
   /// Returns null when settings are incomplete or calculation fails.
+  ///
+  /// Today-only requests are cached for 60s (keyed by settings fingerprint +
+  /// civil date) so same-frame callers — router weekday, Yousria cycle,
+  /// Hijri label — share one solar calculation.
   static PrayerTimes? getPrayersTimings({DateTime? forDate}) {
     final coords = Coordinates(
       SharedPreferencesService.getLatitude(),
@@ -80,6 +83,37 @@ class PrayerTimings {
           ? tz.TZDateTime.from(forDate, tz.local)
           : tz.TZDateTime.now(tz.local);
 
+      if (forDate == null) {
+        final key =
+            '$method|$asrCalc|${coords.latitude}|${coords.longitude}|${SharedPreferencesService.getHighLatitudeRule()}|${dateForCalculation.year}-${dateForCalculation.month}-${dateForCalculation.day}';
+        if (key == _cachedFingerprint &&
+            _cachedTimings != null &&
+            DateTime.now().difference(_cachedAt) < const Duration(seconds: 60)) {
+          return _cachedTimings;
+        }
+        final fresh = _compute(coords, method, asrCalc, dateForCalculation);
+        if (fresh != null) {
+          _cachedTimings = fresh;
+          _cachedFingerprint = key;
+          _cachedAt = DateTime.now();
+        }
+        return fresh;
+      }
+
+      return _compute(coords, method, asrCalc, dateForCalculation);
+    } catch (e) {
+      logError('Error initializing prayer times', e);
+      return null;
+    }
+  }
+
+  static PrayerTimes? _compute(
+    Coordinates coords,
+    String method,
+    String asrCalc,
+    tz.TZDateTime dateForCalculation,
+  ) {
+    try {
       final params = buildParameters(
         method: method,
         asrCalc: asrCalc,
@@ -97,6 +131,13 @@ class PrayerTimings {
       logError('Error initializing prayer times', e);
       return null;
     }
+  }
+
+  /// Clears the today-only cache. Called after settings/timezone changes so
+  /// the next read recomputes instead of serving stale times for up to 60s.
+  static void invalidateCache() {
+    _cachedFingerprint = '';
+    _cachedTimings = null;
   }
 
   /// All prayer times for display (in local timezone).
@@ -124,17 +165,11 @@ class PrayerTimings {
 /// Maps English prayer names from the library to Arabic.
 /// Note: 'fajrAfter' (tomorrow's Fajr) is normalized to 'fajr' by the
 /// caller before lookup, so no separate entry is needed.
-const Map<String, String> _arabicPrayerNames = {
-  'fajr': 'الفجر',
-  'sunrise': 'الشروق',
-  'dhuhr': 'الظهر',
-  'asr': 'العصر',
-  'maghrib': 'المغرب',
-  'isha': 'العشاء',
-};
-
+/// Single table lives in [prayerEventArabicName]; this stays for callers
+/// that still pass raw library strings.
 String arabicPrayerName(String englishName) {
-  return _arabicPrayerNames[englishName.toLowerCase()] ?? 'الفجر';
+  final id = prayerEventIdFromLibraryName(englishName);
+  return prayerEventArabicName(id ?? PrayerEventId.fajr);
 }
 
 /// The current Islamic weekday (after Maghrib the next day begins),

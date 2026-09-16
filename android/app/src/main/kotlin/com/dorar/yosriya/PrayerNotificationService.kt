@@ -30,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
@@ -95,6 +96,15 @@ class PrayerNotificationService : Service() {
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
   private var wakeLock: PowerManager.WakeLock? = null
 
+  // Serializes notification updates: settings saves, alarm deliveries and
+  // service starts can otherwise race (notify + scheduleNextWakeup are
+  // last-writer-wins, so a stale cycle could leave a stale alarm behind).
+  private val refreshMutex = Mutex()
+
+  // Guarded by `synchronized(this)`. Set when a refresh arrives mid-update;
+  // the running cycle re-runs once more instead of overlapping.
+  private var pendingRefresh = false
+
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onCreate() {
@@ -124,12 +134,37 @@ class PrayerNotificationService : Service() {
   }
 
   fun requestRefresh(isAlarmTrigger: Boolean = false) {
-    acquireWakeLock()
     scope.launch {
+      // Coalesce bursts instead of overlapping: if an update is already
+      // running, mark one follow-up and return.
+      if (!refreshMutex.tryLock()) {
+        synchronized(this@PrayerNotificationService) { pendingRefresh = true }
+        return@launch
+      }
       try {
-        runUpdate(isAlarmTrigger)
+        acquireWakeLock()
+        try {
+          runUpdate(isAlarmTrigger)
+        } finally {
+          releaseWakeLock()
+        }
+        // Drain at most one coalesced follow-up per burst.
+        while (true) {
+          val again = synchronized(this@PrayerNotificationService) {
+            val p = pendingRefresh
+            pendingRefresh = false
+            p
+          }
+          if (!again) break
+          acquireWakeLock()
+          try {
+            runUpdate(false)
+          } finally {
+            releaseWakeLock()
+          }
+        }
       } finally {
-        releaseWakeLock()
+        refreshMutex.unlock()
       }
     }
   }
@@ -169,7 +204,7 @@ class PrayerNotificationService : Service() {
     return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
   }
 
-  private fun scheduleNextWakeup(triggerAtMs: Long) {
+  private fun scheduleNextWakeup(triggerAtMs: Long, exact: Boolean) {
     val am = getSystemService(AlarmManager::class.java) ?: return
     val intent = Intent(this, PrayerNotificationService::class.java).apply {
       action = ACTION_ALARM_TRIGGER
@@ -177,8 +212,13 @@ class PrayerNotificationService : Service() {
     val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     val pi = PendingIntent.getService(this, ALARM_REQUEST_CODE, intent, flags)
 
+    // Phase 5 policy: exact alarms wake the device out of Doze and are
+    // reserved for user-facing prayer-arrival alerts (when the user left
+    // precise alerts enabled). Midnight/sunrise/fallback refreshes use
+    // inexact alarms — the displayed countdown is a system Chronometer, so
+    // it keeps ticking correctly without an exact wakeup.
     try {
-      if (canScheduleExactAlarms()) {
+      if (exact && canScheduleExactAlarms()) {
         am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pi)
       } else {
         am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pi)
@@ -211,7 +251,7 @@ class PrayerNotificationService : Service() {
 
     if (cfg == null || (cfg.lat == 0.0 && cfg.lng == 0.0)) {
       postFallback("الرجاء ضبط الموقع لحساب المواقيت")
-      scheduleNextWakeup(System.currentTimeMillis() + NO_LOCATION_RETRY_MS)
+      scheduleNextWakeup(System.currentTimeMillis() + NO_LOCATION_RETRY_MS, exact = false)
       return
     }
 
@@ -221,7 +261,7 @@ class PrayerNotificationService : Service() {
 
     if (plan == null) {
       postFallback("تعذّر حساب المواقيت")
-      scheduleNextWakeup(System.currentTimeMillis() + NO_LOCATION_RETRY_MS)
+      scheduleNextWakeup(System.currentTimeMillis() + NO_LOCATION_RETRY_MS, exact = false)
       return
     }
 
@@ -234,24 +274,26 @@ class PrayerNotificationService : Service() {
 
     postNotification(plan, hijri)
 
-    // Target next event: either the upcoming prayer or midnight
-    val nextWakeMs = computeNextWakeTimestamp(nowMs, zone, plan.nextAtMs)
-    scheduleNextWakeup(nextWakeMs)
+    // Target next event: either the upcoming prayer or midnight.
+    // Exact wakeup only for alertable prayers with precise alerts enabled.
+    val (nextWakeMs, exact) = computeNextWake(nowMs, zone, plan, cfg.preciseAlerts)
+    scheduleNextWakeup(nextWakeMs, exact)
   }
 
   /**
    * Fires a sound alert notification when prayer enters (if within 2 minutes of boundary).
+   * Sunrise is identified by ID (never by display string) and never alerts.
    */
   private fun maybePostPrayerArrivalAlert(plan: DayPlan, nowMs: Long) {
-    for ((name, timeMs) in plan.times) {
-      if (name == "الشروق") continue // Sunrise is not a prayer
-      val diff = nowMs - timeMs
+    for (event in plan.times) {
+      if (!event.isPrayer) continue // Sunrise is not a prayer
+      val diff = nowMs - event.atMs
       if (diff in -15_000..90_000) {
         val nm = getSystemService(NotificationManager::class.java)
         val alert = NotificationCompat.Builder(this, CHANNEL_ARRIVAL_ID)
             .setSmallIcon(R.drawable.ic_stat_prayer)
             .setColor(NEXT_PRAYER_COLOR)
-            .setContentTitle("حان الآن موعد صلاة $name")
+            .setContentTitle("حان الآن موعد صلاة ${event.id.arabicName}")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -263,17 +305,27 @@ class PrayerNotificationService : Service() {
     }
   }
 
-  private fun computeNextWakeTimestamp(nowMs: Long, zone: TimeZone, nextPrayerAtMs: Long): Long {
+  /**
+   * Next wakeup as (timestamp, exact): exact only when the upcoming boundary
+   * is an alertable prayer AND the user enabled precise alerts. Midnight and
+   * sunrise use inexact alarms (Chronometer display needs no exact wakeup).
+   */
+  private fun computeNextWake(
+    nowMs: Long,
+    zone: TimeZone,
+    plan: DayPlan,
+    preciseAlerts: Boolean
+  ): Pair<Long, Boolean> {
     val nowDate = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(zone).date
     val nextMidnightMs = (nowDate.plus(1, kotlinx.datetime.DateTimeUnit.DAY))
         .atStartOfDayIn(zone)
         .toEpochMilliseconds()
 
     // Wake 1 second after whichever event happens first
-    return if (nextPrayerAtMs in (nowMs + 1000)..nextMidnightMs) {
-      nextPrayerAtMs + 1000
+    return if (plan.nextAtMs in (nowMs + 1000)..nextMidnightMs) {
+      (plan.nextAtMs + 1000) to (preciseAlerts && plan.nextIsPrayer)
     } else {
-      nextMidnightMs + 1000
+      (nextMidnightMs + 1000) to false
     }
   }
 
@@ -353,7 +405,7 @@ class PrayerNotificationService : Service() {
     val collapsed = RemoteViews(packageName, R.layout.notification_prayer_collapsed)
     val expanded = RemoteViews(packageName, R.layout.notification_prayer_expanded)
 
-    collapsed.setTextViewText(R.id.next_label, "${plan.nextName} بعد")
+    collapsed.setTextViewText(R.id.next_label, "${plan.nextId.arabicName} بعد")
     expanded.setTextViewText(R.id.hijri_date, hijri)
 
     // System-managed chronometer: SystemUI updates every second with 0 app wakeups.
@@ -395,8 +447,10 @@ class PrayerNotificationService : Service() {
 
     // Reorder from Fajr-first [Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha]
     // to Maghrib-first [Maghrib, Isha, Fajr, Sunrise, Dhuhr, Asr].
-    val maghribFirst = listOf("المغرب", "العشاء", "الفجر", "الشروق", "الظهر", "العصر")
-        .mapNotNull { wanted -> plan.times.firstOrNull { it.first == wanted } }
+    val maghribFirst = listOf(
+        EventId.MAGHRIB, EventId.ISHA, EventId.FAJR,
+        EventId.SUNRISE, EventId.DHUHR, EventId.ASR)
+        .mapNotNull { wanted -> plan.times.firstOrNull { it.id == wanted } }
         .takeIf { it.size == plan.times.size } ?: plan.times
 
     val orderedPrayers = if (isSystemRtl) {
@@ -406,11 +460,11 @@ class PrayerNotificationService : Service() {
     }
 
     PRAYER_SLOTS.forEachIndexed { i, (nameId, timeId) ->
-      val (name, ms) = orderedPrayers[i]
-      expanded.setTextViewText(nameId, name)
-      expanded.setTextViewText(timeId, formatTime(ms, zone))
+      val event = orderedPrayers[i]
+      expanded.setTextViewText(nameId, event.id.arabicName)
+      expanded.setTextViewText(timeId, formatTime(event.atMs, zone))
 
-      if (name == plan.nextName) {
+      if (event.id == plan.nextId) {
         expanded.setTextColor(nameId, NEXT_PRAYER_COLOR)
         expanded.setTextColor(timeId, NEXT_PRAYER_COLOR)
       } else {
@@ -472,8 +526,25 @@ class PrayerNotificationService : Service() {
   }
 
   // -------------------------------------------------------------------------
-  // Config & Calculations
+  // Config & Calculations (cross-platform contract v1 — see Dart
+  // `models/prayer_schedule.dart`. Event IDs are stable enums here; Arabic
+  // labels exist ONLY in `EventId.arabicName` for rendering.)
   // -------------------------------------------------------------------------
+
+  /** Stable event identifiers. SUNRISE.isPrayer == false: it advances the
+   * next-event state but must never fire an arrival alert. */
+  enum class EventId(val arabicName: String, val isPrayer: Boolean) {
+    FAJR("الفجر", true),
+    SUNRISE("الشروق", false),
+    DHUHR("الظهر", true),
+    ASR("العصر", true),
+    MAGHRIB("المغرب", true),
+    ISHA("العشاء", true)
+  }
+
+  data class PrayerEvent(val id: EventId, val atMs: Long) {
+    val isPrayer: Boolean get() = id.isPrayer
+  }
 
   data class Config(
     val lat: Double,
@@ -482,7 +553,9 @@ class PrayerNotificationService : Service() {
     val asrCalculation: String,
     val highLatitudeRule: String,
     val timezone: String,
-    val hijriOffset: Int
+    val hijriOffset: Int,
+    /** Phase 5 policy: exact alarms only for alertable prayers. */
+    val preciseAlerts: Boolean = true
   ) {
     fun zone(): TimeZone =
         try { TimeZone.of(timezone) } catch (_: Exception) { TimeZone.UTC }
@@ -499,18 +572,21 @@ class PrayerNotificationService : Service() {
           asrCalculation = o.optString("asrCalculation", "shafi"),
           highLatitudeRule = o.optString("highLatitudeRule", "middle_of_night"),
           timezone = o.optString("timezone", ""),
-          hijriOffset = o.optInt("hijriOffset", 0))
+          hijriOffset = o.optInt("hijriOffset", 0),
+          preciseAlerts = o.optBoolean("preciseAlerts", true))
     } catch (_: Exception) {
       null
     }
   }
 
   private class DayPlan(
-    val times: List<Pair<String, Long>>,
-    val nextName: String,
+    val times: List<PrayerEvent>,
+    val nextId: EventId,
     val nextAtMs: Long,
     val maghribMs: Long?
-  )
+  ) {
+    val nextIsPrayer: Boolean get() = nextId.isPrayer
+  }
 
   private fun computePlan(cfg: Config, zone: TimeZone, nowMs: Long): DayPlan? {
     val params = buildParams(cfg.method, cfg.asrCalculation, cfg.highLatitudeRule, cfg.lat)
@@ -518,18 +594,18 @@ class PrayerNotificationService : Service() {
     val now = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(zone)
 
     val todayTimes = prayerTimesList(coordinates, params, now.date, zone) ?: return null
-    val maghribMs = todayTimes.firstOrNull { it.first == "المغرب" }?.second
-    val next = todayTimes.firstOrNull { it.second > nowMs }
+    val maghribMs = todayTimes.firstOrNull { it.id == EventId.MAGHRIB }?.atMs
+    val next = todayTimes.firstOrNull { it.atMs > nowMs }
 
     if (next != null) {
-      return DayPlan(todayTimes, next.first, next.second, maghribMs)
+      return DayPlan(todayTimes, next.id, next.atMs, maghribMs)
     }
 
     // After Isha: tomorrow's Fajr is the upcoming prayer
     val tomorrow = now.date.plus(1, kotlinx.datetime.DateTimeUnit.DAY)
     val tomorrowFajr = prayerTimesList(coordinates, params, tomorrow, zone)
-        ?.firstOrNull()?.second ?: return null
-    return DayPlan(todayTimes, "الفجر", tomorrowFajr, maghribMs)
+        ?.firstOrNull()?.atMs ?: return null
+    return DayPlan(todayTimes, EventId.FAJR, tomorrowFajr, maghribMs)
   }
 
   private fun formatTime(ms: Long, zone: TimeZone): String {
@@ -593,22 +669,30 @@ class PrayerNotificationService : Service() {
     params: CalculationParameters,
     date: kotlinx.datetime.LocalDate,
     zone: TimeZone
-  ): List<Pair<String, Long>>? {
+  ): List<PrayerEvent>? {
     return try {
       val pt = PrayerTimes(coordinates, DateComponents(date.year, date.monthNumber,
           date.dayOfMonth), params)
       listOf(
-          "الفجر" to pt.fajr.toEpochMilliseconds(),
-          "الشروق" to pt.sunrise.toEpochMilliseconds(),
-          "الظهر" to pt.dhuhr.toEpochMilliseconds(),
-          "العصر" to pt.asr.toEpochMilliseconds(),
-          "المغرب" to pt.maghrib.toEpochMilliseconds(),
-          "العشاء" to pt.isha.toEpochMilliseconds())
+          PrayerEvent(EventId.FAJR, pt.fajr.toEpochMilliseconds()),
+          PrayerEvent(EventId.SUNRISE, pt.sunrise.toEpochMilliseconds()),
+          PrayerEvent(EventId.DHUHR, pt.dhuhr.toEpochMilliseconds()),
+          PrayerEvent(EventId.ASR, pt.asr.toEpochMilliseconds()),
+          PrayerEvent(EventId.MAGHRIB, pt.maghrib.toEpochMilliseconds()),
+          PrayerEvent(EventId.ISHA, pt.isha.toEpochMilliseconds()))
     } catch (_: Exception) {
       null
     }
   }
 
+  /**
+   * Stable method IDs — must match Dart [PrayerMethods] (contract v1).
+   * NOTE (Tehran): adhan2 0.0.5 has no TEHRAN method and no maghribAngle
+   * field, so Tehran is approximated as OTHER(fajr 17.7, isha 14.0) while
+   * Dart uses the full Tehran parameters (fajr 17.7, isha 14, maghribAngle
+   * 4.5). Expect Maghrib to differ by a few minutes for `tehran` until
+   * adhan2 is upgraded. Covered by the parity-test tolerance carve-out.
+   */
   private fun buildParams(
     method: String,
     asrCalculation: String,
