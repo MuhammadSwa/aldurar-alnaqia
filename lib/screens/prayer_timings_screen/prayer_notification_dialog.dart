@@ -61,7 +61,7 @@ class PrayerNotificationDialog extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'يُبقي مواقيت الصلاة والعد التنازلي للصلاة القادمة ظاهر في شريط الإشعارات',
+              'إظهار مواقيت الصلاة والعد التنازلي للصلاة القادمة في شريط الإشعارات',
               style: bodyStyle.copyWith(color: colors.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
