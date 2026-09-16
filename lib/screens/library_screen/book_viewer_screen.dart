@@ -203,16 +203,21 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   }
 
   /// Shows the jump dialog, waits until it is fully dismissed, and only then
-  /// drives the viewer. Mutating the viewer while the dialog route is still
-  /// in the tree trips `'_dependents.isEmpty'` deactivation asserts, so the
-  /// dialog must be awaited — never animate on a stale modal context.
+  /// drives the viewer. Animating the PdfView in the same frame as the
+  /// dialog pop trips `'_dependents.isEmpty'` deactivation asserts, so we
+  /// let the dialog route (and keyboard focus) settle first.
   Future<void> _pickPageAndJump(int total) async {
     final page = await showBookJumpDialog(
       context,
       currentPage: _controller?.page ?? 1,
       total: total,
     );
-    if (page == null || !mounted) return;
+    if (!mounted) return;
+    // Let the dialog's exit animation + focus release finish before
+    // touching the PdfView or ScaffoldMessenger.
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+    if (page == null) return;
     if (page < 1 || page > total) {
       ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
