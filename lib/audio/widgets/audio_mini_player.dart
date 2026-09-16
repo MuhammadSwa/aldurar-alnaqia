@@ -167,10 +167,39 @@ class _TransportRow extends ConsumerWidget {
         const Align(alignment: Alignment.topRight, child: SpeedSliderButton()),
         Align(
           alignment: Alignment.topCenter,
-          child: _buildPrimaryButton(context, ref, status),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _SkipButton(
+                icon: Icons.forward_10,
+                tooltip: '+10',
+                onPressed: () => _skip(ref, const Duration(seconds: -10)),
+              ),
+              const SizedBox(width: 8),
+              _buildPrimaryButton(context, ref, status),
+              const SizedBox(width: 8),
+              _SkipButton(
+                icon: Icons.replay_10,
+                tooltip: '-10',
+                onPressed: () => _skip(ref, const Duration(seconds: 10)),
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  void _skip(WidgetRef ref, Duration delta) {
+    final s = ref.read(audioProvider);
+    // Nothing loaded yet — just_audio would throw on seek.
+    if (s.duration <= Duration.zero) return;
+
+    var target = s.position + delta;
+    if (target < Duration.zero) target = Duration.zero;
+    if (target > s.duration) target = s.duration;
+
+    ref.read(audioProvider.notifier).seek(target);
   }
 
   Widget _buildPrimaryButton(
@@ -181,16 +210,17 @@ class _TransportRow extends ConsumerWidget {
     final controller = ref.read(audioProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
 
+    final Widget child;
     switch (status) {
       case AudioStatus.playing:
-        return IconButton(
+        child = IconButton(
           onPressed: controller.togglePlayPause,
           icon: const Icon(Icons.pause),
           color: colorScheme.onSecondaryContainer,
         );
       case AudioStatus.paused:
       case AudioStatus.error:
-        return IconButton(
+        child = IconButton(
           onPressed: () {
             if (status == AudioStatus.error) {
               showSnackBar(context, 'جاري إعادة المحاولة...');
@@ -201,16 +231,45 @@ class _TransportRow extends ConsumerWidget {
           color: colorScheme.onSecondaryContainer,
         );
       case AudioStatus.loading:
-        return SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            color: colorScheme.primary,
-          ),
+        child = SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(color: colorScheme.primary),
         );
       case AudioStatus.stopped:
-        return const SizedBox.shrink();
+        child = const SizedBox.shrink();
     }
+
+    // Same footprint in every state → the row never re-lays out.
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Center(child: child),
+    );
+  }
+}
+
+class _SkipButton extends StatelessWidget {
+  const _SkipButton({
+    required this.icon,
+    required this.tooltip,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      iconSize: 28,
+      color: colorScheme.onSecondaryContainer,
+      tooltip: tooltip,
+    );
   }
 }
 
