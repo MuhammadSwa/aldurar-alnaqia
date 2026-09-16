@@ -4,6 +4,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countd
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_action_buttons.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_date_row.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
@@ -84,6 +85,23 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
                         : Icons.notifications_off,
                   ),
                   onPressed: () async {
+                    // No timings yet (settings never saved) → prompt to set
+                    // them up first instead of the notification explainer.
+                    if (ref.read(prayerProvider).schedule == null) {
+                      final openSettings = await showDialog<bool>(
+                        context: context,
+                        builder: (context) =>
+                            const PrayerSetupRequiredDialog(),
+                      );
+                      if (openSettings == true && context.mounted) {
+                        await showDialog(
+                          context: context,
+                          builder: (context) =>
+                              const PrayerSettingsDialog(),
+                        );
+                      }
+                      return;
+                    }
                     if (enabled) {
                       // On → off straight away, no dialog.
                       await setPrayerNotificationEnabled(false);
