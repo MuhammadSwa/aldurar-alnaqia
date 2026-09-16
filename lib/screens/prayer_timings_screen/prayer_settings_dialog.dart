@@ -9,6 +9,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/calc_method.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_picker.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_button_widget.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
     show prayerProvider;
 
@@ -66,20 +67,30 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
     });
   }
 
-  void onGettingLocation(
-      {required String latitude, required String longitude,}) {
+  City? _gpsNearest; // null + _isGpsLocation ⇒ nothing within 50 km
+
+  Future<void> onGettingLocation({
+    required String latitude,
+    required String longitude,
+  }) async {
     final lat = double.tryParse(latitude);
     final lng = double.tryParse(longitude);
     if (lat == null || lng == null) return;
-    if (mounted) {
-      setState(() {
-        _latitude = lat;
-        _longitude = lng;
-        _selectedCity = null;
-        _isGpsLocation = true;
-        _showLocationError = false;
-      });
-    }
+    final directory = await ref.read(cityDirectoryProvider.future);
+    final nearest = LocationTimezone.nearestCity(
+      latitude: lat,
+      longitude: lng,
+      cities: directory.cities,
+    );
+    if (!mounted) return;
+    setState(() {
+      _latitude = lat;
+      _longitude = lng;
+      _selectedCity = null;
+      _isGpsLocation = true;
+      _showLocationError = false;
+      _gpsNearest = nearest;
+    });
   }
 
   bool get _hasLocation => _latitude != null && _longitude != null;
@@ -146,8 +157,21 @@ class _PrayerSettingsDialogState extends ConsumerState<PrayerSettingsDialog> {
                 ),
                 const SizedBox(height: 8),
                 LocationButtonWidget(
-                    onGettingLocation: onGettingLocation,
-                    hasLocation: _hasLocation && _isGpsLocation,),
+                  onGettingLocation: onGettingLocation,
+                  hasLocation: _hasLocation && _isGpsLocation,
+                ),
+                if (_isGpsLocation)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _gpsNearest == null
+                          ? 'لا توجد مدينة قريبة — سيُعرض موقعك بالإحداثيات'
+                          : 'أقرب مدينة: ${_gpsNearest!.displayName}',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.hintColor),
+                    ),
+                  ),
                 if (_showLocationError)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
