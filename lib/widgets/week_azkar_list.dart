@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/models/week_collection_data.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+import 'package:aldurar_alnaqia/prayer/prayer_repository.dart'
     show islamicWeekdayNow;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart';

@@ -1,4 +1,5 @@
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
@@ -7,8 +8,6 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notificatio
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
-    show prayerProvider;
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +21,7 @@ class PrayerTimingsScreen extends ConsumerStatefulWidget {
       _PrayerTimingsScreenState();
 }
 
-class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen>
-    with WidgetsBindingObserver {
+class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   // Ensures the settings dialog auto-opens only once per route visit
   // when prayer timings can't be calculated (e.g. no location yet).
   bool _hasAutoShownSettings = false;
@@ -31,7 +29,6 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     // Warm the city directory while the user reads the timings so the
     // settings dialog and city search open instantly (the 2.3 MB asset
     // parse now runs on a background isolate, but starting it early
@@ -44,28 +41,11 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen>
     });
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // The user may have changed the system clock/date in Settings while we
-    // were backgrounded (timers suspended, so the countdown couldn't
-    // notice). Force a recalculation on return instead of showing stale
-    // data until the next prayer boundary or restart.
-    if (state == AppLifecycleState.resumed) {
-      ref.read(prayerProvider.notifier).handleResume();
-    }
-  }
-
   void _maybeAutoShowSettingsDialog() {
     if (_hasAutoShownSettings || !mounted) return;
-    final prayerState = ref.read(prayerProvider);
-    if (!prayerState.isInitialized) return;
-    if (prayerState.schedule != null) return;
+    // Null view means unconfigured (prefs are ready before runApp, so there
+    // is no separate loading state to wait for).
+    if (ref.read(prayerViewProvider) != null) return;
     _hasAutoShownSettings = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -78,13 +58,10 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Fires when the async provider finishes init (or settings change)
-    // after we've already entered the page.
-    ref.listen(prayerProvider, (previous, next) {
-      if (previous?.isInitialized == next.isInitialized &&
-          previous?.schedule == next.schedule) {
-        return;
-      }
+    // Fires when the derived view appears (or settings change) after we've
+    // already entered the page.
+    ref.listen(prayerViewProvider, (previous, next) {
+      if (previous == next) return;
       _maybeAutoShowSettingsDialog();
     });
     return Scaffold(
@@ -123,7 +100,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen>
                   onPressed: () async {
                     // No timings yet (settings never saved) → prompt to set
                     // them up first instead of the notification explainer.
-                    if (ref.read(prayerProvider).schedule == null) {
+                    if (ref.read(prayerViewProvider) == null) {
                       final openSettings = await showDialog<bool>(
                         context: context,
                         builder: (context) =>

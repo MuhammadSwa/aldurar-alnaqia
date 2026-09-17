@@ -1,31 +1,26 @@
 import 'package:intl/intl.dart' as intl;
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
-import 'package:timezone/timezone.dart' as tz;
 
-/// Timetable card. Renders the cached [PrayerSchedule] from provider state.
-/// No prayer calculation happens here. Rebuilds only when the schedule or
-/// the next-prayer highlight changes, never every second.
+/// Timetable card. Renders the cached daily schedule; the highlighted row is
+/// derived at build time by matching the prayer's instant against the next
+/// event (not by name), so after Isha — when next is *tomorrow's* Fajr — no
+/// row is wrongly highlighted. Rebuilds only on nudge/settings changes.
 class PrayerTimingsCard extends ConsumerWidget {
   const PrayerTimingsCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. The day's schedule. Changes ~1x/day or on settings change.
-    final schedule =
-        ref.watch(prayerProvider.select((state) => state.schedule));
-    if (schedule == null) {
+    // Null while unconfigured: setup prompt lives on the timings screen.
+    final view = ref.watch(prayerViewProvider);
+    if (view == null) {
       return _buildPlaceholderTable(context);
     }
-
-    // 2. The next prayer name (changes at event boundaries only).
-    final nextPrayerName =
-        ref.watch(prayerProvider.select((s) => s.nextPrayerInfo.$2));
-
-    final placeholderTime = tz.TZDateTime(tz.local, 1, 1, 1);
+    final schedule = view.schedule;
+    final nextMs = view.next.time.millisecondsSinceEpoch;
     final sunnah = schedule.sunnah;
 
     // Main box: fard prayers + sunrise. Sunnah times live in their own
@@ -40,25 +35,26 @@ class PrayerTimingsCard extends ConsumerWidget {
     ];
 
     final sunnahPrayers = [
-      _PrayerTime('منتصف الليل', sunnah?.middleOfNight ?? placeholderTime,
-          isSunnah: true,),
-      _PrayerTime('الثلث الأخير', sunnah?.lastThirdOfNight ?? placeholderTime,
-          isSunnah: true,),
-      _PrayerTime('الضحى', sunnah?.duha ?? placeholderTime, isSunnah: true),
+      _PrayerTime('منتصف الليل', sunnah?.middleOfNight, isSunnah: true),
+      _PrayerTime('الثلث الأخير', sunnah?.lastThirdOfNight, isSunnah: true),
+      _PrayerTime('الضحى', sunnah?.duha, isSunnah: true),
     ];
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildCard(context, fardPrayers, nextPrayerName),
+        _buildCard(context, fardPrayers, nextMs),
         const SizedBox(height: 8),
-        _buildCard(context, sunnahPrayers, nextPrayerName),
+        _buildCard(context, sunnahPrayers, nextMs),
       ],
     );
   }
 
   Widget _buildCard(
-      BuildContext context, List<_PrayerTime> prayers, String nextPrayerName,) {
+    BuildContext context,
+    List<_PrayerTime> prayers,
+    int nextMs,
+  ) {
     return Card(
       elevation: 4,
       margin: EdgeInsets.zero,
@@ -77,7 +73,7 @@ class PrayerTimingsCard extends ConsumerWidget {
             1: FlexColumnWidth(1),
           },
           children: prayers.map((prayer) {
-            final isNextPrayer = prayer.name == nextPrayerName;
+            final isNextPrayer = prayer.time?.millisecondsSinceEpoch == nextMs;
             return _buildTableRow(context, prayer, isNextPrayer);
           }).toList(),
         ),
@@ -88,7 +84,10 @@ class PrayerTimingsCard extends ConsumerWidget {
   // --- REFACTORED: This is now a "dumb" builder method ---
   // It receives all the data it needs and contains NO reactive code.
   TableRow _buildTableRow(
-      BuildContext context, _PrayerTime prayer, bool isNextPrayer,) {
+    BuildContext context,
+    _PrayerTime prayer,
+    bool isNextPrayer,
+  ) {
     final Color? rowColor = isNextPrayer
         ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
         : null;
@@ -132,19 +131,18 @@ class PrayerTimingsCard extends ConsumerWidget {
 
   // Helper method to build the placeholder table to avoid code duplication
   Widget _buildPlaceholderTable(BuildContext context) {
-    final placeholderTime = tz.TZDateTime(tz.local, 1, 1, 1);
-    final fardPrayers = [
-      _PrayerTime('المغرب', placeholderTime),
-      _PrayerTime('العشاء', placeholderTime),
-      _PrayerTime('الفجر', placeholderTime),
-      _PrayerTime('الشروق', placeholderTime),
-      _PrayerTime('الظهر', placeholderTime),
-      _PrayerTime('العصر', placeholderTime),
+    const fardPrayers = [
+      _PrayerTime('المغرب', null),
+      _PrayerTime('العشاء', null),
+      _PrayerTime('الفجر', null),
+      _PrayerTime('الشروق', null),
+      _PrayerTime('الظهر', null),
+      _PrayerTime('العصر', null),
     ];
-    final sunnahPrayers = [
-      _PrayerTime('منتصف الليل', placeholderTime, isSunnah: true),
-      _PrayerTime('الثلث الأخير', placeholderTime, isSunnah: true),
-      _PrayerTime('الضحى', placeholderTime, isSunnah: true),
+    const sunnahPrayers = [
+      _PrayerTime('منتصف الليل', null, isSunnah: true),
+      _PrayerTime('الثلث الأخير', null, isSunnah: true),
+      _PrayerTime('الضحى', null, isSunnah: true),
     ];
 
     return Column(
@@ -201,8 +199,8 @@ class PrayerTimingsCard extends ConsumerWidget {
     );
   }
 
-  String _formatTime(tz.TZDateTime time) {
-    if (time.year <= 1) {
+  String _formatTime(DateTime? time) {
+    if (time == null) {
       return '--:--';
     }
     final period = (time.hour >= 12) ? 'م' : 'ص';
@@ -213,7 +211,7 @@ class PrayerTimingsCard extends ConsumerWidget {
 
 class _PrayerTime {
   final String name;
-  final tz.TZDateTime time;
+  final DateTime? time;
   final bool isSunnah;
 
   const _PrayerTime(this.name, this.time, {this.isSunnah = false});

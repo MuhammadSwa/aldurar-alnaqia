@@ -1,4 +1,5 @@
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/asr_calc_segmented_button.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/calc_method.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
@@ -7,8 +8,6 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_button_wi
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation_method_info.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
-    show prayerProvider;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -107,17 +106,22 @@ class _PrayerSettingsFormState extends ConsumerState<PrayerSettingsForm> {
       return;
     }
 
-    await ref.read(prayerProvider.notifier).setPrayerSettings(
-          lat: _latitude!,
-          long: _longitude!,
-          method: _selectedMethod,
-          asrCalc: _selectedAsrCalc,
-          city: _isGpsLocation ? null : _selectedCity,
-        );
+    final saved = await savePrayerSettings(
+      ref,
+      lat: _latitude!,
+      long: _longitude!,
+      method: _selectedMethod,
+      asrCalc: _selectedAsrCalc,
+      city: _isGpsLocation ? null : _selectedCity,
+    );
 
     if (!mounted) return;
-    showSnackBar(context, 'تم حفظ إعدادات مواقيت الصلاة بنجاح');
-    widget.onSaved?.call();
+    if (saved) {
+      showSnackBar(context, 'تم حفظ إعدادات مواقيت الصلاة بنجاح');
+      widget.onSaved?.call();
+    } else {
+      showSnackBar(context, 'تعذّر تحديد المنطقة الزمنية للموقع');
+    }
   }
 
   @override

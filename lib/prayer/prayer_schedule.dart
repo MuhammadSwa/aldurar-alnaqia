@@ -1,12 +1,11 @@
-// models/prayer_schedule.dart
+// prayer/prayer_schedule.dart
 //
-// Single Flutter prayer domain model (contract v2).
+// Single Flutter prayer domain model (contract v3).
 //
 // This is the sole source of truth for prayer calculation on both sides.
-// Dart precomputes N days of epoch-ms timetables; the native Kotlin service
-// is a dumb renderer + alarm scheduler and performs no solar calculation.
-// (contract v1 duplicated the calculator in Kotlin via adhan2; v2 deletes
-// that duplication, including the old Tehran maghribAngle divergence.)
+// Dart precomputes N days of epoch-ms timetables plus Hijri labels; the
+// native Kotlin service is a dumb renderer + alarm scheduler and performs
+// no solar or Hijri calculation of its own.
 //
 // Cross-platform contract (Kotlin `PrayerNotificationService` reads only):
 //   - stable method IDs: egyptian, karachi, muslim_world_league, dubai, qatar,
@@ -22,7 +21,8 @@
 //     Arabic labels only at render time via [prayerEventArabicName]
 //     (Kotlin mirrors this with its own `EventId.arabicName` for rendering)
 //   - timestamps cross the platform boundary as epoch milliseconds:
-//     `days[i]` holds one civil day's 6 events, `midnights` holds the
+//     `days[i]` holds one civil day's 6 events plus that day's Hijri labels
+//     (`hb` before Maghrib, `ha` from Maghrib on); `midnights` holds the
 //     N+1 civil-midnight boundaries in the same zone so Kotlin can pick
 //     "today" and schedule midnight rollover without any date math.
 
@@ -30,11 +30,13 @@ import 'package:adhan_dart/adhan_dart.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_hijri.dart';
 
 /// Version of the cross-platform prayer-settings contract. Persisted with the
 /// native config so a future contract change can migrate instead of silently
-/// misreading old JSON. v2: Dart precomputes timetables; Kotlin renders.
-const int prayerConfigVersion = 2;
+/// misreading old JSON. v3: payload adds per-day Hijri labels; Kotlin no
+/// longer computes Hijri itself.
+const int prayerConfigVersion = 3;
 
 /// Days of timetable precomputed per native-config write. 30 days lets the
 /// native service survive app-kill/reboot without any Dart execution; the
@@ -56,23 +58,8 @@ String prayerEventArabicName(PrayerEventId id) => switch (id) {
       PrayerEventId.isha => 'العشاء',
     };
 
-/// Parses the stable ID back from the English prayer-name strings returned
-/// by `adhan_dart` (`fajr`, `sunrise`, …, plus `fajrAfter` for tomorrow's
-/// Fajr). Returns null for unknown names instead of guessing.
-PrayerEventId? prayerEventIdFromLibraryName(String name) =>
-    switch (name.toLowerCase()) {
-      'fajr' || 'fajrafter' => PrayerEventId.fajr,
-      'sunrise' => PrayerEventId.sunrise,
-      'dhuhr' => PrayerEventId.dhuhr,
-      'asr' => PrayerEventId.asr,
-      'maghrib' => PrayerEventId.maghrib,
-      'isha' => PrayerEventId.isha,
-      _ => null,
-    };
-
 /// Canonical calculation-method keys. Single Dart-side source; the dropdown
-/// list in `calculation_method_info.dart` and the Kotlin `when` must use
-/// exactly these strings.
+/// list in `calculation_method_info.dart` must use exactly these strings.
 abstract final class PrayerMethods {
   static const String egyptian = 'egyptian';
   static const String karachi = 'karachi';
@@ -135,7 +122,6 @@ class PrayerSettings {
   final String method;
   final String madhab;
   final String highLatitudeRule;
-  final int hijriOffset;
 
   const PrayerSettings({
     required this.latitude,
@@ -144,7 +130,6 @@ class PrayerSettings {
     required this.method,
     required this.madhab,
     required this.highLatitudeRule,
-    this.hijriOffset = 0,
   });
 
   static const PrayerSettings defaults = PrayerSettings(
@@ -184,9 +169,10 @@ class PrayerSettings {
 
   bool get isValid => validate() == null;
 
-  /// Stable fingerprint for change detection / debugging.
+  /// Stable fingerprint for change detection / debugging. Covers the solar
+  /// inputs only (the Hijri day offset affects labels, never prayer times).
   String get fingerprint =>
-      '$latitude,$longitude|$timezone|$method|$madhab|$highLatitudeRule|$hijriOffset|v$prayerConfigVersion';
+      '$latitude,$longitude|$timezone|$method|$madhab|$highLatitudeRule|v$prayerConfigVersion';
 
   /// Native bridge serialization (epoch-ms-free: settings only, no times).
   /// Single writer: `SharedPreferencesService.savePrayerSettings`.
@@ -198,7 +184,6 @@ class PrayerSettings {
         'asrCalculation': madhab,
         'highLatitudeRule': highLatitudeRule,
         'timezone': timezone,
-        'hijriOffset': hijriOffset,
       };
 
   /// Reads the native map defensively: unknown/missing method IDs fall back
@@ -214,11 +199,6 @@ class PrayerSettings {
       madhab: '${map['asrCalculation'] ?? PrayerMadhabs.shafi}',
       highLatitudeRule:
           '${map['highLatitudeRule'] ?? PrayerHighLatitudeRules.middleOfNight}',
-      hijriOffset: switch (map['hijriOffset']) {
-        final int v => v,
-        final double v => v.toInt(),
-        _ => int.tryParse('${map['hijriOffset']}') ?? 0,
-      },
     );
   }
 
@@ -229,7 +209,6 @@ class PrayerSettings {
     String? method,
     String? madhab,
     String? highLatitudeRule,
-    int? hijriOffset,
   }) =>
       PrayerSettings(
         latitude: latitude ?? this.latitude,
@@ -238,7 +217,6 @@ class PrayerSettings {
         method: method ?? this.method,
         madhab: madhab ?? this.madhab,
         highLatitudeRule: highLatitudeRule ?? this.highLatitudeRule,
-        hijriOffset: hijriOffset ?? this.hijriOffset,
       );
 
   @override
@@ -460,9 +438,15 @@ abstract final class PrayerScheduleCalculator {
   }
 }
 
-/// Builds the full native-service payload (contract v2): settings plus
-/// precomputed `days` (one map of 6 epoch-ms per civil day) and `midnights`
-/// (N+1 civil-midnight epoch-ms boundaries in [settings.timezone]).
+/// Builds the full native-service payload (contract v3): settings plus
+/// precomputed `days` (one map of 6 epoch-ms + 2 Hijri labels per civil day)
+/// and `midnights` (N+1 civil-midnight epoch-ms boundaries in
+/// [settings.timezone]).
+///
+/// `hb` is the Hijri label before Maghrib, `ha` from Maghrib on; Kotlin picks
+/// between them with a single comparison, so no Hijri math lives natively.
+/// [hijriOffset] is passed separately (not part of [PrayerSettings]) because
+/// it affects labels only, never the solar timetable or its cache key.
 ///
 /// Never throws: invalid settings or missing tz data yield a settings-only
 /// payload with empty lists, which Kotlin renders as a visible fallback.
@@ -470,9 +454,10 @@ abstract final class PrayerScheduleCalculator {
 Map<String, Object?> buildNativeConfigMap(
   PrayerSettings settings, {
   DateTime? now,
+  int hijriOffset = 0,
 }) {
   final base = settings.toNativeMap();
-  List<Map<String, int>> days = [];
+  List<Map<String, Object>> days = [];
   List<int> midnights = [];
   try {
     if (settings.validate() == null) {
@@ -488,18 +473,31 @@ Map<String, Object?> buildNativeConfigMap(
       );
       days = schedules
           .map(
-            (s) => {
-              'fajr':
-                  s.events[PrayerEventId.fajr]!.time.millisecondsSinceEpoch,
-              'sunrise': s.events[PrayerEventId.sunrise]!.time
-                  .millisecondsSinceEpoch,
-              'dhuhr':
-                  s.events[PrayerEventId.dhuhr]!.time.millisecondsSinceEpoch,
-              'asr': s.events[PrayerEventId.asr]!.time.millisecondsSinceEpoch,
-              'maghrib': s.events[PrayerEventId.maghrib]!.time
-                  .millisecondsSinceEpoch,
-              'isha':
-                  s.events[PrayerEventId.isha]!.time.millisecondsSinceEpoch,
+            (s) {
+              final maghrib = s.events[PrayerEventId.maghrib]!.time;
+              return {
+                'fajr':
+                    s.events[PrayerEventId.fajr]!.time.millisecondsSinceEpoch,
+                'sunrise': s.events[PrayerEventId.sunrise]!.time
+                    .millisecondsSinceEpoch,
+                'dhuhr':
+                    s.events[PrayerEventId.dhuhr]!.time.millisecondsSinceEpoch,
+                'asr':
+                    s.events[PrayerEventId.asr]!.time.millisecondsSinceEpoch,
+                'maghrib': maghrib.millisecondsSinceEpoch,
+                'isha':
+                    s.events[PrayerEventId.isha]!.time.millisecondsSinceEpoch,
+                'hb': hijriLabel(
+                  now: maghrib.subtract(const Duration(seconds: 1)),
+                  maghrib: maghrib,
+                  offset: hijriOffset,
+                ),
+                'ha': hijriLabel(
+                  now: maghrib.add(const Duration(seconds: 1)),
+                  maghrib: maghrib,
+                  offset: hijriOffset,
+                ),
+              };
             },
           )
           .toList();

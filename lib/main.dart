@@ -9,6 +9,7 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/audio_engine.dart';
 import 'package:aldurar_alnaqia/audio/audio_handler.dart';
@@ -40,6 +41,10 @@ Future<ProviderContainer> _bootstrap() async {
   }
 
   await SharedPreferencesService().init();
+
+  // Prayer math needs the IANA database (synchronous; block startup — every
+  // prayer read below depends on it, and prefs are already awaited).
+  tzdata.initializeTimeZones();
 
   final container = ProviderContainer(
     overrides: [

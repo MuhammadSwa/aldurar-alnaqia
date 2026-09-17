@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods, PrayerSettings;
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 
@@ -96,10 +96,6 @@ class SharedPreferencesService {
   static String getPrayerCityLabel() =>
       _sharedPreferences?.getString(PrefsKeys.cityLabel) ?? '';
 
-  static Future<void> setPrayerCityLabel(String label) async {
-    await _sharedPreferences?.setString(PrefsKeys.cityLabel, label);
-  }
-
   /// Stored method or default. Absent returns the default; present-but-unknown
   /// values are logged visibly and reset to default (no silent guess).
   static String getMethod() {
@@ -146,7 +142,6 @@ class SharedPreferencesService {
       method: getMethod(),
       madhab: getAsrCalculation(),
       highLatitudeRule: getHighLatitudeRule(),
-      hijriOffset: getHijriDayOffset(),
     );
   }
 

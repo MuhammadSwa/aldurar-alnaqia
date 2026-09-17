@@ -1,19 +1,13 @@
-import 'dart:async';
-
 import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
 import 'package:flutter/material.dart';
-import 'package:timezone/timezone.dart' as tz;
 
-class GregorianDateWidget extends StatefulWidget {
-  const GregorianDateWidget({super.key});
+/// Gregorian civil date label. Stateless renderer: the caller passes the
+/// current date in the prayer timezone. Midnight rollover arrives via the
+/// parent's rebuild (nudge timer), so no timer lives here.
+class GregorianDateWidget extends StatelessWidget {
+  final DateTime today;
 
-  @override
-  State<GregorianDateWidget> createState() => _GregorianDateWidgetState();
-}
-
-class _GregorianDateWidgetState extends State<GregorianDateWidget> {
-  late tz.TZDateTime _currentDate;
-  Timer? _timer;
+  const GregorianDateWidget({super.key, required this.today});
 
   static const Map<int, String> _arabicMonths = {
     1: 'يناير',
@@ -31,46 +25,10 @@ class _GregorianDateWidgetState extends State<GregorianDateWidget> {
   };
 
   @override
-  void initState() {
-    super.initState();
-    _currentDate = tz.TZDateTime.now(tz.local);
-    _scheduleNextUpdate();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel(); // Important: prevent memory leaks
-    super.dispose();
-  }
-
-  void _scheduleNextUpdate() {
-    final now = tz.TZDateTime.now(tz.local);
-    // Calculate the exact moment of the next midnight.
-    final nextMidnight =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day + 1);
-    final durationUntilMidnight = nextMidnight.difference(now);
-
-    // Set a timer that will fire only once, precisely at midnight.
-    _timer = Timer(durationUntilMidnight, () {
-      if (mounted) {
-        setState(() {
-          _currentDate = tz.TZDateTime.now(tz.local);
-        });
-        // After updating, schedule the *next* update for the following midnight.
-        _scheduleNextUpdate();
-      }
-    });
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day} ${_arabicMonths[date.month]} ${date.year}';
-  }
-
-  @override
   Widget build(BuildContext context) {
     return InlineTextWidget(
       style: Theme.of(context).textTheme.titleMedium,
-      _formatDate(_currentDate),
+      '${today.day} ${_arabicMonths[today.month]} ${today.year}',
       textDirection: TextDirection.rtl,
     );
   }

@@ -253,7 +253,14 @@ class PrayerNotificationService : Service() {
       maybePostPrayerArrivalAlert(plan, nowMs)
     }
 
-    val hijri = hijriDateString(cfg, nowMs, plan.maghribMs)
+    // The Islamic day flips at Maghrib: both labels ride in the payload,
+    // so this is a single comparison with no calendar math.
+    val maghrib = plan.maghribMs
+    val hijri = if (maghrib != null && nowMs >= maghrib) {
+      plan.hijriAfter
+    } else {
+      plan.hijriBefore
+    }
 
     postNotification(plan, hijri)
 
@@ -496,11 +503,12 @@ class PrayerNotificationService : Service() {
   }
 
   // -------------------------------------------------------------------------
-  // Config & precomputed timetables (cross-platform contract v2 — see Dart
-  // `models/prayer_schedule.dart`. Dart owns ALL solar math and writes
-  // `days` (N civil days × 6 epoch-ms) + `midnights` (N+1 boundaries).
-  // Kotlin only selects next/display and schedules alarms. Event IDs are
-  // stable enums here; Arabic labels exist ONLY in `EventId.arabicName`.)
+  // Config & precomputed timetables (cross-platform contract v3 — see Dart
+  // `prayer/prayer_schedule.dart`. Dart owns ALL solar + Hijri math and
+  // writes `days` (N civil days × 6 epoch-ms + 2 Hijri labels) + `midnights`
+  // (N+1 boundaries). Kotlin only selects next/display and schedules alarms.
+  // Event IDs are stable enums here; Arabic labels exist ONLY in
+  // `EventId.arabicName` for rendering.)
   // -------------------------------------------------------------------------
 
   /** Stable event identifiers. SUNRISE.isPrayer == false: it advances the
@@ -522,9 +530,17 @@ class PrayerNotificationService : Service() {
     val lat: Double,
     val lng: Double,
     val timezone: String,
-    val hijriOffset: Int,
-    val days: List<List<PrayerEvent>>,
+    val days: List<DayTimes>,
     val midnights: List<Long>
+  )
+
+  /** One civil day: 6 prayer instants + the Hijri label before Maghrib
+   * (`hijriBefore`) and from Maghrib on (`hijriAfter`). Both strings come
+   * from Dart (single source with the in-app label); Kotlin only picks. */
+  data class DayTimes(
+    val events: List<PrayerEvent>,
+    val hijriBefore: String,
+    val hijriAfter: String
   )
 
   private fun readConfig(context: Context): Config? {
@@ -535,7 +551,6 @@ class PrayerNotificationService : Service() {
           lat = o.getDouble("lat"),
           lng = o.getDouble("lng"),
           timezone = o.optString("timezone", ""),
-          hijriOffset = o.optInt("hijriOffset", 0),
           days = parseDays(o.optJSONArray("days")),
           midnights = parseLongs(o.optJSONArray("midnights")))
     } catch (_: Exception) {
@@ -543,9 +558,9 @@ class PrayerNotificationService : Service() {
     }
   }
 
-  private fun parseDays(arr: JSONArray?): List<List<PrayerEvent>> {
+  private fun parseDays(arr: JSONArray?): List<DayTimes> {
     if (arr == null) return emptyList()
-    val out = ArrayList<List<PrayerEvent>>(arr.length())
+    val out = ArrayList<DayTimes>(arr.length())
     for (i in 0 until arr.length()) {
       val d = arr.optJSONObject(i) ?: continue
       val day = listOf(
@@ -556,7 +571,12 @@ class PrayerNotificationService : Service() {
           PrayerEvent(EventId.MAGHRIB, d.optLong("maghrib", 0L)),
           PrayerEvent(EventId.ISHA, d.optLong("isha", 0L)))
       if (day.any { it.atMs <= 0L }) continue
-      out.add(day)
+      // Pre-v3 payloads carry no Hijri labels: skip the day so the window
+      // reads as expired and one app open rewrites it. No migration code.
+      val hb = d.optString("hb", "")
+      val ha = d.optString("ha", "")
+      if (hb.isEmpty() || ha.isEmpty()) continue
+      out.add(DayTimes(day, hb, ha))
     }
     return out
   }
@@ -575,7 +595,9 @@ class PrayerNotificationService : Service() {
     val times: List<PrayerEvent>,
     val nextId: EventId,
     val nextAtMs: Long,
-    val maghribMs: Long?
+    val maghribMs: Long?,
+    val hijriBefore: String,
+    val hijriAfter: String
   ) {
     val nextIsPrayer: Boolean get() = nextId.isPrayer
   }
@@ -601,11 +623,12 @@ class PrayerNotificationService : Service() {
       }
     }
     if (todayIdx >= cfg.days.size) return null
-    val times = cfg.days[todayIdx]
+    val today = cfg.days[todayIdx]
+    val times = today.events
 
     var next: PrayerEvent? = null
     outer@ for (day in cfg.days) {
-      for (event in day) {
+      for (event in day.events) {
         if (event.atMs > nowMs) {
           next = event
           break@outer
@@ -614,7 +637,8 @@ class PrayerNotificationService : Service() {
     }
     val n = next ?: return null
     return DayPlan(times, n.id, n.atMs,
-        times.firstOrNull { it.id == EventId.MAGHRIB }?.atMs)
+        times.firstOrNull { it.id == EventId.MAGHRIB }?.atMs,
+        today.hijriBefore, today.hijriAfter)
   }
 
   private fun formatTime(ms: Long, zoneId: String): String {
@@ -623,50 +647,6 @@ class PrayerNotificationService : Service() {
     }
     val period = if (hourOf(ms, zoneId) < 12) "ص" else "م"
     return "${fmt.format(Date(ms))} $period"
-  }
-
-  private fun hijriDateString(
-    cfg: Config,
-    nowMs: Long,
-    maghribMs: Long?
-  ): String {
-    // Uses android.icu (present on all supported APIs, minSdk 24) instead of
-    // java.time, so no core-library desugaring is needed.
-    // NOTE: Must use Umm al-Qura calculation to match the Flutter UI, which
-    // uses the `hijri` Dart package (Umm al-Qura table). The ICU default is
-    // the tabular civil calendar, which drifts 1-2 days from Umm al-Qura.
-    return try {
-      val tz = android.icu.util.TimeZone.getTimeZone(cfg.timezone.ifEmpty { "UTC" })
-      val cal = android.icu.util.IslamicCalendar(
-          tz, android.icu.util.ULocale.ENGLISH)
-      cal.setCalculationType(
-          android.icu.util.IslamicCalendar.CalculationType.ISLAMIC_UMALQURA)
-      cal.timeInMillis = nowMs + cfg.hijriOffset * 86_400_000L
-      if (maghribMs != null && nowMs >= maghribMs) {
-        cal.add(android.icu.util.Calendar.DAY_OF_MONTH, 1)
-      }
-      val day = cal.get(android.icu.util.Calendar.DAY_OF_MONTH)
-      val month = cal.get(android.icu.util.Calendar.MONTH) + 1 // 0-based
-      val year = cal.get(android.icu.util.Calendar.YEAR)
-      "$day ${hijriMonthName(month)} $year"
-    } catch (_: Exception) {
-      ""
-    }
-  }
-
-  private fun hijriMonthName(month: Int): String = when (month) {
-    1 -> "محرم"
-    2 -> "صفر"
-    3 -> "ربيع الأول"
-    4 -> "ربيع الآخر"
-    5 -> "جمادى الأولى"
-    6 -> "جمادى الآخرة"
-    7 -> "رجب"
-    8 -> "شعبان"
-    9 -> "رمضان"
-    10 -> "شوال"
-    11 -> "ذو القعدة"
-    else -> "ذو الحجة"
   }
 
   private fun hourOf(ms: Long, zoneId: String): Int {

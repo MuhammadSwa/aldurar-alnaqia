@@ -1,6 +1,6 @@
 // models/calculation_method_info.dart
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show PrayerMethods;
 
 class CalculationMethodInfo {

@@ -1,5 +1,5 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods, PrayerSettings;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -293,9 +293,16 @@ void main() {
       );
     });
 
-    test('load carries the hijri offset into settings', () {
+    test('hijri offset does not leak into solar settings', () {
+      final before = SharedPreferencesService.loadPrayerSettings().fingerprint;
       SharedPreferencesService.setHijriDayOffset(1);
-      expect(SharedPreferencesService.loadPrayerSettings().hijriOffset, 1);
+      // The offset lives in prefs and the native payload (as a build
+      // parameter), never in the calculation inputs or their cache key.
+      expect(
+        SharedPreferencesService.loadPrayerSettings().fingerprint,
+        before,
+      );
+      expect(SharedPreferencesService.getHijriDayOffset(), 1);
     });
   });
 
@@ -304,8 +311,15 @@ void main() {
       expect(SharedPreferencesService.getPrayerCityLabel(), isEmpty);
     });
 
-    test('round-trips a label', () async {
-      await SharedPreferencesService.setPrayerCityLabel('القاهرة، مصر');
+    test('label round-trips through savePrayerSettings', () async {
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 30.0444,
+        longitude: 31.2357,
+        method: PrayerMethods.egyptian,
+        asrCalculation: PrayerMadhabs.shafi,
+        timezone: 'Africa/Cairo',
+        cityLabel: 'القاهرة، مصر',
+      );
       expect(
         SharedPreferencesService.getPrayerCityLabel(),
         'القاهرة، مصر',

@@ -16,7 +16,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
     as islamic_date;
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 
 const _cairo = PrayerSettings(
   latitude: 30.0444,
@@ -352,6 +352,16 @@ void main() {
             1000,
         isTrue,
       );
+      // Contract v3: each day carries both Hijri labels, non-empty.
+      for (final d in days) {
+        final m = d as Map;
+        expect((m['hb'] as String).isNotEmpty, isTrue);
+        expect((m['ha'] as String).isNotEmpty, isTrue);
+      }
+      // Maghrib flips the label: ha is tomorrow's Hijri date.
+      final day1hb = (days.first as Map)['hb'] as String;
+      final day1ha = (days.first as Map)['ha'] as String;
+      expect(day1hb, isNot(equals(day1ha)));
     });
 
     test('native payload is empty for invalid settings', () {

@@ -1,7 +1,7 @@
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
     as islamic_date;
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+import 'package:aldurar_alnaqia/prayer/prayer_repository.dart'
     show todayPrayerSchedule;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 

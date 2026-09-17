@@ -1,12 +1,15 @@
+import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/gregorian_date_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
-    show prayerProvider;
+import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The day name comes from prayer controller state (flips at Maghrib);
-// the dates below are Hijri | Gregorian.
+/// Day name (flips at Maghrib) + Hijri | Gregorian dates.
+///
+/// Pure derivation: weekday, Hijri label, and civil date all come from the
+/// watched [prayerViewProvider] plus wall-clock time at build. Rebuilds on
+/// nudge/settings changes; keeps no timers of its own.
 class PrayerDateRow extends ConsumerWidget {
   const PrayerDateRow({super.key});
 
@@ -23,9 +26,10 @@ class PrayerDateRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isInitialized =
-        ref.watch(prayerProvider.select((s) => s.isInitialized));
-    final weekday = ref.watch(prayerProvider.select((s) => s.islamicWeekday));
+    final view = ref.watch(prayerViewProvider);
+    final offset = ref.watch(hijriOffsetProvider);
+
+    final now = view?.today ?? DateTime.now();
 
     return Card(
       margin: EdgeInsets.zero,
@@ -36,7 +40,7 @@ class PrayerDateRow extends ConsumerWidget {
           children: [
             // ---- Day name line (in place of the old location line) ----
             Text(
-              !isInitialized ? '...' : (_arabicDayNames[weekday] ?? '...'),
+              view == null ? '...' : (_arabicDayNames[view.weekday] ?? '...'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleLarge?.copyWith(
@@ -49,8 +53,14 @@ class PrayerDateRow extends ConsumerWidget {
             // ---- Dates row: Hijri | Gregorian ----
             Row(
               children: [
-                const Expanded(
-                  child: Center(child: HijriDateWidget()),
+                Expanded(
+                  child: Center(
+                    child: HijriDateWidget(
+                      now: now,
+                      maghrib: view?.schedule.maghrib,
+                      offset: offset,
+                    ),
+                  ),
                 ),
                 Container(
                   width: 1,
@@ -58,8 +68,8 @@ class PrayerDateRow extends ConsumerWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   color: theme.dividerColor,
                 ),
-                const Expanded(
-                  child: Center(child: GregorianDateWidget()),
+                Expanded(
+                  child: Center(child: GregorianDateWidget(today: now)),
                 ),
               ],
             ),

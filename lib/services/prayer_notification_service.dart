@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show buildNativeConfigMap;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart'
     show PrefsKeys, SharedPreferencesService;
@@ -95,19 +95,24 @@ Future<void> refreshPrayerNotification() async {
 
 Future<void> _writeConfig() async {
   final prefs = await SharedPreferences.getInstance();
-  // Single serialization path: typed settings + precomputed timetables ->
-  // native map. The native service must never observe half-saved
-  // coordinates/timezone/method, so all writers go through
-  // `savePrayerSettings` (one refresh per save). Policy is always-exact:
-  // alertable prayers wake the device on time.
-  // tz init is idempotent; _writeConfig can run before the provider init.
+  // Single serialization path: stored settings + precomputed timetables ->
+  // native map. Writers (prayer `savePrayerSettings`, hijri offset changes)
+  // save first, then call `refreshPrayerNotification`, so the native service
+  // never observes half-saved coordinates/timezone/method. Policy is
+  // always-exact: alertable prayers wake the device on time.
+  // tz init is idempotent; main() already ran it, this covers test hosts.
   try {
     tzdata.initializeTimeZones();
   } catch (_) {}
   final settings = SharedPreferencesService.loadPrayerSettings();
   await prefs.setString(
     PrefsKeys.prayerNativeConfig,
-    jsonEncode(buildNativeConfigMap(settings)),
+    jsonEncode(
+      buildNativeConfigMap(
+        settings,
+        hijriOffset: SharedPreferencesService.getHijriDayOffset(),
+      ),
+    ),
   );
 }
 

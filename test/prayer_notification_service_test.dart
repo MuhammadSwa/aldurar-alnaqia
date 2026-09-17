@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show PrayerMadhabs, PrayerMethods;
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart'
@@ -71,10 +71,13 @@ void main() {
       expect(config['asrCalculation'], PrayerMadhabs.hanafi);
       expect(config['timezone'], 'Africa/Cairo');
       expect(config['version'], isNotNull);
-      expect(config['hijriOffset'], 0);
-      // Contract v2: precomputed tables ride along.
+      expect(config.containsKey('hijriOffset'), isFalse);
+      // Contract v3: precomputed tables ride along, with Hijri labels.
       expect((config['days'] as List).length, 30);
       expect((config['midnights'] as List).length, 31);
+      final day = (config['days'] as List).first as Map;
+      expect((day['hb'] as String).isNotEmpty, isTrue);
+      expect((day['ha'] as String).isNotEmpty, isTrue);
     });
 
     test('empty prefs write defaults without throwing', () async {

@@ -9,8 +9,7 @@ import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widg
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
-    show prayerProvider;
+import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -31,7 +30,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final islamicWeekday =
-        ref.watch(prayerProvider.select((state) => state.islamicWeekday));
+        ref.watch(prayerViewProvider.select((view) => view?.weekday)) ??
+            DateTime.now().weekday;
     final dayIndex = islamicWeekday - 1;
 
     return Scaffold(

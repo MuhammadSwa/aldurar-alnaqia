@@ -1,17 +1,21 @@
 import 'dart:async';
 
+import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Countdown to the next prayer.
 ///
 /// Owns its own 1-second [Timer] while mounted: navigating away disposes it,
-/// so no Dart wakeups happen while the user reads elsewhere. The global
-/// prayer state only changes at event boundaries; this widget diffs the
-/// cached target against `now` locally and asks the notifier to refresh when
-/// the target is long past (e.g. the device slept through a boundary).
+/// so no Dart wakeups happen while the user reads elsewhere. The displayed
+/// next prayer is derived live on every tick from the cached daily schedule
+/// and wall-clock time — nothing about "now" is stored, so manual
+/// system-clock changes correct themselves within a second with no refresh
+/// protocol. When the derived next prayer differs from the last published
+/// one, the tick pokes [prayerNudgeProvider] so highlight/weekday/date
+/// widgets rebuild too.
 class NextPrayerCountdown extends ConsumerStatefulWidget {
   const NextPrayerCountdown({super.key});
 
@@ -22,18 +26,16 @@ class NextPrayerCountdown extends ConsumerStatefulWidget {
 
 class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
   Timer? _timer;
-  Duration _timeLeft = Duration.zero;
+  DateTime _now = DateTime.now();
 
-  /// Target the local ticker is currently counting toward. Re-synced from
-  /// the provider on every tick (no `ref.listen` needed — the 1s cadence
-  /// picks up boundary/settings changes within a second).
-  DateTime? _target;
+  /// Epoch-ms of the next event we last poked for. Change detection only —
+  /// the display always uses the live derivation in [build].
+  int? _pokedFor;
 
   @override
   void initState() {
     super.initState();
-    _target = ref.read(prayerProvider).nextPrayerInfo.$1;
-    _startTimer();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
   @override
@@ -42,107 +44,55 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
     super.dispose();
   }
 
-  void _startTimer() {
-    _timer?.cancel();
-    if (_target == null) return;
-    _tick();
-    // Align ticks to the wall-clock second to avoid drift.
-    final now = DateTime.now();
-    final toNextSecond = Duration(milliseconds: 1000 - now.millisecond) +
-        const Duration(milliseconds: 50);
-    _timer = Timer(toNextSecond, () {
-      if (!mounted) return;
-      _tick();
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (!mounted) return;
-        _tick();
-      });
-    });
-  }
-
   void _tick() {
     if (!mounted) return;
-    // Cheap sync (no solar math unless something changed): catches manual
-    // system-clock jumps within a second. A backward jump leaves the cached
-    // target in the future (e.g. Asr still "ahead" at 2am), so without this
-    // the widget would count toward the wrong prayer until the next restart.
-    // On change the provider rebuilds and `build` re-syncs `_target`.
-    ref.read(prayerProvider.notifier).refresh();
-    final latest = ref.read(prayerProvider).nextPrayerInfo.$1;
-    if (latest != _target) {
-      // Boundary or settings change: restart toward the new target.
-      _target = latest;
-      _startTimer();
-      return;
+    final view = ref.read(prayerViewProvider);
+    // Unconfigured: nothing to count toward. The `watch` in `build`
+    // rebuilds us when settings get published — no ticking needed.
+    if (view == null) return;
+    final now = DateTime.now();
+    // The repository is a stateless cache, not a provider: read the shared
+    // instance directly. Display values are derived here, never subscribed.
+    final epoch = PrayerRepository.instance
+        .nextAt(view.settings, now)
+        ?.time
+        .millisecondsSinceEpoch;
+    if (epoch != _pokedFor) {
+      _pokedFor = epoch;
+      ref.read(prayerNudgeProvider.notifier).poke();
     }
-    final target = _target;
-    if (target == null) return;
-    final left = target.difference(DateTime.now());
-    if (left.inSeconds < -5) {
-      // Boundary was missed (sleep/suspend): let the single owner recalc.
-      ref.read(prayerProvider.notifier).refresh();
-      return;
-    }
-    setState(() {
-      _timeLeft = left.isNegative ? Duration.zero : left;
-    });
+    setState(() => _now = now);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isInitialized =
-        ref.watch(prayerProvider.select((s) => s.isInitialized));
-    final next = ref.watch(prayerProvider.select((s) => s.nextPrayerInfo));
-    final cityLabel = ref.watch(prayerProvider.select((s) => s.cityLabel));
-    final isUnset = cityLabel.isEmpty;
-
-    // The ticker re-syncs only while it runs. If the target appeared while
-    // it was idle (first setup: null → first prayer), (re)start it. The
-    // field write here is safe; timer work is deferred past build.
-    if (next.$1 != _target) {
-      if (next.$1 == null) {
-        _target = null;
-        _timer?.cancel();
-      } else {
-        _target = next.$1;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _startTimer();
-        });
-      }
-    }
+    final view = ref.watch(prayerViewProvider);
 
     return Card(
       elevation: 4,
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: !isInitialized
-            ? const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 8),
-                  Text('جاري تحميل أوقات الصلاة...'),
-                ],
-              )
+        child: view == null
+            ? _UnsetContent(onTap: () => _openSettings(context))
             : Builder(
                 builder: (context) {
-                  final prayerName = next.$2;
-
-                  if (prayerName.isEmpty) {
+                  // Live derivation, deliberately `read` (not `watch`): this
+                  // rebuild already runs every tick and on every nudge, so
+                  // subscribing would add nothing but rebuild loops.
+                  final next = PrayerRepository.instance.nextAt(
+                    view.settings,
+                    _now,
+                  );
+                  if (next == null) {
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _LocationLine(
-                          label: cityLabel,
-                          isUnset: isUnset,
+                          label: view.cityLabel,
+                          isUnset: view.cityLabel.isEmpty,
                           onTap: () => _openSettings(context),
                         ),
                         const SizedBox(height: 4),
@@ -154,13 +104,13 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                       ],
                     );
                   }
-
+                  final left = next.time.difference(_now);
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _LocationLine(
-                        label: cityLabel,
-                        isUnset: isUnset,
+                        label: view.cityLabel,
+                        isUnset: view.cityLabel.isEmpty,
                         onTap: () => _openSettings(context),
                       ),
                       const SizedBox(height: 6),
@@ -176,7 +126,7 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                             color: colorScheme.primary,
                           ),
                           Text(
-                            '$prayerName بعد',
+                            '${next.arabicName} بعد',
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: colorScheme.primary,
                               fontWeight: FontWeight.bold,
@@ -188,7 +138,7 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                               vertical: 2,
                             ),
                             child: Text(
-                              _formatDuration(_timeLeft),
+                              _formatDuration(left),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.primary,
                                 fontFeatures: const [
@@ -222,6 +172,28 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
     return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
+  }
+}
+
+class _UnsetContent extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _UnsetContent({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LocationLine(label: '', isUnset: true, onTap: onTap),
+        const SizedBox(height: 4),
+        const Text(
+          'اضغط لتحديد الموقع لحساب المواقيت',
+          style: TextStyle(fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
   }
 }
 

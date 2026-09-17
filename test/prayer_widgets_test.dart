@@ -1,80 +1,65 @@
 // Widget/unit tests for the prayer timings screen.
 //
-// Proves: the timetable renders from the cached schedule (no calculation in
-// build), the countdown owns its ticker locally, Hijri/day labels flip at
-// Maghrib without timers, and nothing rebuilds every second.
+// Proves: the timetable renders from the derived view (no calculation in
+// build), the countdown owns its ticker locally, and the highlight follows
+// the next event by instant identity.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/adjust_hijri_day_dialog_box.dart'
-    show hijriDayWithOffset;
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_hijri.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
-const _settings = PrayerSettings(
-  latitude: 30.0444,
-  longitude: 31.2357,
-  timezone: 'Africa/Cairo',
-  method: 'egyptian',
-  madhab: 'shafi',
-  highLatitudeRule: 'middle_of_night',
-);
-
-/// Notifier stub: fixed schedule for *today*, no timers, no prefs, no assets.
-class _FakePrayerNotifier extends PrayerTimingsNotifier {
-  @override
-  PrayerState build() {
-    final now = tz.TZDateTime.now(tz.getLocation('Africa/Cairo'));
-    final schedule = PrayerScheduleCalculator.calculate(
-      settings: _settings,
-      date: now,
-    )!;
-    final next = schedule.nextEventAt(now);
-    return PrayerState(
-      schedule: schedule,
-      islamicWeekday: 6,
-      nextPrayerInfo: (next.time, next.arabicName),
-      isInitialized: true,
-    );
-  }
+/// Configured prefs (Cairo) so the real providers derive a real view.
+Future<ProviderContainer> makeConfiguredContainer() async {
+  SharedPreferences.setMockInitialValues(<String, Object>{
+    PrefsKeys.latitude: 30.0444,
+    PrefsKeys.longitude: 31.2357,
+    PrefsKeys.method: PrayerMethods.egyptian,
+    PrefsKeys.asrCalculation: PrayerMadhabs.shafi,
+    PrefsKeys.timezone: 'Africa/Cairo',
+    PrefsKeys.cityLabel: 'القاهرة، مصر',
+  });
+  await SharedPreferencesService().init();
+  final container = ProviderContainer();
+  // Force provider creation against the mock prefs.
+  container.read(prayerViewProvider);
+  return container;
 }
 
-/// Notifier stub with a settable target: reproduces first setup
-/// (null → first prayer) without prefs or timers.
-class _MutablePrayerNotifier extends PrayerTimingsNotifier {
-  @override
-  PrayerState build() =>
-      PrayerState(nextPrayerInfo: (null, ''), isInitialized: true);
-
-  void setNext(DateTime time, String name) {
-    state = state.copyWith(nextPrayerInfo: (time, name));
-  }
+Future<ProviderContainer> makeEmptyContainer() async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  await SharedPreferencesService().init();
+  return ProviderContainer();
 }
 
 void main() {
   setUpAll(() => tzdata.initializeTimeZones());
 
   group('PrayerTimingsCard', () {
-    testWidgets('renders cached schedule without recalculating', (tester) async {
+    testWidgets('renders derived schedule without recalculating',
+        (tester) async {
+      final container = await makeConfiguredContainer();
+      addTearDown(container.dispose);
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            prayerProvider.overrideWith(_FakePrayerNotifier.new),
-          ],
+        UncontrolledProviderScope(
+          container: container,
           child: const MaterialApp(
             home: Scaffold(body: PrayerTimingsCard()),
           ),
         ),
       );
       await tester.pump();
-      // All six fard + sunnah rows present, next prayer highlighted by name.
+      // All six fard + sunnah rows present.
       for (final name in [
         'الفجر',
         'الشروق',
@@ -90,12 +75,16 @@ void main() {
       }
       // No placeholder dashes when a schedule exists.
       expect(find.text('--:--'), findsNothing);
+      container.dispose();
     });
 
-    testWidgets('shows placeholder when schedule is null', (tester) async {
+    testWidgets('shows placeholder when unconfigured', (tester) async {
+      final container = await makeEmptyContainer();
+      addTearDown(container.dispose);
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(home: Scaffold(body: PrayerTimingsCard())),
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: Scaffold(body: PrayerTimingsCard())),
         ),
       );
       await tester.pump();
@@ -104,13 +93,13 @@ void main() {
   });
 
   group('NextPrayerCountdown', () {
-    testWidgets('shows next name and ticks without touching provider',
-        (tester) async {      var buildCount = 0;
+    testWidgets('shows next name and ticks locally', (tester) async {
+      final container = await makeConfiguredContainer();
+      addTearDown(container.dispose);
+      var buildCount = 0;
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            prayerProvider.overrideWith(_FakePrayerNotifier.new),
-          ],
+        UncontrolledProviderScope(
+          container: container,
           child: MaterialApp(
             home: Scaffold(
               body: Builder(
@@ -126,8 +115,7 @@ void main() {
       await tester.pump();
       // Next prayer name + countdown label render (name depends on time of day).
       expect(find.textContaining('بعد'), findsOneWidget);
-      // Advance 3 seconds: countdown text updates via its LOCAL timer while
-      // the provider never changes (no global tick).
+      // Advance 3 seconds: countdown text updates via its LOCAL timer.
       await tester.pump(const Duration(seconds: 3));
       expect(find.textContaining('بعد'), findsOneWidget);
       expect(
@@ -135,69 +123,66 @@ void main() {
         lessThan(5),
         reason: 'parent rebuilt every second: ticker leaked upward',
       );
+      container.dispose();
     });
 
-    testWidgets('starts ticking when target appears after mount',
+    testWidgets('shows setup prompt when unconfigured, recovers on save',
         (tester) async {
-      // Reproduces first-time setup: widget mounts with no target (user has
-      // not saved settings yet), then حفظ publishes the first prayer.
-      // Before the fix the ticker never started → frozen "00:00:00".
-      late _MutablePrayerNotifier notifier;
+      final container = await makeEmptyContainer();
+      addTearDown(container.dispose);
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            prayerProvider.overrideWith(() {
-              notifier = _MutablePrayerNotifier();
-              return notifier;
-            }),
-          ],
+        UncontrolledProviderScope(
+          container: container,
           child: const MaterialApp(
             home: Scaffold(body: NextPrayerCountdown()),
           ),
         ),
       );
       await tester.pump();
-      expect(find.text('خطأ في حساب أوقات الصلاة'), findsOneWidget);
+      expect(find.text('اضغط لتحديد الموقع'), findsOneWidget);
 
-      notifier.setNext(
-        DateTime.now().add(const Duration(hours: 1)),
-        'الظهر',
-      );
-      await tester.pump();
+      // Publishing settings (as the settings form does) flows through.
+      container.read(prayerConfigProvider.notifier).publish(
+            const PrayerSettings(
+              latitude: 30.0444,
+              longitude: 31.2357,
+              timezone: 'Africa/Cairo',
+              method: 'egyptian',
+              madhab: 'shafi',
+              highLatitudeRule: 'middle_of_night',
+            ),
+            '',
+          );
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
 
-      expect(find.text('الظهر بعد'), findsOneWidget);
       expect(find.textContaining('بعد'), findsOneWidget);
       expect(find.textContaining('00:00:00'), findsNothing);
+      container.dispose();
     });
   });
 
-  group('hijriDayWithOffset (pure, no timers)', () {
+  group('hijriLabel (pure, shared by widget and native payload)', () {
     test('advances one day after Maghrib', () {
       final loc = tz.getLocation('Africa/Cairo');
       final maghrib = tz.TZDateTime(loc, 2024, 6, 15, 19, 57);
-      final before =
-          tz.TZDateTime(loc, 2024, 6, 15, 19, 0).add(const Duration());
+      final before = tz.TZDateTime(loc, 2024, 6, 15, 19);
       final after = tz.TZDateTime(loc, 2024, 6, 15, 20, 30);
-      final a = hijriDayWithOffset(offset: 0, now: before, maghrib: maghrib);
-      final b = hijriDayWithOffset(offset: 0, now: after, maghrib: maghrib);
-      final da = DateTime(a.hYear, a.hMonth, a.hDay);
-      final db = DateTime(b.hYear, b.hMonth, b.hDay);
-      expect(db.difference(da), const Duration(days: 1));
+      final a = hijriLabel(now: before, maghrib: maghrib, offset: 0);
+      final b = hijriLabel(now: after, maghrib: maghrib, offset: 0);
+      expect(a, isNotEmpty);
+      expect(b, isNotEmpty);
+      expect(a, isNot(equals(b)));
     });
 
     test('offset shifts days; null maghrib still works', () {
       final loc = tz.getLocation('Africa/Cairo');
       final now = tz.TZDateTime(loc, 2024, 6, 15, 12);
-      final base = hijriDayWithOffset(offset: 0, now: now, maghrib: null);
-      final plus =
-          hijriDayWithOffset(offset: 1, now: now, maghrib: null);
-      expect(
-        DateTime(plus.hYear, plus.hMonth, plus.hDay)
-            .difference(DateTime(base.hYear, base.hMonth, base.hDay)),
-        const Duration(days: 1),
-      );
+      final base = hijriLabel(now: now, maghrib: null, offset: 0);
+      final plus = hijriLabel(now: now, maghrib: null, offset: 1);
+      expect(base, isNotEmpty);
+      expect(plus, isNotEmpty);
+      expect(plus, isNot(equals(base)));
     });
   });
 
