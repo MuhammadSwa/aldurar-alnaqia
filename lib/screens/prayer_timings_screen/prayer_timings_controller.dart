@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 // GeoNames supplies IANA timezone IDs for cities worldwide. The full database
@@ -48,6 +49,32 @@ String? _localZoneName() {
   } catch (_) {
     return null;
   }
+}
+
+/// Pure decision helper (unit-testable): true when the cached next-prayer
+/// no longer matches what [schedule] says is next at [now].
+///
+/// Catches manual clock changes the one-shot boundary timer can't see: after
+/// a backward jump (e.g. 2:17pm → 2am) the cached next (Asr) is still in the
+/// future, so a naive "is it past?" guard no-ops — but the true next at 2am
+/// is Fajr. Re-evaluating `nextEventAt` is O(6) and allocation-free enough
+/// to run on every countdown tick; the expensive solar recalculation only
+/// runs when this returns true.
+@visibleForTesting
+bool nextPrayerIsStale({
+  required PrayerSchedule schedule,
+  required DateTime? cachedNext,
+  required String cachedName,
+  required DateTime now,
+}) {
+  if (cachedNext == null) return true;
+  if (!cachedNext.isAfter(now)) return true;
+  final live = schedule.nextEventAt(
+    tz.TZDateTime.from(now, schedule.civilDate.location),
+  );
+  return live.time.millisecondsSinceEpoch !=
+          cachedNext.millisecondsSinceEpoch ||
+      live.arabicName != cachedName;
 }
 
 /// Immutable snapshot of everything the prayer UI needs.
@@ -158,21 +185,42 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
     );
   }
 
-  /// Public refresh for lifecycle edges (e.g. the countdown widget noticing
-  /// its target is long past while the boundary timer was suspended).
-  /// Cheap: no-ops unless the next event or civil date actually changed.
+  /// Public refresh for lifecycle edges and clock jumps (e.g. the countdown
+  /// widget noticing its target is long past while the boundary timer was
+  /// suspended, or a manual system-clock change while the app was open).
+  /// Cheap: re-evaluates the next event from the cached schedule (no solar
+  /// math) and no-ops unless the next event or civil date actually changed.
+  /// Callers may invoke it on every countdown tick.
   void refresh() {
     if (!ref.mounted) return;
-    final next = state.nextPrayerInfo.$1;
-    final now = tz.TZDateTime.now(tz.local);
     final schedule = state.schedule;
-    final dateChanged = schedule == null ||
-        now.year != schedule.civilDate.year ||
-        now.month != schedule.civilDate.month ||
-        now.day != schedule.civilDate.day;
-    if (dateChanged || next == null || !next.isAfter(now)) {
+    // Unconfigured: nothing cached to sync; schedule appears via init or
+    // settings saves, which rebuild listeners on their own.
+    if (schedule == null) return;
+    final now = tz.TZDateTime.now(schedule.civilDate.location);
+    final civil = schedule.civilDate;
+    final dateChanged =
+        now.year != civil.year || now.month != civil.month || now.day != civil.day;
+    if (dateChanged ||
+        nextPrayerIsStale(
+          schedule: schedule,
+          cachedNext: state.nextPrayerInfo.$1,
+          cachedName: state.nextPrayerInfo.$2,
+          now: now,
+        )) {
       _recalculateAllPrayerData();
     }
+  }
+
+  /// Force path for app-resume: the system clock (or date) may have changed
+  /// while the UI was backgrounded and timers suspended. One solar
+  /// calculation per resume is negligible and guarantees fresh state.
+  /// The native 30-day tables are absolute instants and self-heal, so no
+  /// native rewrite is needed here.
+  void handleResume() {
+    if (!ref.mounted) return;
+    if (state.schedule == null) return;
+    _recalculateAllPrayerData();
   }
 
   Future<void> setPrayerSettings({

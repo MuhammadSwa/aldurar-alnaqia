@@ -62,6 +62,12 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
 
   void _tick() {
     if (!mounted) return;
+    // Cheap sync (no solar math unless something changed): catches manual
+    // system-clock jumps within a second. A backward jump leaves the cached
+    // target in the future (e.g. Asr still "ahead" at 2am), so without this
+    // the widget would count toward the wrong prayer until the next restart.
+    // On change the provider rebuilds and `build` re-syncs `_target`.
+    ref.read(prayerProvider.notifier).refresh();
     final latest = ref.read(prayerProvider).nextPrayerInfo.$1;
     if (latest != _target) {
       // Boundary or settings change: restart toward the new target.

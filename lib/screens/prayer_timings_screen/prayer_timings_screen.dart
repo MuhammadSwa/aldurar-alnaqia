@@ -22,7 +22,8 @@ class PrayerTimingsScreen extends ConsumerStatefulWidget {
       _PrayerTimingsScreenState();
 }
 
-class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
+class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen>
+    with WidgetsBindingObserver {
   // Ensures the settings dialog auto-opens only once per route visit
   // when prayer timings can't be calculated (e.g. no location yet).
   bool _hasAutoShownSettings = false;
@@ -30,6 +31,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Warm the city directory while the user reads the timings so the
     // settings dialog and city search open instantly (the 2.3 MB asset
     // parse now runs on a background isolate, but starting it early
@@ -40,6 +42,23 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
       if (!mounted) return;
       _maybeAutoShowSettingsDialog();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The user may have changed the system clock/date in Settings while we
+    // were backgrounded (timers suspended, so the countdown couldn't
+    // notice). Force a recalculation on return instead of showing stale
+    // data until the next prayer boundary or restart.
+    if (state == AppLifecycleState.resumed) {
+      ref.read(prayerProvider.notifier).handleResume();
+    }
   }
 
   void _maybeAutoShowSettingsDialog() {

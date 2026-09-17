@@ -30,11 +30,16 @@ Defined in Dart (`lib/screens/prayer_timings_screen/models/prayer_schedule.dart`
 ## Flutter timing model
 
 - `PrayerTimingsNotifier` is the **single owner** of prayer timing. It
-  recalculates only on init, settings change, event boundary, or midnight,
-  then arms **one** one-shot boundary timer (~7 wakeups/day).
+  recalculates on init, settings change, event boundary, midnight,
+  app-resume, or a detected system-clock jump, then arms **one** one-shot
+  boundary timer (~7 wakeups/day).
 - There is **no global 1-second ticker**. `NextPrayerCountdown` owns a local
   1s timer while mounted; navigating away disposes it, so reading elsewhere
-  costs zero Dart wakeups.
+  costs zero Dart wakeups. Each tick calls the cheap `refresh()` guard
+  (re-evaluates the next event from the cached schedule, no solar math),
+  so a manual clock change re-syncs within a second instead of going stale
+  until restart — a backward jump leaves the old target in the future, which
+  a naive past-check would miss (`nextPrayerIsStale`).
 - Timetable/weekday/Hijri widgets are pure `select()` renderers — they never
   recalculate and never rebuild per second.
 - Settings writes are atomic: `savePrayerSettings` → one native refresh.

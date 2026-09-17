@@ -1,14 +1,25 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
-    show PrayerMadhabs, PrayerMethods;
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
+    show
+        PrayerEventId,
+        PrayerMadhabs,
+        PrayerMethods,
+        PrayerScheduleCalculator,
+        PrayerSettings;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
+    show
+        islamicWeekdayNow,
+        nextPrayerIsStale,
+        prayerProvider,
+        todayPrayerSchedule;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 const _cairo = City(
   nameEn: 'Cairo',
@@ -199,6 +210,110 @@ void main() {
       container.dispose();
 
       expect(notifier.refresh, returnsNormally);
+    });
+
+    test('handleResume is safe after dispose and keeps state', () async {
+      final container = makeContainer();
+      final notifier = container.read(prayerProvider.notifier);
+      await notifier.setPrayerSettings(
+        lat: 30.0444,
+        long: 31.2357,
+        method: PrayerMethods.egyptian,
+        asrCalc: PrayerMadhabs.shafi,
+        city: _cairo,
+      );
+
+      final before = container.read(prayerProvider).nextPrayerInfo;
+      expect(notifier.handleResume, returnsNormally);
+      final after = container.read(prayerProvider).nextPrayerInfo;
+      expect(
+        after.$1?.millisecondsSinceEpoch,
+        before.$1?.millisecondsSinceEpoch,
+      );
+      expect(after.$2, before.$2);
+    });
+  });
+
+  group('nextPrayerIsStale (manual clock-change detection)', () {
+    const settings = PrayerSettings(
+      latitude: 30.0444,
+      longitude: 31.2357,
+      timezone: 'Africa/Cairo',
+      method: 'egyptian',
+      madhab: 'shafi',
+      highLatitudeRule: 'middle_of_night',
+    );
+
+    test('backward jump keeps cached Asr future but Fajr is next: stale',
+        () {
+      final schedule = PrayerScheduleCalculator.calculate(
+        settings: settings,
+        date: DateTime.utc(2024, 6, 15),
+      )!;
+      final loc = tz.getLocation('Africa/Cairo');
+      // 2:17pm local: next is Asr (the cached value).
+      final afternoon = tz.TZDateTime(loc, 2024, 6, 15, 14, 17);
+      final cached = schedule.nextEventAt(afternoon);
+      expect(cached.id, PrayerEventId.asr);
+      // User sets the clock back to 2am: Asr is still "in the future",
+      // but the true next prayer is Fajr.
+      final morning = tz.TZDateTime(loc, 2024, 6, 15, 2);
+      expect(
+        nextPrayerIsStale(
+          schedule: schedule,
+          cachedNext: cached.time,
+          cachedName: cached.arabicName,
+          now: morning,
+        ),
+        isTrue,
+      );
+    });
+
+    test('matching cache is fresh', () {
+      final schedule = PrayerScheduleCalculator.calculate(
+        settings: settings,
+        date: DateTime.utc(2024, 6, 15),
+      )!;
+      final loc = tz.getLocation('Africa/Cairo');
+      final now = tz.TZDateTime(loc, 2024, 6, 15, 2);
+      final live = schedule.nextEventAt(now);
+      expect(
+        nextPrayerIsStale(
+          schedule: schedule,
+          cachedNext: live.time,
+          cachedName: live.arabicName,
+          now: now,
+        ),
+        isFalse,
+      );
+    });
+
+    test('null or past cache is stale', () {
+      final schedule = PrayerScheduleCalculator.calculate(
+        settings: settings,
+        date: DateTime.utc(2024, 6, 15),
+      )!;
+      final loc = tz.getLocation('Africa/Cairo');
+      final now = tz.TZDateTime(loc, 2024, 6, 15, 2);
+      expect(
+        nextPrayerIsStale(
+          schedule: schedule,
+          cachedNext: null,
+          cachedName: '',
+          now: now,
+        ),
+        isTrue,
+      );
+      final past = now.subtract(const Duration(hours: 1));
+      expect(
+        nextPrayerIsStale(
+          schedule: schedule,
+          cachedNext: past,
+          cachedName: 'الفجر',
+          now: now,
+        ),
+        isTrue,
+      );
     });
   });
 
