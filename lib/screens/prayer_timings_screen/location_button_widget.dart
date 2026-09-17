@@ -75,9 +75,8 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
       context: context,
       builder: (context) {
         final theme = Theme.of(context);
-        final smallButtonStyle = TextButton.styleFrom(
-          textStyle: theme.textTheme.bodySmall,
-          visualDensity: VisualDensity.compact,
+        final buttonStyle = TextButton.styleFrom(
+          textStyle: theme.textTheme.bodyMedium,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         );
         return AlertDialog(
@@ -89,21 +88,21 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
           title: Text(
             title,
             textAlign: TextAlign.center,
-            style: theme.textTheme.titleSmall,
+            style: theme.textTheme.titleMedium,
           ),
           content: Text(
             message,
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall,
+            style: theme.textTheme.bodyMedium,
           ),
           actions: <Widget>[
             TextButton(
-              style: smallButtonStyle,
+              style: buttonStyle,
               child: const Text('إغلاق'),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              style: smallButtonStyle,
+              style: buttonStyle,
               child: const Text('فتح الإعدادات'),
               onPressed: () {
                 onOpenSettings();

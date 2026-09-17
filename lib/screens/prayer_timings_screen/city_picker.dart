@@ -169,11 +169,15 @@ class _ResultsList extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (CityDirectory.normalize(query).isEmpty) {
-      return Center(
-        child: Text(
-          'اكتب اسم المدينة أو الدولة بالعربية أو الإنجليزية',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+      return Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 32),
+          child: Text(
+            'اكتب اسم المدينة أو الدولة بالعربية أو الإنجليزية',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor),
+          ),
         ),
       );
     }
