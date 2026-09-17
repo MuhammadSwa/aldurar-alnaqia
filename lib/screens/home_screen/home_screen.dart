@@ -100,16 +100,13 @@ class _HomePageState extends ConsumerState<HomePage> {
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: Row(
-                textDirection: TextDirection
-                    .rtl, // Ensures icon is on the right for Arabic
+                textDirection: TextDirection.rtl,
                 children: [
-                  Icon(Icons.today_rounded),
+                  Icon(Icons.folder_special_rounded),
                   SizedBox(width: 8),
                   Text(
                     'المحفوظات',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -195,13 +192,68 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
               ),
             ),
           } else ...{
-            // TODO: design empty state
-            const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [Text('المحفوظات فارغة'), Icon(Icons.bookmark_remove)],
-            ),
+            EmptyBookmarks(),
           },
         ],
+      ),
+    );
+  }
+}
+
+class EmptyBookmarks extends StatelessWidget {
+  final VoidCallback? onExplore;
+
+  const EmptyBookmarks({super.key, this.onExplore});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow,
+        ),
+        child: Column(
+          children: [
+            // Icon badge — the same folder_special as the section header
+            Container(
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.folder_special_rounded,
+                size: 26,
+                color: scheme.primary,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'لا توجد محفوظات بعد',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'الأذكار التي تحفظها ستظهر هنا',
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            if (onExplore != null) ...[
+              const SizedBox(height: 16),
+              // Styled by your theme's elevatedButtonTheme automatically
+              ElevatedButton.icon(
+                onPressed: onExplore,
+                icon: const Icon(Icons.explore_rounded, size: 18),
+                label: const Text('استكشف الأوراد'),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
