@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
@@ -33,42 +34,58 @@ abstract final class PrefsKeys {
   static String pdfLastPage(String title) => 'pdf_last_page_$title';
 }
 
-class SharedPreferencesService {
-  static final SharedPreferencesService _instance =
-      SharedPreferencesService._instance;
-  static SharedPreferences? _sharedPreferences;
+/// Fire-and-forget write with a visible warning on failure instead of a
+/// silent drop. Reads/writes through the shared_preferences mock update the
+/// in-memory cache synchronously, so an immediate `get` after a `set` still
+/// observes the value (existing tests rely on this).
+void _persist(Future<bool> write, String what) {
+  unawaited(
+    write.then((ok) {
+      if (!ok) logWarn('Failed to persist $what');
+    }).catchError((Object e) {
+      logWarn('Failed to persist $what: $e');
+    }),
+  );
+}
 
-  Future<void> init() async {
-    _sharedPreferences = await SharedPreferences.getInstance();
-  }
+// ---------------------------------------------------------------------------
+// Focused stores. Each owns one unrelated preference domain and takes a
+// non-nullable [SharedPreferences], so domains can be used (and tested)
+// without touching the app-wide facade below.
+// ---------------------------------------------------------------------------
 
-  static double getLatitude() {
-    return _sharedPreferences?.getDouble(PrefsKeys.latitude) ?? 0.0;
-  }
+/// Prayer/location/calculation settings.
+class PrayerPrefs {
+  PrayerPrefs(this._prefs);
 
-  static double getLongitude() {
-    return _sharedPreferences?.getDouble(PrefsKeys.longitude) ?? 0.0;
-  }
+  final SharedPreferences _prefs;
+
+  double getLatitude() => _prefs.getDouble(PrefsKeys.latitude) ?? 0.0;
+
+  double getLongitude() => _prefs.getDouble(PrefsKeys.longitude) ?? 0.0;
 
   /// The city chosen in the city picker, if any (GPS selections clear it).
   /// Coordinates themselves stay in the latitude/longitude keys.
-  static void setCity(City? city) {
+  void setCity(City? city) {
     if (city == null) {
-      _sharedPreferences?.remove(PrefsKeys.cityInfo);
+      _persist(_prefs.remove(PrefsKeys.cityInfo), 'city');
       return;
     }
-    _sharedPreferences?.setString(
-      PrefsKeys.cityInfo,
-      jsonEncode({
-        'en': city.nameEn,
-        'ar': city.nameAr,
-        'country': city.countryCode,
-      }),
+    _persist(
+      _prefs.setString(
+        PrefsKeys.cityInfo,
+        jsonEncode({
+          'en': city.nameEn,
+          'ar': city.nameAr,
+          'country': city.countryCode,
+        }),
+      ),
+      'city',
     );
   }
 
-  static City? getCity() {
-    final raw = _sharedPreferences?.getString(PrefsKeys.cityInfo);
+  City? getCity() {
+    final raw = _prefs.getString(PrefsKeys.cityInfo);
     if (raw == null) return null;
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
@@ -84,7 +101,7 @@ class SharedPreferencesService {
       );
     } catch (e) {
       logWarn('Failed to parse stored city info: $e — dropping corrupt key');
-      _sharedPreferences?.remove(PrefsKeys.cityInfo);
+      _persist(_prefs.remove(PrefsKeys.cityInfo), 'corrupt city info');
       return null;
     }
   }
@@ -93,13 +110,13 @@ class SharedPreferencesService {
   /// once at save time (city pick → its label; GPS → nearest city within
   /// 50 km, else coordinates) and stored as a plain string so rendering
   /// never needs the city directory. Empty when no location is configured.
-  static String getPrayerCityLabel() =>
-      _sharedPreferences?.getString(PrefsKeys.cityLabel) ?? '';
+  String getPrayerCityLabel() =>
+      _prefs.getString(PrefsKeys.cityLabel) ?? '';
 
   /// Stored method or default. Absent returns the default; present-but-unknown
   /// values are logged visibly and reset to default (no silent guess).
-  static String getMethod() {
-    final stored = _sharedPreferences?.getString(PrefsKeys.method);
+  String getMethod() {
+    final stored = _prefs.getString(PrefsKeys.method);
     if (stored == null) return PrayerMethods.egyptian;
     if (!PrayerMethods.isValid(stored)) {
       logWarn('Unknown stored prayer method "$stored" — using default');
@@ -108,8 +125,8 @@ class SharedPreferencesService {
     return stored;
   }
 
-  static String getAsrCalculation() {
-    final stored = _sharedPreferences?.getString(PrefsKeys.asrCalculation);
+  String getAsrCalculation() {
+    final stored = _prefs.getString(PrefsKeys.asrCalculation);
     if (stored == null) return PrayerMadhabs.shafi;
     if (!PrayerMadhabs.isValid(stored)) {
       logWarn('Unknown stored madhab "$stored" — using default');
@@ -118,8 +135,8 @@ class SharedPreferencesService {
     return stored;
   }
 
-  static String getHighLatitudeRule() {
-    final stored = _sharedPreferences?.getString(PrefsKeys.highLatitudeRule);
+  String getHighLatitudeRule() {
+    final stored = _prefs.getString(PrefsKeys.highLatitudeRule);
     if (stored == null) return PrayerHighLatitudeRules.middleOfNight;
     if (!PrayerHighLatitudeRules.isValid(stored)) {
       logWarn('Unknown stored high-latitude rule "$stored" — using default');
@@ -128,13 +145,11 @@ class SharedPreferencesService {
     return stored;
   }
 
-  static String getTimezone() {
-    return _sharedPreferences?.getString(PrefsKeys.timezone) ?? '';
-  }
+  String getTimezone() => _prefs.getString(PrefsKeys.timezone) ?? '';
 
   /// Typed snapshot of all prayer settings. Single source of defaults and
   /// validation for the UI, the calculator, and the native bridge.
-  static PrayerSettings loadPrayerSettings() {
+  PrayerSettings loadPrayerSettings() {
     return PrayerSettings(
       latitude: getLatitude(),
       longitude: getLongitude(),
@@ -147,7 +162,7 @@ class SharedPreferencesService {
 
   /// Saves interdependent prayer settings together, then refreshes the native
   /// notification once so it cannot observe a half-saved location or zone.
-  static Future<void> savePrayerSettings({
+  Future<void> savePrayerSettings({
     required double latitude,
     required double longitude,
     required String method,
@@ -157,21 +172,18 @@ class SharedPreferencesService {
     City? city,
     String? cityLabel, // null = leave stored label unchanged
   }) async {
-    final prefs = _sharedPreferences;
-    if (prefs == null) return;
-
-    await prefs.setDouble(PrefsKeys.latitude, latitude);
-    await prefs.setDouble(PrefsKeys.longitude, longitude);
-    await prefs.setString(PrefsKeys.method, method);
-    await prefs.setString(PrefsKeys.asrCalculation, asrCalculation);
-    await prefs.setString(PrefsKeys.timezone, timezone);
+    await _prefs.setDouble(PrefsKeys.latitude, latitude);
+    await _prefs.setDouble(PrefsKeys.longitude, longitude);
+    await _prefs.setString(PrefsKeys.method, method);
+    await _prefs.setString(PrefsKeys.asrCalculation, asrCalculation);
+    await _prefs.setString(PrefsKeys.timezone, timezone);
     if (highLatitudeRule != null) {
-      await prefs.setString(PrefsKeys.highLatitudeRule, highLatitudeRule);
+      await _prefs.setString(PrefsKeys.highLatitudeRule, highLatitudeRule);
     }
     if (city == null) {
-      await prefs.remove(PrefsKeys.cityInfo);
+      await _prefs.remove(PrefsKeys.cityInfo);
     } else {
-      await prefs.setString(
+      await _prefs.setString(
         PrefsKeys.cityInfo,
         jsonEncode({
           'en': city.nameEn,
@@ -181,52 +193,71 @@ class SharedPreferencesService {
       );
     }
     if (cityLabel != null) {
-      await prefs.setString(PrefsKeys.cityLabel, cityLabel);
+      await _prefs.setString(PrefsKeys.cityLabel, cityLabel);
     }
     await refreshPrayerNotification();
   }
+}
 
-  static List<String> getBookmarks() {
-    return _sharedPreferences?.getStringList(PrefsKeys.bookmarks) ?? [];
+/// Saved bookmarks (zikr/reading ids).
+class BookmarkPrefs {
+  BookmarkPrefs(this._prefs);
+
+  final SharedPreferences _prefs;
+
+  List<String> getBookmarks() =>
+      _prefs.getStringList(PrefsKeys.bookmarks) ?? [];
+
+  void setBookmarks(List<String> bookmarks) {
+    _persist(
+      _prefs.setStringList(PrefsKeys.bookmarks, bookmarks),
+      'bookmarks',
+    );
   }
 
-  static void setBookmarks(List<String> bookmarks) {
-    _sharedPreferences?.setStringList(PrefsKeys.bookmarks, bookmarks);
+  void removeAllBookmarks() {
+    _persist(_prefs.remove(PrefsKeys.bookmarks), 'bookmarks');
   }
 
-  static void removeAllBookmarks() {
-    _sharedPreferences?.remove(PrefsKeys.bookmarks);
-  }
-
-  static void addBookmark(String bookmark) {
+  void addBookmark(String bookmark) {
     final bookmarks = getBookmarks();
     if (bookmarks.contains(bookmark)) return;
     bookmarks.add(bookmark);
     setBookmarks(bookmarks);
   }
 
-  static void removeBookmark(String bookmark) {
+  void removeBookmark(String bookmark) {
     final bookmarks = getBookmarks();
     if (!bookmarks.remove(bookmark)) return;
     setBookmarks(bookmarks);
   }
+}
 
-  static void setYousriaBeginning(DateTime startingDay) {
+/// Yousria cycle state.
+class YousriaPrefs {
+  YousriaPrefs(this._prefs);
+
+  final SharedPreferences _prefs;
+
+  void setBeginning(DateTime startingDay) {
     // NOTE: set to midnight of the beginning day
     // so when subtract it, hours and minutes wouldn't be considered
     final dayMidnight =
         DateTime(startingDay.year, startingDay.month, startingDay.day);
-    _sharedPreferences?.setString(
-      PrefsKeys.yousriaStartingDay,
-      dayMidnight.toIso8601String(),
+    _persist(
+      _prefs.setString(
+        PrefsKeys.yousriaStartingDay,
+        dayMidnight.toIso8601String(),
+      ),
+      'yousria beginning',
     );
   }
 
   /// No stored beginning — default to today's midnight and persist it.
   /// Single `now` so the returned and stored values agree.
   /// Corrupt values are dropped (key removed) and reset to today visibly.
-  static DateTime getYousriaBeginning() {
-    final stored = _sharedPreferences?.getString(PrefsKeys.yousriaStartingDay);
+  DateTime getBeginning() {
+    final stored = _prefs.getString(PrefsKeys.yousriaStartingDay);
     if (stored != null) {
       try {
         return DateTime.parse(stored);
@@ -234,37 +265,47 @@ class SharedPreferencesService {
         logWarn(
           'Failed to parse yousria beginning "$stored": $e — resetting to today',
         );
-        _sharedPreferences?.remove(PrefsKeys.yousriaStartingDay);
+        _persist(
+          _prefs.remove(PrefsKeys.yousriaStartingDay),
+          'corrupt yousria beginning',
+        );
       }
     }
     final now = DateTime.now();
     final todayMidnight = DateTime(now.year, now.month, now.day);
-    _sharedPreferences?.setString(
-      PrefsKeys.yousriaStartingDay,
-      todayMidnight.toIso8601String(),
+    _persist(
+      _prefs.setString(
+        PrefsKeys.yousriaStartingDay,
+        todayMidnight.toIso8601String(),
+      ),
+      'yousria beginning',
     );
     return todayMidnight;
   }
 
-  static bool getYousriaBannerDismissed() {
-    return _sharedPreferences?.getBool(PrefsKeys.yousriaBannerDismissed) ??
-        false;
-  }
+  bool getBannerDismissed() =>
+      _prefs.getBool(PrefsKeys.yousriaBannerDismissed) ?? false;
 
-  static Future<void> setYousriaBannerDismissed(bool dismissed) async {
-    await _sharedPreferences?.setBool(
+  Future<void> setBannerDismissed(bool dismissed) async {
+    final ok = await _prefs.setBool(
       PrefsKeys.yousriaBannerDismissed,
       dismissed,
     );
+    if (!ok) logWarn('Failed to persist yousria banner flag');
   }
+}
 
-  // --- Theme mode preference: 'light' | 'dark' | 'system' ---
+/// Appearance and reading preferences.
+class AppearancePrefs {
+  AppearancePrefs(this._prefs);
+
+  final SharedPreferences _prefs;
 
   /// Raw stored value. Kept string-based so this service does not depend
   /// on Flutter material; providers map it to [ThemeMode].
   /// Absent returns system; unknown values are logged and reset to system.
-  static String getThemeMode() {
-    final stored = _sharedPreferences?.getString(PrefsKeys.themeMode);
+  String getThemeMode() {
+    final stored = _prefs.getString(PrefsKeys.themeMode);
     if (stored == null) return 'system';
     if (stored != 'light' && stored != 'dark' && stored != 'system') {
       logWarn('Unknown stored theme mode "$stored" — using system');
@@ -273,16 +314,17 @@ class SharedPreferencesService {
     return stored;
   }
 
-  static Future<void> setThemeMode(String mode) async {
-    await _sharedPreferences?.setString(PrefsKeys.themeMode, mode);
+  Future<void> setThemeMode(String mode) async {
+    final ok = await _prefs.setString(PrefsKeys.themeMode, mode);
+    if (!ok) logWarn('Failed to persist theme mode "$mode"');
   }
 
-  static void setFontSize(double size) {
-    _sharedPreferences?.setDouble(PrefsKeys.fontSize, size);
+  void setFontSize(double size) {
+    _persist(_prefs.setDouble(PrefsKeys.fontSize, size), 'font size $size');
   }
 
-  static double getFontSize() {
-    final stored = _sharedPreferences?.getDouble(PrefsKeys.fontSize);
+  double getFontSize() {
+    final stored = _prefs.getDouble(PrefsKeys.fontSize);
     if (stored == null) return 22;
     if (!stored.isFinite || stored < 16 || stored > 40) {
       logWarn('Invalid stored font size "$stored" — using default');
@@ -291,13 +333,16 @@ class SharedPreferencesService {
     return stored;
   }
 
-  static void setHijriDayOffset(int offset) {
-    _sharedPreferences?.setInt(PrefsKeys.hijriDayOffset, offset);
+  void setHijriDayOffset(int offset) {
+    _persist(
+      _prefs.setInt(PrefsKeys.hijriDayOffset, offset),
+      'hijri offset $offset',
+    );
     unawaited(refreshPrayerNotification());
   }
 
-  static int getHijriDayOffset() {
-    final stored = _sharedPreferences?.getInt(PrefsKeys.hijriDayOffset);
+  int getHijriDayOffset() {
+    final stored = _prefs.getInt(PrefsKeys.hijriDayOffset);
     if (stored == null) return 0;
     if (stored < -2 || stored > 2) {
       logWarn('Invalid stored hijri offset "$stored" — using 0');
@@ -306,20 +351,11 @@ class SharedPreferencesService {
     return stored;
   }
 
-  // --- PDF last page persistence ---
-  static Future<void> setPdfLastPage(String title, int page) async {
-    await _sharedPreferences?.setInt(PrefsKeys.pdfLastPage(title), page);
-  }
-
-  static int? getPdfLastPage(String title) {
-    return _sharedPreferences?.getInt(PrefsKeys.pdfLastPage(title));
-  }
-
   // --- File open action preference: 'ask' | 'open' | 'download' ---
   // Single preference shared by audio and books for non-downloaded files.
   // Unknown values are logged and reset to ask (no silent guess).
-  static String getFileOpenAction() {
-    final stored = _sharedPreferences?.getString(PrefsKeys.fileOpenAction);
+  String getFileOpenAction() {
+    final stored = _prefs.getString(PrefsKeys.fileOpenAction);
     if (stored == null) return 'ask';
     if (stored != 'ask' && stored != 'open' && stored != 'download') {
       logWarn('Unknown stored file open action "$stored" — using ask');
@@ -328,7 +364,203 @@ class SharedPreferencesService {
     return stored;
   }
 
-  static Future<void> setFileOpenAction(String action) async {
-    await _sharedPreferences?.setString(PrefsKeys.fileOpenAction, action);
+  Future<void> setFileOpenAction(String action) async {
+    final ok = await _prefs.setString(PrefsKeys.fileOpenAction, action);
+    if (!ok) logWarn('Failed to persist file open action "$action"');
   }
+}
+
+/// Per-book PDF reading positions.
+class PdfPrefs {
+  PdfPrefs(this._prefs);
+
+  final SharedPreferences _prefs;
+
+  Future<void> setLastPage(String title, int page) async {
+    final ok = await _prefs.setInt(PrefsKeys.pdfLastPage(title), page);
+    if (!ok) logWarn('Failed to persist PDF page for "$title"');
+  }
+
+  int? getLastPage(String title) =>
+      _prefs.getInt(PrefsKeys.pdfLastPage(title));
+}
+
+// ---------------------------------------------------------------------------
+// App-wide facade. Kept for the existing call sites (see blast-radius note);
+// new code should prefer `SharedPreferencesService.instance.<domain>`.
+// Every accessor goes through [_prefs], which throws a [StateError] before
+// init instead of silently returning defaults or dropping writes.
+// ---------------------------------------------------------------------------
+
+class SharedPreferencesService {
+  /// Historical throwaway-constructible entry point (`().init()` in main and
+  /// existing tests). The constructed object holds no state; [init] populates
+  /// the static holder. New code should call [ensureInitialized] directly.
+  SharedPreferencesService();
+
+  /// Preferred entry point for new code: `await SharedPreferencesService.init()`
+  /// once in `main()` before `runApp`, then `SharedPreferencesService.instance`
+  /// (or the static shims below during migration).
+  SharedPreferencesService._(SharedPreferences prefs)
+      : prayer = PrayerPrefs(prefs),
+        bookmarks = BookmarkPrefs(prefs),
+        yousria = YousriaPrefs(prefs),
+        appearance = AppearancePrefs(prefs),
+        pdf = PdfPrefs(prefs);
+
+  late final PrayerPrefs prayer;
+  late final BookmarkPrefs bookmarks;
+  late final YousriaPrefs yousria;
+  late final AppearancePrefs appearance;
+  late final PdfPrefs pdf;
+
+  static SharedPreferencesService? _instance;
+
+  /// True once [init]/[ensureInitialized] has completed.
+  static bool get isInitialized => _instance != null;
+
+  /// Fail-fast accessor: throws [StateError] when used before init.
+  static SharedPreferencesService get instance {
+    final current = _instance;
+    if (current == null) {
+      throw StateError(
+        'SharedPreferencesService.init() must be awaited before use '
+        '(call it in main() before runApp).',
+      );
+    }
+    return current;
+  }
+
+  static SharedPreferencesService _require() => instance;
+
+  /// Idempotent async initializer. Safe to call more than once.
+  static Future<void> ensureInitialized() async {
+    if (_instance != null) return;
+    final prefs = await SharedPreferences.getInstance();
+    _instance = SharedPreferencesService._(prefs);
+  }
+
+  /// Historical entry point (`SharedPreferencesService().init()` in main and
+  /// tests). Always re-reads the backing store so tests that reset the mock
+  /// (`setMockInitialValues` + `init()`) observe fresh values; new code
+  /// should call [ensureInitialized] directly.
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _instance = SharedPreferencesService._(prefs);
+  }
+
+  /// Preferred static initializer for new code.
+  static Future<void> initStatic() => ensureInitialized();
+
+  @visibleForTesting
+  static void resetForTest() {
+    _instance = null;
+  }
+
+  // --- Prayer shims (delegate to [PrayerPrefs]) ---
+
+  static double getLatitude() => _require().prayer.getLatitude();
+
+  static double getLongitude() => _require().prayer.getLongitude();
+
+  static void setCity(City? city) => _require().prayer.setCity(city);
+
+  static City? getCity() => _require().prayer.getCity();
+
+  static String getPrayerCityLabel() =>
+      _require().prayer.getPrayerCityLabel();
+
+  static String getMethod() => _require().prayer.getMethod();
+
+  static String getAsrCalculation() => _require().prayer.getAsrCalculation();
+
+  static String getHighLatitudeRule() =>
+      _require().prayer.getHighLatitudeRule();
+
+  static String getTimezone() => _require().prayer.getTimezone();
+
+  static PrayerSettings loadPrayerSettings() =>
+      _require().prayer.loadPrayerSettings();
+
+  static Future<void> savePrayerSettings({
+    required double latitude,
+    required double longitude,
+    required String method,
+    required String asrCalculation,
+    required String timezone,
+    String? highLatitudeRule,
+    City? city,
+    String? cityLabel,
+  }) =>
+      _require().prayer.savePrayerSettings(
+        latitude: latitude,
+        longitude: longitude,
+        method: method,
+        asrCalculation: asrCalculation,
+        timezone: timezone,
+        highLatitudeRule: highLatitudeRule,
+        city: city,
+        cityLabel: cityLabel,
+      );
+
+  // --- Bookmark shims ---
+
+  static List<String> getBookmarks() => _require().bookmarks.getBookmarks();
+
+  static void setBookmarks(List<String> bookmarks) =>
+      _require().bookmarks.setBookmarks(bookmarks);
+
+  static void removeAllBookmarks() =>
+      _require().bookmarks.removeAllBookmarks();
+
+  static void addBookmark(String bookmark) =>
+      _require().bookmarks.addBookmark(bookmark);
+
+  static void removeBookmark(String bookmark) =>
+      _require().bookmarks.removeBookmark(bookmark);
+
+  // --- Yousria shims ---
+
+  static void setYousriaBeginning(DateTime startingDay) =>
+      _require().yousria.setBeginning(startingDay);
+
+  static DateTime getYousriaBeginning() =>
+      _require().yousria.getBeginning();
+
+  static bool getYousriaBannerDismissed() =>
+      _require().yousria.getBannerDismissed();
+
+  static Future<void> setYousriaBannerDismissed(bool dismissed) =>
+      _require().yousria.setBannerDismissed(dismissed);
+
+  // --- Appearance shims ---
+
+  static String getThemeMode() => _require().appearance.getThemeMode();
+
+  static Future<void> setThemeMode(String mode) =>
+      _require().appearance.setThemeMode(mode);
+
+  static void setFontSize(double size) =>
+      _require().appearance.setFontSize(size);
+
+  static double getFontSize() => _require().appearance.getFontSize();
+
+  static void setHijriDayOffset(int offset) =>
+      _require().appearance.setHijriDayOffset(offset);
+
+  static int getHijriDayOffset() => _require().appearance.getHijriDayOffset();
+
+  static String getFileOpenAction() =>
+      _require().appearance.getFileOpenAction();
+
+  static Future<void> setFileOpenAction(String action) =>
+      _require().appearance.setFileOpenAction(action);
+
+  // --- PDF shims ---
+
+  static Future<void> setPdfLastPage(String title, int page) =>
+      _require().pdf.setLastPage(title, page);
+
+  static int? getPdfLastPage(String title) =>
+      _require().pdf.getLastPage(title);
 }
