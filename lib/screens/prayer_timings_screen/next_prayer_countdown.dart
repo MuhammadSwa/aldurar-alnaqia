@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// Countdown to the next prayer.
 ///
@@ -102,6 +105,17 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                     );
                   }
                   final left = next.time.difference(_now);
+                  final liveSchedule =
+                      PrayerRepository.instance.scheduleFor(
+                        view.settings,
+                        _now,
+                      ) ??
+                      view.schedule;
+                  final progress = _progress(
+                    schedule: liveSchedule,
+                    now: _now,
+                    next: next,
+                  );
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -112,16 +126,12 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                       ),
                       const SizedBox(height: 6),
                       // Next-prayer hero: name + countdown in one line.
+                      // No clock icon: the countdown digits already say that.
                       Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         spacing: 8,
                         children: [
-                          Icon(
-                            Icons.schedule_outlined,
-                            size: 18,
-                            color: colorScheme.primary,
-                          ),
                           Text(
                             '${next.arabicName} بعد',
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -148,6 +158,65 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                           ),
                         ],
                       ),
+                      if (progress != null) ...[
+                        const SizedBox(height: 8),
+                        Center(
+                          child: ConstrainedBox(
+                            constraints:
+                                const BoxConstraints(maxWidth: 260),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final marker = _markerFor(next.id);
+                                final dx =
+                                    constraints.maxWidth * progress;
+                                return Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 6,
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(99),
+                                        child: LinearProgressIndicator(
+                                          value: progress,
+                                          minHeight: 4,
+                                          backgroundColor: colorScheme.primary
+                                              .withValues(alpha: 0.15),
+                                        ),
+                                      ),
+                                    ),
+                                    // Opaque next-prayer icon riding the
+                                    // fill tip. RTL: measure from the right.
+                                    Positioned(
+                                      right: (dx - 9).clamp(
+                                        0.0,
+                                        constraints.maxWidth - 18,
+                                      ),
+                                      top: -2,
+                                      child: Container(
+                                        width: 18,
+                                        height: 18,
+                                        decoration: BoxDecoration(
+                                          color: marker.color,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          marker.icon,
+                                          size: 10,
+                                          color: Colors.white,
+                                          semanticLabel: next.arabicName,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   );
                 },
@@ -157,6 +226,62 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
 
   void _openSettings(BuildContext context) {
     showDialog(context: context, builder: (_) => const PrayerSettingsDialog());
+  }
+
+  /// Opaque marker for the bar's fill tip: the next prayer's timetable
+  /// icon in its timetable tint, mirroring [PrayerTimingsCard].
+  ({IconData icon, Color color}) _markerFor(PrayerEventId id) =>
+      switch (id) {
+        PrayerEventId.fajr => (
+            icon: LucideIcons.sunMoon,
+            color: const Color(0xFF7C6AAE),
+          ),
+        PrayerEventId.sunrise => (
+            icon: LucideIcons.sunrise,
+            color: const Color(0xFFE8823A),
+          ),
+        PrayerEventId.dhuhr => (
+            icon: LucideIcons.sun,
+            color: const Color(0xFFB8860B),
+          ),
+        PrayerEventId.asr => (
+            icon: LucideIcons.cloudSun,
+            color: const Color(0xFFD97A2B),
+          ),
+        PrayerEventId.maghrib => (
+            icon: LucideIcons.sunset,
+            color: const Color(0xFFC14A3A),
+          ),
+        PrayerEventId.isha => (
+            icon: LucideIcons.moon,
+            color: const Color(0xFF4A5AA8),
+          ),
+      };
+
+  /// Elapsed fraction from the previous event to [next] (0–1). Null when it
+  /// can't be determined (e.g. before Fajr, where "previous" was yesterday's
+  /// Isha). Ticks with [_now], so the bar under the counter moves every
+  /// second.
+  double? _progress({
+    required PrayerSchedule schedule,
+    required DateTime now,
+    required PrayerEvent next,
+  }) {
+    final location = schedule.civilDate.location;
+    final zonedNow = tz.TZDateTime.from(now, location);
+    tz.TZDateTime? prev;
+    for (final event in schedule.ordered) {
+      if (!event.time.isAfter(zonedNow)) {
+        prev = event.time;
+      }
+    }
+    if (prev == null) return null;
+    final prevMs = prev.millisecondsSinceEpoch;
+    final nextMs = next.time.millisecondsSinceEpoch;
+    if (nextMs <= prevMs) return null;
+    final nowMs = zonedNow.millisecondsSinceEpoch;
+    if (nowMs < prevMs) return null;
+    return ((nowMs - prevMs) / (nextMs - prevMs)).clamp(0.0, 1.0);
   }
 
   String _formatDuration(Duration duration) {

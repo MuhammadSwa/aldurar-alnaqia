@@ -12,7 +12,8 @@ import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
 /// row is wrongly highlighted. Rebuilds only on nudge/settings changes.
 ///
 /// Each fard row shows a time-of-day tinted medallion; the next prayer's row
-/// carries a progress bar measuring prev → next elapsed time.
+/// is highlighted. The prev → next progress bar lives under the countdown
+/// in [NextPrayerCountdown], not here.
 class PrayerTimingsCard extends ConsumerWidget {
   const PrayerTimingsCard({super.key});
 
@@ -53,31 +54,11 @@ class PrayerTimingsCard extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildCard(context, fardPrayers, nextMs,
-            _nextProgress(view.today, schedule, nextMs),),
+        _buildCard(context, fardPrayers, nextMs),
         const SizedBox(height: 8),
-        _buildCard(context, sunnahPrayers, nextMs, null),
+        _buildCard(context, sunnahPrayers, nextMs),
       ],
     );
-  }
-
-  /// Progress from the previous event to the next one (0–1), derived
-  /// chronologically from today's ordered events. Null when it can't be
-  /// determined (e.g. before Fajr, where "previous" was yesterday's Isha).
-  /// Static per build — refreshes on nudge, like the highlight.
-  static double? _nextProgress(
-      DateTime now, PrayerSchedule schedule, int nextMs,) {
-    DateTime? prev;
-    for (final event in schedule.ordered) {
-      if (!event.time.isAfter(now)) {
-        prev = event.time;
-      }
-    }
-    final prevMs = prev?.millisecondsSinceEpoch;
-    if (prevMs == null || nextMs <= prevMs) return null;
-    final nowMs = now.millisecondsSinceEpoch;
-    if (nowMs < prevMs) return null;
-    return ((nowMs - prevMs) / (nextMs - prevMs)).clamp(0.0, 1.0);
   }
 
   /// Time-of-day tint for each prayer medallion. Fixed hues read well on
@@ -99,7 +80,6 @@ class PrayerTimingsCard extends ConsumerWidget {
     BuildContext context,
     List<_PrayerTime> prayers,
     int nextMs,
-    double? nextProgress,
   ) {
     return Card(
       elevation: 4,
@@ -121,10 +101,6 @@ class PrayerTimingsCard extends ConsumerWidget {
                 context,
                 prayers[i],
                 isNext: prayers[i].time?.millisecondsSinceEpoch == nextMs,
-                progress:
-                    prayers[i].time?.millisecondsSinceEpoch == nextMs
-                        ? nextProgress
-                        : null,
               ),
               if (i != prayers.length - 1)
                 Divider(
@@ -148,7 +124,6 @@ class PrayerTimingsCard extends ConsumerWidget {
     BuildContext context,
     _PrayerTime prayer, {
     required bool isNext,
-    required double? progress,
   }) {
     final Color? rowColor = isNext
         ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
@@ -160,67 +135,46 @@ class PrayerTimingsCard extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       // Row is explicitly RTL so the medallion — the first child — lands
       // on the right of the name.
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
+        textDirection: TextDirection.rtl,
         children: [
-          Row(
-            textDirection: TextDirection.rtl,
-            children: [
-              if (prayer.icon != null)
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: medallionBg.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    prayer.icon,
-                    size: 20,
-                    color: medallionFg,
-                    semanticLabel: prayer.name,
-                  ),
-                ),
-              if (prayer.icon != null) const SizedBox(width: 10),
-              Expanded(
-                child: InlineTextWidget(
-                  prayer.name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isNext
-                        ? FontWeight.bold
-                        : (prayer.isSunnah
-                            ? FontWeight.w500
-                            : FontWeight.w600),
-                  ),
-                  textAlign: TextAlign.right,
-                ),
+          if (prayer.icon != null)
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: medallionBg.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(12),
               ),
-              InlineTextWidget(
-                _formatTime(prayer.time),
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.normal,),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          if (isNext && progress != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 4,
-                  backgroundColor: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.15),
-                ),
+              child: Icon(
+                prayer.icon,
+                size: 20,
+                color: medallionFg,
+                semanticLabel: prayer.name,
               ),
             ),
+          if (prayer.icon != null) const SizedBox(width: 10),
+          Expanded(
+            child: InlineTextWidget(
+              prayer.name,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: isNext
+                    ? FontWeight.bold
+                    : (prayer.isSunnah ? FontWeight.w500 : FontWeight.w600),
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+          InlineTextWidget(
+            _formatTime(prayer.time),
+            style: const TextStyle(
+              fontSize: 16,
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -248,13 +202,13 @@ class PrayerTimingsCard extends ConsumerWidget {
       _PrayerTime('الضحى', null, isSunnah: true),
     ];
 
-    // No next prayer while unconfigured: -1 matches nothing, no progress bar.
+    // No next prayer while unconfigured: -1 matches nothing.
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildCard(context, fardPrayers, -1, null),
+        _buildCard(context, fardPrayers, -1),
         const SizedBox(height: 8),
-        _buildCard(context, sunnahPrayers, -1, null),
+        _buildCard(context, sunnahPrayers, -1),
       ],
     );
   }
