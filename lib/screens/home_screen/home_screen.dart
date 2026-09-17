@@ -214,9 +214,6 @@ class EmptyBookmarks extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerLow,
-        ),
         child: Column(
           children: [
             // Icon badge — the same folder_special as the section header
