@@ -68,11 +68,6 @@ class PrayerNotificationService : Service() {
     private const val KEY_CONFIG = "flutter.prayer_native_config"
 
     private const val NO_LOCATION_RETRY_MS = 15 * 60 * 1000L
-    // Cosmetic grace: pushes the displayed countdown's zero-crossing past the
-    // prayer time so a late refresh (1-2 min on inexact alarms) lands before
-    // the Chronometer would tick into "-MM:SS". Display-only; wakeup timing
-    // still uses the true prayer time.
-    private const val CHRONOMETER_GRACE_MS = 120_000L
     private const val NEXT_PRAYER_COLOR = 0xFF2E7D32.toInt()
 
     @Volatile
@@ -398,11 +393,9 @@ class PrayerNotificationService : Service() {
     expanded.setTextViewText(R.id.hijri_date, hijri)
 
     // System-managed chronometer: SystemUI updates every second with 0 app wakeups.
-    // Never show a minus: past zero a countdown Chronometer keeps ticking into
-    // "-MM:SS" until the late refresh posts. The displayed zero-crossing is
-    // therefore pushed back by CHRONOMETER_GRACE_MS, and a refresh landing
-    // inside the grace window freezes at 00:00:00. Label left unchanged by
-    // request. (minSdk 24, so no pre-N fallback.)
+    // Exact zero-crossing matches the in-app countdown. If the refresh lands
+    // late, the remaining <= 0 branch below freezes at 00:00:00 instead of
+    // showing a minus. (minSdk 24, so no pre-N fallback.)
     val remaining = plan.nextAtMs - System.currentTimeMillis()
     if (remaining <= 0) {
       collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
@@ -410,7 +403,7 @@ class PrayerNotificationService : Service() {
       collapsed.setTextViewText(R.id.chronometer, "00:00:00")
       expanded.setTextViewText(R.id.chronometer, "00:00:00")
     } else {
-      val base = SystemClock.elapsedRealtime() + remaining + CHRONOMETER_GRACE_MS
+      val base = SystemClock.elapsedRealtime() + remaining
       collapsed.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
       expanded.setViewVisibility(R.id.chronometer, android.view.View.VISIBLE)
       collapsed.setChronometer(R.id.chronometer, base, null, true)
