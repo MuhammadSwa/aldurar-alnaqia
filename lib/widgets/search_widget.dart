@@ -6,7 +6,61 @@ import 'package:aldurar_alnaqia/models/azkar_models.dart' show zikrIdForTitle;
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart';
 import 'package:flutter/material.dart';
 
-// SearchWidget remains the same
+/// Titles that should lead results for common names which imply related azkar.
+///
+/// Keys use normalized Arabic (for example, `ة` becomes `ه`). The rest of the
+/// literal matches retain the order supplied by the registry.
+const _preferredSuggestionsByQuery = <String, List<String>>{
+  'حزب': [
+    'حزب البحر',
+    'حزب البر (الحزب الكبير)',
+    'حزب النصر',
+    'حزب الإمام النووي',
+    'حزب الفتح الصديقي',
+  ],
+  'برده': ['قصيدة بانت سعاد', 'بردة الإمام البوصيري'],
+  'البرده': ['قصيدة بانت سعاد', 'بردة الإمام البوصيري'],
+};
+
+List<String> _preferredSuggestionsForQuery(String normalizedQuery) {
+  for (final entry in _preferredSuggestionsByQuery.entries) {
+    if (entry.key.startsWith(normalizedQuery)) {
+      return entry.value;
+    }
+  }
+  return const <String>[];
+}
+
+/// Filters suggestions and puts related azkar first for a few common queries.
+List<String> filterAndRankSuggestions(String query, List<String> suggestions) {
+  final normalizedQuery = normalizeArabic(query);
+  final preferredSuggestions = _preferredSuggestionsForQuery(normalizedQuery);
+  final preferredIndexes = <String, int>{
+    for (var index = 0; index < preferredSuggestions.length; index++)
+      preferredSuggestions[index]: index,
+  };
+
+  final matches = <({String suggestion, int originalIndex})>[];
+  for (var index = 0; index < suggestions.length; index++) {
+    final suggestion = suggestions[index];
+    final isLiteralMatch =
+        normalizeArabic(suggestion).contains(normalizedQuery);
+    if (isLiteralMatch || preferredIndexes.containsKey(suggestion)) {
+      matches.add((suggestion: suggestion, originalIndex: index));
+    }
+  }
+
+  matches.sort((a, b) {
+    final aRank = preferredIndexes[a.suggestion] ?? preferredSuggestions.length;
+    final bRank = preferredIndexes[b.suggestion] ?? preferredSuggestions.length;
+    final rankComparison = aRank.compareTo(bRank);
+    return rankComparison != 0
+        ? rankComparison
+        : a.originalIndex.compareTo(b.originalIndex);
+  });
+  return [for (final match in matches) match.suggestion];
+}
+
 class SearchWidget extends StatefulWidget {
   final Function(String)? onSearch;
   final String? hintText;
@@ -117,20 +171,15 @@ class _SearchModalState extends State<SearchModal> {
     }
 
     final query = widget.controller.text;
-    // Normalize query for better filtering
-    final normalizedQuery = _normalizeArabic(query.toLowerCase());
 
     setState(() {
       if (query.isEmpty) {
         _filteredSuggestions = List.from(widget.suggestions!);
       } else {
-        // Filter suggestions based on the normalized query
-        _filteredSuggestions = widget.suggestions!
-            .where(
-              (suggestion) => _normalizeArabic(suggestion.toLowerCase())
-                  .contains(normalizedQuery),
-            )
-            .toList();
+        _filteredSuggestions = filterAndRankSuggestions(
+          query,
+          widget.suggestions!,
+        );
       }
     });
   }
