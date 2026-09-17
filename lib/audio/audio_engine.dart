@@ -98,25 +98,28 @@ class JustAudioEngine implements AudioEngine {
       : _notifications = notifications {
     _notifications?.attach(_player);
 
-    _subscriptions.add(_player.playerStateStream.listen((playerState) {
-      final processing = playerState.processingState;
-      final playing = playerState.playing;
+    _subscriptions.add(
+      _player.playerStateStream.listen((playerState) {
+        final processing = playerState.processingState;
+        final playing = playerState.playing;
 
-      final EnginePlaybackState mapped;
-      if (processing == ProcessingState.loading ||
-          processing == ProcessingState.buffering) {
-        mapped = EnginePlaybackState.buffering;
-      } else if (processing == ProcessingState.completed) {
-        mapped = EnginePlaybackState.completed;
-      } else if (processing == ProcessingState.idle) {
-        // Idle means no source / stopped after error.
-        mapped = EnginePlaybackState.idle;
-      } else {
-        mapped =
-            playing ? EnginePlaybackState.playing : EnginePlaybackState.paused;
-      }
-      _emit(EnginePlaybackChanged(mapped));
-    }),);
+        final EnginePlaybackState mapped;
+        if (processing == ProcessingState.loading ||
+            processing == ProcessingState.buffering) {
+          mapped = EnginePlaybackState.buffering;
+        } else if (processing == ProcessingState.completed) {
+          mapped = EnginePlaybackState.completed;
+        } else if (processing == ProcessingState.idle) {
+          // Idle means no source / stopped after error.
+          mapped = EnginePlaybackState.idle;
+        } else {
+          mapped = playing
+              ? EnginePlaybackState.playing
+              : EnginePlaybackState.paused;
+        }
+        _emit(EnginePlaybackChanged(mapped));
+      }),
+    );
 
     _subscriptions.add(
       _player.playbackEventStream.listen(
@@ -150,11 +153,13 @@ class JustAudioEngine implements AudioEngine {
   }
 
   void _emitProgress() {
-    _emit(EngineProgress(
-      position: _player.position,
-      buffered: _player.bufferedPosition,
-      duration: _player.duration ?? Duration.zero,
-    ),);
+    _emit(
+      EngineProgress(
+        position: _player.position,
+        buffered: _player.bufferedPosition,
+        duration: _player.duration ?? Duration.zero,
+      ),
+    );
   }
 
   /// The bundled cover image, extracted to a real file once.
@@ -188,7 +193,7 @@ class JustAudioEngine implements AudioEngine {
     return MediaItem(
       id: request.trackId,
       title: request.title,
-      album: 'الطريقة اليسرية',
+      album: 'الدرر النقية',
       artist: 'د يسري جبر',
       artUri: artUri,
     );

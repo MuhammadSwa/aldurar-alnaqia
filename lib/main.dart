@@ -143,7 +143,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         child: child!,
       ),
       scrollBehavior: AppScrollBehavior(),
-      title: 'الطريقة اليسرية',
+      title: 'الدرر النقية',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(fontSize: fontSize),
       darkTheme: AppTheme.dark(fontSize: fontSize),
