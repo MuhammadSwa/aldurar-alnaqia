@@ -306,6 +306,29 @@ void main() {
     });
   });
 
+  group('initialization guard', () {
+    test('reads and writes throw before init instead of silently no-op', () {
+      SharedPreferencesService.resetForTest();
+      expect(SharedPreferencesService.isInitialized, isFalse);
+      expect(() => SharedPreferencesService.getFontSize(), throwsStateError);
+      expect(() => SharedPreferencesService.getBookmarks(), throwsStateError);
+      expect(
+        () => SharedPreferencesService.setFontSize(28),
+        throwsStateError,
+      );
+      expect(
+        () => SharedPreferencesService.loadPrayerSettings(),
+        throwsStateError,
+      );
+    });
+
+    test('focused stores are reachable from the instance', () {
+      expect(SharedPreferencesService.isInitialized, isTrue);
+      expect(SharedPreferencesService.instance.appearance.getFontSize(), 22);
+      expect(SharedPreferencesService.instance.bookmarks.getBookmarks(), isEmpty);
+    });
+  });
+
   group('prayer city label storage', () {
     test('absent label is empty', () {
       expect(SharedPreferencesService.getPrayerCityLabel(), isEmpty);

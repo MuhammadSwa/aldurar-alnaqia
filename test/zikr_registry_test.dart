@@ -1,10 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/models/week_collection_data.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 
 void main() {
+  setUp(() async {
+    // WeekCollectionAzkar.getDay(isToday: true) resolves today's Yousria
+    // part from prefs; init so it reads deterministic (empty-mock) state
+    // instead of throwing on uninitialized access.
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    await SharedPreferencesService().init();
+  });
+
   group('zikr registry', () {
     test('every id is unique and ASCII-safe', () {
       final ids = zikrById.keys.toList();
