@@ -31,31 +31,141 @@ List<String> _preferredSuggestionsForQuery(String normalizedQuery) {
   return const <String>[];
 }
 
-/// Filters suggestions and puts related azkar first for a few common queries.
+final RegExp _searchWordSeparator =
+    RegExp(r'''[\s\(\)\[\]\{\}،؛؟:!"'،.\-_/\\]+''');
+
+List<String> _searchWords(String normalizedText) => normalizedText
+    .split(_searchWordSeparator)
+    .where((word) => word.isNotEmpty)
+    .toList();
+
+int? _wordMatchScore(
+  List<String> queryWords,
+  List<String> suggestionWords, {
+  required bool allowSubstring,
+}) {
+  var positions = 0;
+  for (final queryWord in queryWords) {
+    final position = suggestionWords.indexWhere(
+      (suggestionWord) => allowSubstring
+          ? suggestionWord.contains(queryWord)
+          : suggestionWord.startsWith(queryWord),
+    );
+    if (position == -1) return null;
+    positions += position;
+  }
+  return positions;
+}
+
+bool _isOneEditAway(String first, String second) {
+  if ((first.length - second.length).abs() > 1) return false;
+
+  var firstIndex = 0;
+  var secondIndex = 0;
+  var edits = 0;
+  while (firstIndex < first.length && secondIndex < second.length) {
+    if (first[firstIndex] == second[secondIndex]) {
+      firstIndex++;
+      secondIndex++;
+      continue;
+    }
+
+    if (++edits > 1) return false;
+    if (first.length > second.length) {
+      firstIndex++;
+    } else if (first.length < second.length) {
+      secondIndex++;
+    } else {
+      firstIndex++;
+      secondIndex++;
+    }
+  }
+  return edits + (first.length - firstIndex) + (second.length - secondIndex) <=
+      1;
+}
+
+bool _hasFuzzyWordMatch(
+  List<String> queryWords,
+  List<String> suggestionWords,
+) {
+  return queryWords.every(
+    (queryWord) =>
+        queryWord.length >= 4 &&
+        suggestionWords.any(
+          (suggestionWord) =>
+              suggestionWord.length >= 4 &&
+              _isOneEditAway(queryWord, suggestionWord),
+        ),
+  );
+}
+
+/// Returns a relevance score for a normalized query and suggestion.
+///
+/// Lower scores are better. The tiers favour exact and prefix matches, then
+/// word matches (which tolerate extra words and changed spacing), followed by
+/// a one-character typo in a meaningful word.
+int? _searchScore(String query, String suggestion) {
+  if (suggestion == query) return 0;
+  if (suggestion.startsWith(query)) return 10;
+
+  final compactQuery = query.replaceAll(' ', '');
+  final compactSuggestion = suggestion.replaceAll(' ', '');
+  if (compactSuggestion.startsWith(compactQuery)) return 15;
+  if (suggestion.contains(query)) return 20;
+
+  final queryWords = _searchWords(query);
+  final suggestionWords = _searchWords(suggestion);
+  final prefixWordPositions = _wordMatchScore(
+    queryWords,
+    suggestionWords,
+    allowSubstring: false,
+  );
+  if (prefixWordPositions != null) return 30 + prefixWordPositions;
+
+  final substringWordPositions = _wordMatchScore(
+    queryWords,
+    suggestionWords,
+    allowSubstring: true,
+  );
+  if (substringWordPositions != null) return 50 + substringWordPositions;
+
+  return _hasFuzzyWordMatch(queryWords, suggestionWords) ? 70 : null;
+}
+
+/// Filters suggestions by relevance and puts related azkar first for a few
+/// common queries.
 List<String> filterAndRankSuggestions(String query, List<String> suggestions) {
   final normalizedQuery = normalizeArabic(query);
+  if (normalizedQuery.isEmpty) return List<String>.from(suggestions);
+
   final preferredSuggestions = _preferredSuggestionsForQuery(normalizedQuery);
   final preferredIndexes = <String, int>{
     for (var index = 0; index < preferredSuggestions.length; index++)
       preferredSuggestions[index]: index,
   };
 
-  final matches = <({String suggestion, int originalIndex})>[];
+  final matches = <({String suggestion, int score, int originalIndex})>[];
   for (var index = 0; index < suggestions.length; index++) {
     final suggestion = suggestions[index];
-    final isLiteralMatch =
-        normalizeArabic(suggestion).contains(normalizedQuery);
-    if (isLiteralMatch || preferredIndexes.containsKey(suggestion)) {
-      matches.add((suggestion: suggestion, originalIndex: index));
+    final preferredIndex = preferredIndexes[suggestion];
+    final score = _searchScore(normalizedQuery, normalizeArabic(suggestion));
+    if (preferredIndex != null || score != null) {
+      matches.add(
+        (
+          suggestion: suggestion,
+          // Curated suggestions always lead; all other results are ranked by
+          // the same general relevance rules.
+          score: preferredIndex ?? 100 + score!,
+          originalIndex: index,
+        ),
+      );
     }
   }
 
   matches.sort((a, b) {
-    final aRank = preferredIndexes[a.suggestion] ?? preferredSuggestions.length;
-    final bRank = preferredIndexes[b.suggestion] ?? preferredSuggestions.length;
-    final rankComparison = aRank.compareTo(bRank);
-    return rankComparison != 0
-        ? rankComparison
+    final scoreComparison = a.score.compareTo(b.score);
+    return scoreComparison != 0
+        ? scoreComparison
         : a.originalIndex.compareTo(b.originalIndex);
   });
   return [for (final match in matches) match.suggestion];

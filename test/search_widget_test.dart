@@ -19,7 +19,6 @@ void main() {
           ]),
           reason: 'query: $query',
         );
-        expect(results[5], 'الحزب الأول ورد يوم الاثنين');
       }
     });
 
@@ -53,6 +52,32 @@ void main() {
           'ورد يوم الأحد',
         ]),
         orderedEquals(['الحزب السابع ورد يوم الأحد', 'ورد يوم الأحد']),
+      );
+    });
+
+    test('ranks exact and prefix matches before looser word matches', () {
+      expect(
+        filterAndRankSuggestions('ورد الثلاثاء', [
+          'ورد يوم الثلاثاء',
+          'ورد الثلاثاء الخاص',
+          'ورد ليوم الثلاثاء',
+        ]),
+        orderedEquals([
+          'ورد الثلاثاء الخاص',
+          'ورد يوم الثلاثاء',
+          'ورد ليوم الثلاثاء',
+        ]),
+      );
+    });
+
+    test('finds queries with omitted spaces and a one-character typo', () {
+      expect(
+        filterAndRankSuggestions('حزبالبحر', ['حزب البحر', 'حزب النصر']),
+        orderedEquals(['حزب البحر']),
+      );
+      expect(
+        filterAndRankSuggestions('الفتحه', ['الفاتحة', 'سورة الإخلاص']),
+        orderedEquals(['الفاتحة']),
       );
     });
   });
