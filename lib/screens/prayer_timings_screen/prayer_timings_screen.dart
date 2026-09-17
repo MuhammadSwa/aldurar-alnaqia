@@ -1,4 +1,5 @@
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_date_row.dart';
@@ -29,6 +30,12 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   @override
   void initState() {
     super.initState();
+    // Warm the city directory while the user reads the timings so the
+    // settings dialog and city search open instantly (the 2.3 MB asset
+    // parse now runs on a background isolate, but starting it early
+    // still hides its latency behind this screen).
+    // ignore: unused_result
+    ref.read(cityDirectoryProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _maybeAutoShowSettingsDialog();

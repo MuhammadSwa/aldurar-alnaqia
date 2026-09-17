@@ -12,7 +12,9 @@
 // one pass via [searchWithCount].
 
 import 'dart:convert';
+import 'dart:isolate';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -71,9 +73,19 @@ class CityDirectory {
 
   /// Loads and parses the bundled asset. The caller is expected to cache
   /// the result (see [cityDirectoryProvider]).
+  ///
+  /// The ~34k-city JSON decode + index build blocks the UI thread for
+  /// hundreds of ms on low-end phones, which used to freeze the settings
+  /// dialog on first open — so it runs on a background isolate (main
+  /// thread only on web, where spawning isolates is unsupported).
   static Future<CityDirectory> load() async {
     final raw = await rootBundle.loadString('assets/data/cities.json');
-    return CityDirectory.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    if (kIsWeb) {
+      return CityDirectory.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    }
+    return Isolate.run(
+      () => CityDirectory.fromJson(jsonDecode(raw) as Map<String, dynamic>),
+    );
   }
 
   /// Country name for the Arabic UI (Arabic, English fallback, code last).
