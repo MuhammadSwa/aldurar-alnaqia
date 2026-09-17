@@ -14,6 +14,9 @@ class SettingPopupTile<T> extends StatelessWidget {
     required this.values,
     required this.labelFor,
     required this.onSelected,
+    this.cardStyle = SettingsCardStyle.classic,
+    this.leading,
+    this.trailingStyle = 0,
   });
 
   final String title;
@@ -22,11 +25,21 @@ class SettingPopupTile<T> extends StatelessWidget {
   final String Function(T) labelFor;
   final ValueChanged<T> onSelected;
 
+  /// TEMP LAB: outer card variation (one per drawer row).
+  final SettingsCardStyle cardStyle;
+
+  /// TEMP LAB: optional leading icon chip to preview icon treatments.
+  final Widget? leading;
+
+  /// TEMP LAB: 0 = arrow-down, 1 = chevron in circle, 2 = no trailing.
+  final int trailingStyle;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return SettingsCard(
+      style: cardStyle,
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: PopupMenuButton<T>(
@@ -51,25 +64,53 @@ class SettingPopupTile<T> extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
+                if (leading != null) ...[
+                  leading!,
+                  const SizedBox(width: 12),
+                ],
                 Expanded(
                   child: Text(
                     title,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurface,
+                      color: cardStyle == SettingsCardStyle.tonal
+                          ? colorScheme.onSecondaryContainer
+                          : colorScheme.onSurface,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.2,
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
+                _buildTrailing(colorScheme),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildTrailing(ColorScheme colorScheme) {
+    switch (trailingStyle) {
+      case 1:
+        return Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colorScheme.primary.withValues(alpha: 0.12),
+          ),
+          child: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: colorScheme.primary,
+            size: 18,
+          ),
+        );
+      case 2:
+        return const SizedBox.shrink();
+      default:
+        return Icon(
+          Icons.keyboard_arrow_down_rounded,
+          color: colorScheme.onSurface.withValues(alpha: 0.6),
+        );
+    }
   }
 }

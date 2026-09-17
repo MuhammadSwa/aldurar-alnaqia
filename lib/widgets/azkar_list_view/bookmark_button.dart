@@ -23,7 +23,8 @@ class BookmarkButton extends ConsumerWidget {
     );
 
     return IconButton(
-      highlightColor: Colors.lightGreenAccent,
+      highlightColor:
+          Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
       onPressed: () {
         final wasBookmark =
             ref.read(bookmarksProvider.notifier).toggleBookmark(bookmarkId);

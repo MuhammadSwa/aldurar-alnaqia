@@ -34,18 +34,20 @@ abstract final class AppTheme {
   // -- Color schemes (built once; deriving them is not cheap) ---------------
 
   static final ColorScheme lightScheme = ColorScheme.fromSeed(
-    // used for table borders
-    secondaryFixed: Colors.greenAccent,
-    seedColor: Colors.green,
+    seedColor: const Color(0xFF0B6B4F),
     brightness: Brightness.light,
+  ).copyWith(
+    // Default tone 40 reads too dark; tone 50 of the same hue stays
+    // 4.5:1 on white while feeling lighter.
+    primary: const Color(0xFF318567),
   );
 
   static final ColorScheme darkScheme = ColorScheme.fromSeed(
-    // used for table borders
-    secondaryFixed: Colors.greenAccent,
-    seedColor: Colors.greenAccent,
+    seedColor: const Color(0xFF4DD0C4),
     brightness: Brightness.dark,
-  );
+  ).copyWith(
+      // Default tone 80 reads washed-out; tone 70 of the same hue.
+      primary: const Color(0xFF1A8980),);
 
   // -- Public factories -------------------------------------------------------
 
@@ -72,6 +74,20 @@ abstract final class AppTheme {
       bodyMediumColor: null,
       bodySmallColor: Colors.grey.shade400,
       labelSmallColor: null,
+    );
+  }
+
+  /// Custom scheme factory (used by the temporary theme lab and any future
+  /// theme picker). Text colors follow the same rules as [light]/[dark].
+  static ThemeData fromScheme(ColorScheme scheme) {
+    final isLight = scheme.brightness == Brightness.light;
+    return _build(
+      scheme: scheme,
+      brightness: scheme.brightness,
+      fontSize: defaultFontSize,
+      bodyMediumColor: isLight ? Colors.black : null,
+      bodySmallColor: isLight ? Colors.grey.shade600 : Colors.grey.shade400,
+      labelSmallColor: isLight ? Colors.grey.shade600 : null,
     );
   }
 
@@ -152,14 +168,14 @@ abstract final class AppTheme {
         verticalOffset: 10,
         preferBelow: true,
         decoration: BoxDecoration(
-          color: Colors.green.shade100,
+          color: scheme.inverseSurface,
           borderRadius: BorderRadius.circular(10),
         ),
         padding: const EdgeInsets.all(8),
         margin: const EdgeInsets.all(8),
         enableFeedback: true,
-        textStyle: const TextStyle(
-          color: Colors.black,
+        textStyle: TextStyle(
+          color: scheme.onInverseSurface,
           fontWeight: FontWeight.bold,
           fontSize: 12,
         ),
@@ -181,7 +197,7 @@ abstract final class AppTheme {
         // primary (not the default secondaryContainer) so it stays visible.
         backgroundColor: scheme.secondaryContainer,
         indicatorColor: scheme.primary,
-        surfaceTintColor: Colors.green.shade900,
+        surfaceTintColor: Colors.transparent,
         iconTheme: WidgetStatePropertyAll(
           IconThemeData(color: scheme.onSecondaryContainer),
         ),
@@ -194,12 +210,21 @@ abstract final class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.green[900],
-        contentTextStyle: const TextStyle(
-          color: Colors.white,
+        // Dark in both modes, still theme-derived: inverseSurface is dark
+        // in light mode; in dark mode inverseSurface flips light, so use
+        // a dark surface-container instead.
+        backgroundColor: brightness == Brightness.light
+            ? scheme.inverseSurface
+            : scheme.surfaceContainerHighest,
+        contentTextStyle: TextStyle(
+          color: brightness == Brightness.light
+              ? scheme.onInverseSurface
+              : scheme.onSurface,
           fontFamily: fontFamily,
         ),
-        actionTextColor: Colors.white,
+        actionTextColor: brightness == Brightness.light
+            ? scheme.onInverseSurface
+            : scheme.onSurface,
       ),
     );
   }

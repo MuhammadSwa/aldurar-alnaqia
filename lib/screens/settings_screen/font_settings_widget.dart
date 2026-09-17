@@ -9,7 +9,10 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 /// Dragging previews live via [FontSizeNotifier.preview] (no disk write);
 /// releasing persists once via [FontSizeNotifier.change].
 class FontSizeSettingsWidget extends ConsumerWidget {
-  const FontSizeSettingsWidget({super.key});
+  const FontSizeSettingsWidget(
+      {super.key, this.cardStyle = SettingsCardStyle.classic});
+
+  final SettingsCardStyle cardStyle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,6 +20,7 @@ class FontSizeSettingsWidget extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final size = ref.watch(fontSizeProvider);
     return SettingsCard(
+      style: cardStyle,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
@@ -26,7 +30,7 @@ class FontSizeSettingsWidget extends ConsumerWidget {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
               Expanded(

@@ -1,11 +1,14 @@
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
+import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/setting_popup_tile.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class YousriaBeginningDayDropDown extends ConsumerWidget {
-  const YousriaBeginningDayDropDown({super.key});
+  const YousriaBeginningDayDropDown({super.key, this.cardStyle = SettingsCardStyle.classic});
+
+  final SettingsCardStyle cardStyle;
 
   static String araDayName(int relativeDayNum) {
     // relativeDayNum: today is zero, yesterday is 1 etc.
@@ -34,6 +37,7 @@ class YousriaBeginningDayDropDown extends ConsumerWidget {
       value: selected,
       values: const [0, 1, 2, 3, 4, 5],
       labelFor: label,
+      cardStyle: cardStyle,
       onSelected: (relativeDayNum) => ref
           .read(yousriaBeginningProvider.notifier)
           .setRelativeDay(relativeDayNum),

@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:aldurar_alnaqia/common/theme/font_lab_screen.dart';
+import 'package:aldurar_alnaqia/common/theme/theme_preview_screen.dart';
+import 'package:aldurar_alnaqia/common/theme/tile_separator_lab_screen.dart';
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
@@ -16,8 +19,7 @@ class MyDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Drawer(
       elevation: 0,
@@ -27,25 +29,20 @@ class MyDrawer extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 20),
           children: [
-            const ThemeModeSettingWidget(),
-            const YousriaBeginningDayDropDown(),
-            const FileActionSettingWidget(),
-            const FontSizeSettingsWidget(),
-            _buildDrawerItem(
-              context: context,
-              icon: Icon(
-                Icons.cloud_download_rounded,
-                color: colorScheme.onSecondaryContainer,
-                size: 20,
-              ),
-              title: 'إدارة التحميلات',
-              onTap: () {
-                Navigator.pop(context);
-                AppNav.goToDownloadManager(context, 0);
-              },
+            const ThemeModeSettingWidget(
+              cardStyle: SettingsCardStyle.outlined,
+            ),
+            const YousriaBeginningDayDropDown(
+              cardStyle: SettingsCardStyle.outlined,
+            ),
+            const FileActionSettingWidget(
+              cardStyle: SettingsCardStyle.outlined,
+            ),
+            const FontSizeSettingsWidget(
+              cardStyle: SettingsCardStyle.outlined,
             ),
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Divider(height: 1),
             ),
             _buildDrawerItem(
@@ -99,6 +96,73 @@ class MyDrawer extends StatelessWidget {
                 );
               },
             ),
+            // // TEMPORARY: theme preview entry. Preview-only, safe to keep/remove.
+            // _buildDrawerItem(
+            //   context: context,
+            //   icon: Icon(
+            //     Icons.palette_outlined,
+            //     color: colorScheme.onSecondaryContainer,
+            //     size: 20,
+            //   ),
+            //   title: 'تجربة الألوان (مؤقت)',
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //     Navigator.of(context).push(
+            //       MaterialPageRoute(
+            //         builder: (_) => const ThemePreviewScreen(),
+            //       ),
+            //     );
+            //   },
+            // ),
+            // // TEMPORARY: font-lab entry. Remove after choices are made.
+            // _buildDrawerItem(
+            //   context: context,
+            //   icon: Icon(
+            //     Icons.text_fields_outlined,
+            //     color: colorScheme.onSecondaryContainer,
+            //     size: 20,
+            //   ),
+            //   title: 'معاينة الخطوط (مؤقت)',
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //     Navigator.of(context).push(
+            //       MaterialPageRoute(
+            //         builder: (_) => const FontLabScreen(),
+            //       ),
+            //     );
+            //   },
+            // ),
+            // // TEMPORARY: tile-separator lab. Remove after a choice is made.
+            // _buildDrawerItem(
+            //   context: context,
+            //   icon: Icon(
+            //     Icons.view_agenda_outlined,
+            //     color: colorScheme.onSecondaryContainer,
+            //     size: 20,
+            //   ),
+            //   title: 'فواصل البلاطات (مؤقت)',
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //     Navigator.of(context).push(
+            //       MaterialPageRoute(
+            //         builder: (_) => const TileSeparatorLabScreen(),
+            //       ),
+            //     );
+            //   },
+            // ),
+            // _buildDrawerItem(
+            //   context: context,
+            //   icon: Icon(
+            //     Icons.cloud_download_rounded,
+            //     color: colorScheme.onSecondaryContainer,
+            //     size: 20,
+            //   ),
+            //   title: 'إدارة التحميلات',
+            //   onTap: () {
+            //     Navigator.pop(context);
+            //     AppNav.goToDownloadManager(context, 0);
+            //   },
+            // ),
           ],
         ),
       ),
@@ -115,6 +179,7 @@ class MyDrawer extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return SettingsCard(
+      style: SettingsCardStyle.outlined,
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),

@@ -46,9 +46,21 @@ class PrayerTimingsCard extends ConsumerWidget {
     ];
 
     final sunnahPrayers = [
-      _PrayerTime('منتصف الليل', sunnah?.middleOfNight, isSunnah: true),
-      _PrayerTime('الثلث الأخير', sunnah?.lastThirdOfNight, isSunnah: true),
-      _PrayerTime('الضحى', sunnah?.duha, isSunnah: true),
+      _PrayerTime('الضحى', sunnah?.duha,
+          isSunnah: true,
+          assetPath: 'assets/imgs/sunnah_duha.png',
+          icon: LucideIcons.sun,
+          tint: const Color(0xFFE8823A),),
+      _PrayerTime('منتصف الليل', sunnah?.middleOfNight,
+          isSunnah: true,
+          assetPath: 'assets/imgs/sunnah_midnight.png',
+          icon: LucideIcons.moonStar,
+          tint: const Color(0xFF4A5AA8),),
+      _PrayerTime('الثلث الأخير', sunnah?.lastThirdOfNight,
+          isSunnah: true,
+          assetPath: 'assets/imgs/sunnah_last_third.png',
+          icon: LucideIcons.moonStar,
+          tint: const Color(0xFF7C6AAE),),
     ];
 
     return Column(
@@ -82,7 +94,7 @@ class PrayerTimingsCard extends ConsumerWidget {
     int nextMs,
   ) {
     return Card(
-      elevation: 4,
+      elevation: 1,
       margin: EdgeInsets.zero,
       child: Container(
         decoration: BoxDecoration(
@@ -128,7 +140,9 @@ class PrayerTimingsCard extends ConsumerWidget {
     final Color? rowColor = isNext
         ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
         : null;
-    final (medallionBg, medallionFg) = _tintFor(prayer.id);
+    final (medallionBg, medallionFg) =
+        prayer.tint != null ? (prayer.tint!, prayer.tint!) : _tintFor(prayer.id);
+    final hasVisual = prayer.icon != null || prayer.assetPath != null;
 
     return Container(
       decoration: BoxDecoration(color: rowColor),
@@ -138,7 +152,7 @@ class PrayerTimingsCard extends ConsumerWidget {
       child: Row(
         textDirection: TextDirection.rtl,
         children: [
-          if (prayer.icon != null)
+          if (hasVisual)
             Container(
               width: 38,
               height: 38,
@@ -146,14 +160,34 @@ class PrayerTimingsCard extends ConsumerWidget {
                 color: medallionBg.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                prayer.icon,
-                size: 20,
-                color: medallionFg,
-                semanticLabel: prayer.name,
+              child: Center(
+                child: prayer.assetPath != null
+                    ? Image.asset(
+                        prayer.assetPath!,
+                        width: 22,
+                        height: 22,
+                        color: medallionFg,
+                        colorBlendMode: BlendMode.srcIn,
+                        semanticLabel: prayer.name,
+                        // New files need a full restart (not hot reload) to
+                        // enter the asset bundle; fall back to the Lucide
+                        // icon instead of the red broken-image box.
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          prayer.icon,
+                          size: 20,
+                          color: medallionFg,
+                          semanticLabel: prayer.name,
+                        ),
+                      )
+                    : Icon(
+                        prayer.icon,
+                        size: 20,
+                        color: medallionFg,
+                        semanticLabel: prayer.name,
+                      ),
               ),
             ),
-          if (prayer.icon != null) const SizedBox(width: 10),
+          if (hasVisual) const SizedBox(width: 10),
           Expanded(
             child: InlineTextWidget(
               prayer.name,
@@ -197,9 +231,21 @@ class PrayerTimingsCard extends ConsumerWidget {
           id: PrayerEventId.asr, icon: LucideIcons.cloudSun,),
     ];
     const sunnahPrayers = [
-      _PrayerTime('منتصف الليل', null, isSunnah: true),
-      _PrayerTime('الثلث الأخير', null, isSunnah: true),
-      _PrayerTime('الضحى', null, isSunnah: true),
+      _PrayerTime('الضحى', null,
+          isSunnah: true,
+          assetPath: 'assets/imgs/sunnah_duha.png',
+          icon: LucideIcons.sun,
+          tint: Color(0xFFE8823A),),
+      _PrayerTime('منتصف الليل', null,
+          isSunnah: true,
+          assetPath: 'assets/imgs/sunnah_midnight.png',
+          icon: LucideIcons.moonStar,
+          tint: Color(0xFF4A5AA8),),
+      _PrayerTime('الثلث الأخير', null,
+          isSunnah: true,
+          assetPath: 'assets/imgs/sunnah_last_third.png',
+          icon: LucideIcons.moonStar,
+          tint: Color(0xFF7C6AAE),),
     ];
 
     // No next prayer while unconfigured: -1 matches nothing.
@@ -229,7 +275,9 @@ class _PrayerTime {
   final bool isSunnah;
   final PrayerEventId? id;
   final IconData? icon;
+  final String? assetPath;
+  final Color? tint;
 
   const _PrayerTime(this.name, this.time,
-      {this.isSunnah = false, this.id, this.icon,});
+      {this.isSunnah = false, this.id, this.icon, this.assetPath, this.tint,});
 }
