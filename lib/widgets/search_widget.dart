@@ -126,8 +126,10 @@ class _SearchModalState extends State<SearchModal> {
       } else {
         // Filter suggestions based on the normalized query
         _filteredSuggestions = widget.suggestions!
-            .where((suggestion) => _normalizeArabic(suggestion.toLowerCase())
-                .contains(normalizedQuery),)
+            .where(
+              (suggestion) => _normalizeArabic(suggestion.toLowerCase())
+                  .contains(normalizedQuery),
+            )
             .toList();
       }
     });
@@ -185,16 +187,14 @@ class _SearchModalState extends State<SearchModal> {
     final colorScheme = Theme.of(context).colorScheme;
     final onSurface = colorScheme.onSurface;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
-    // Available height below the status bar. The modal itself already avoids
-    // the top intrusion via `useSafeArea: true`, so size the sheet from what
-    // is left to guarantee it never slides under the status bar.
-    // Shrink the sheet by the keyboard height so the keyboard sits below
-    // the sheet instead of covering it; total height stays at 90%.
-    final availableHeight =
-        mediaQuery.size.height - mediaQuery.viewPadding.top;
-    final keyboardHeight = mediaQuery.viewInsets.bottom;
-    final sheetHeight = (availableHeight * 0.9 - keyboardHeight)
-        .clamp(0.0, availableHeight);
+    // Full-height sheet that ignores the keyboard: no viewInsets padding,
+    // no shrinking. The keyboard overlays the lower part of the list.
+    // Subtract only the top system padding so we never slide under the
+    // status bar; the bottom SafeArea below keeps us off the nav bar when
+    // the keyboard is closed (its padding goes to 0 when the keyboard
+    // opens, so content continues under the keyboard).
+    final availableHeight = mediaQuery.size.height - mediaQuery.viewPadding.top;
+    final sheetHeight = availableHeight;
 
     final hasSuggestions =
         widget.suggestions != null && widget.suggestions!.isNotEmpty;
@@ -212,53 +212,47 @@ class _SearchModalState extends State<SearchModal> {
       );
     }
 
-    // Outer SafeArea handles the bottom (home indicator); top/left/right are
-    // already handled by `useSafeArea: true` on the modal, so don't apply
-    // them twice. Bottom padding lifts the sheet above the keyboard so it
-    // resizes instead of being covered.
+    // Bottom SafeArea only (uses viewPadding, not the keyboard), so the
+    // sheet rests above the nav bar but slides under the keyboard.
     return SafeArea(
       top: false,
       left: false,
       right: false,
       bottom: true,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: keyboardHeight),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
-          child: Container(
-            height: sheetHeight,
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
+        child: Container(
+          height: sheetHeight,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                _SearchTextField(
-                  controller: widget.controller,
-                  focusNode: widget.focusNode,
-                  hintText: widget.hintText,
-                  onSubmitted: _performSearch,
-                  onCancel: () {
-                    if (mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  onSurface: onSurface,
-                  onSurfaceVariant: onSurfaceVariant,
-                ),
-                Expanded(child: suggestionsArea),
-              ],
-            ),
+              ),
+              _SearchTextField(
+                controller: widget.controller,
+                focusNode: widget.focusNode,
+                hintText: widget.hintText,
+                onSubmitted: _performSearch,
+                onCancel: () {
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                onSurface: onSurface,
+                onSurfaceVariant: onSurfaceVariant,
+              ),
+              Expanded(child: suggestionsArea),
+            ],
           ),
         ),
       ),

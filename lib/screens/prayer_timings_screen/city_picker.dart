@@ -96,15 +96,14 @@ class _CitySearchSheetState extends ConsumerState<CitySearchSheet> {
 
     return Directionality(
       textDirection: TextDirection.rtl,
+      // Full-height sheet: no bottom padding, no viewInsets (keyboard
+      // overlays the lower results). useSafeArea on the modal keeps the
+      // sheet off the system nav bar.
       child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 12,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-        ),
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
         child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.8,
+          width: double.infinity,
+          height: double.infinity,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
