@@ -45,8 +45,8 @@ class BookmarkButton extends ConsumerWidget {
               // Show snackbar if enabled (helper hides the current one first).
               if (showSnackBarBool) {
                 final message = wasBookmark
-                    ? 'تم الحذف من المحفوظات'
-                    : 'تم الإضافة إلى المحفوظات';
+                    ? 'تم الحذف من المفضلة'
+                    : 'تم الإضافة إلى المفضلة';
                 showSnackBar(context, message);
               }
             },

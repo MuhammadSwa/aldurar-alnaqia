@@ -56,7 +56,7 @@ class YousriaBanner extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'اختر صلوات اليوم وسيتم حفظ ترتيب الصلوات تلقائياً',
+              'اختر صلوات اليوم وسيتم حفظ ترتيب الصلوات تلقائيًّا',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSecondaryContainer,
               ),

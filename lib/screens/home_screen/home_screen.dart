@@ -102,10 +102,10 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: Row(
                 textDirection: TextDirection.rtl,
                 children: [
-                  Icon(Icons.folder_special_rounded),
+                  Icon(Icons.favorite),
                   SizedBox(width: 8),
                   Text(
-                    'المحفوظات',
+                    'المفضلة',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -232,7 +232,7 @@ class EmptyBookmarks extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'لا توجد محفوظات بعد',
+              'لا توجد مفضلات بعد',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
