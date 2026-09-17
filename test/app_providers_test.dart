@@ -90,20 +90,26 @@ void main() {
       SharedPreferencesService.setYousriaBeginning(
         DateTime.now().subtract(const Duration(days: 3)),
       );
-      expect(freshContainer().read(yousriaBeginningProvider.notifier)
-          .relativeDay(), 3);
+      expect(
+        freshContainer().read(yousriaBeginningProvider.notifier).relativeDay(),
+        3,
+      );
 
       SharedPreferencesService.setYousriaBeginning(
         DateTime.now().subtract(const Duration(days: 30)),
       );
-      expect(freshContainer().read(yousriaBeginningProvider.notifier)
-          .relativeDay(), 5);
+      expect(
+        freshContainer().read(yousriaBeginningProvider.notifier).relativeDay(),
+        5,
+      );
 
       SharedPreferencesService.setYousriaBeginning(
         DateTime.now().add(const Duration(days: 2)),
       );
-      expect(freshContainer().read(yousriaBeginningProvider.notifier)
-          .relativeDay(), 0);
+      expect(
+        freshContainer().read(yousriaBeginningProvider.notifier).relativeDay(),
+        0,
+      );
     });
 
     test('setBeginning truncates to midnight', () async {

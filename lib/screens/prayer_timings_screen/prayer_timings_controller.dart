@@ -141,7 +141,7 @@ class PrayerTimingsNotifier extends Notifier<PrayerState> {
   /// installs saved before labels existed (no country suffix).
   String _locationLabel() {
     final label = SharedPreferencesService.getPrayerCityLabel();
-    if (label != null && label.isNotEmpty) return label;
+    if (label.isNotEmpty) return label;
     return SharedPreferencesService.getCity()?.displayName ?? '';
   }
 
