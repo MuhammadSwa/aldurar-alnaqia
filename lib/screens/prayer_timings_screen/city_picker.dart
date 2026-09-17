@@ -172,7 +172,8 @@ class _ResultsList extends StatelessWidget {
       return Center(
         child: Text(
           'اكتب اسم المدينة أو الدولة بالعربية أو الإنجليزية',
-          style: TextStyle(color: theme.hintColor),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
         ),
       );
     }
