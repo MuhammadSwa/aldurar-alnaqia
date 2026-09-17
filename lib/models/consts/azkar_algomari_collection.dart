@@ -146,7 +146,7 @@ const azkarSalatGomari = Zikr(
 // === azkarAfterSalat ===
 const azkarAfterSalat = Zikr(
   id: 'azkar-khatm-salat',
-  title: 'أذكار ختم الصلاة',
+  title: 'أذكار ختام الصلاة',
   content: '''
 أَسْتَغْفِرُ الله الْعَظِيمَ الَّذِي لَا إِلَهَ إِلاَّ هُوَ الْحَيَّ الْقَيُّومَ وَأَتُوبُ إِلَيْهِ. (ثَلاَثَ مَرَّاتٍ).
 
