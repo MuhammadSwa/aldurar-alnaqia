@@ -1,9 +1,8 @@
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_header_card.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_date_row.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
@@ -139,9 +138,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            PrayerDateRow(),
-            SizedBox(height: 8),
-            NextPrayerCountdown(),
+            PrayerHeaderCard(),
             SizedBox(height: 8),
             PrayerTimingsCard(),
           ],

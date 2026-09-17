@@ -5,6 +5,11 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Shared separator style for the prayer header: the Hijri|Gregorian divider
+/// and the dates/countdown divider use the same color and weight.
+Color prayerSeparatorColor(BuildContext context) =>
+    Theme.of(context).colorScheme.outline.withValues(alpha: 0.45);
+
 /// Day name (flips at Maghrib) + Hijri | Gregorian dates.
 ///
 /// Pure derivation: weekday, Hijri label, and civil date all come from the
@@ -31,15 +36,13 @@ class PrayerDateRow extends ConsumerWidget {
 
     final now = view?.today ?? DateTime.now();
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ---- Day name line (in place of the old location line) ----
-            Text(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ---- Day name line (in place of the old location line) ----
+          Text(
               view == null ? '...' : (_arabicDayNames[view.weekday] ?? '...'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -63,10 +66,10 @@ class PrayerDateRow extends ConsumerWidget {
                   ),
                 ),
                 Container(
-                  width: 1,
+                  width: 1.5,
                   height: 28,
                   margin: const EdgeInsets.symmetric(horizontal: 8),
-                  color: theme.dividerColor,
+                  color: prayerSeparatorColor(context),
                 ),
                 Expanded(
                   child: Center(child: GregorianDateWidget(today: now)),
@@ -75,7 +78,6 @@ class PrayerDateRow extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }

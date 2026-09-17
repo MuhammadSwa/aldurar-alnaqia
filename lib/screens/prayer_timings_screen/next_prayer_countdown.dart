@@ -70,13 +70,10 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
     final colorScheme = theme.colorScheme;
     final view = ref.watch(prayerViewProvider);
 
-    return Card(
-      elevation: 4,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: view == null
-            ? _UnsetContent(onTap: () => _openSettings(context))
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      child: view == null
+          ? _UnsetContent(onTap: () => _openSettings(context))
             : Builder(
                 builder: (context) {
                   // Live derivation, deliberately `read` (not `watch`): this
@@ -155,7 +152,6 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                   );
                 },
               ),
-      ),
     );
   }
 
