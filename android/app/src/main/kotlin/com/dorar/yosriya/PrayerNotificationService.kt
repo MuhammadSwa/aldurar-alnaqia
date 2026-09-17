@@ -15,13 +15,6 @@ import android.os.PowerManager
 import android.os.SystemClock
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
-import com.batoulapps.adhan2.CalculationMethod
-import com.batoulapps.adhan2.CalculationParameters
-import com.batoulapps.adhan2.Coordinates
-import com.batoulapps.adhan2.HighLatitudeRule
-import com.batoulapps.adhan2.Madhab
-import com.batoulapps.adhan2.PrayerTimes
-import com.batoulapps.adhan2.data.DateComponents
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,16 +24,17 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atStartOfDayIn
-import kotlinx.datetime.plus
-import kotlinx.datetime.toLocalDateTime
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
  * Native foreground service showing a persistent prayer-times notification
  * with a system-rendered countdown and exact AlarmManager-driven updates.
+ *
+ * Dart owns ALL prayer math (adhan_dart): it writes precomputed epoch-ms
+ * timetables (`days` + `midnights`, contract v2) into the config JSON.
+ * This service only renders + schedules alarms — no solar calculation here,
+ * so there is a single source of truth and no method/madhab divergence.
  *
  * Architecture inspired by Noorulhuda:
  *  - Uses [AlarmManager.setExactAndAllowWhileIdle] with [AlarmManager.RTC_WAKEUP]
@@ -243,11 +237,13 @@ class PrayerNotificationService : Service() {
     }
 
     val nowMs = System.currentTimeMillis()
-    val zone = cfg.zone()
-    val plan = computePlan(cfg, zone, nowMs)
+    // Dumb renderer: pick next/display from Dart-precomputed tables.
+    // Empty `days` means a v1 config (pre-update install) or invalid
+    // settings — one app open rewrites it to v2.
+    val plan = findPlan(cfg, nowMs)
 
     if (plan == null) {
-      postFallback("تعذّر حساب المواقيت")
+      postFallback("افتح التطبيق لتحديث المواقيت")
       scheduleNextWakeup(System.currentTimeMillis() + NO_LOCATION_RETRY_MS, exact = false)
       return
     }
@@ -257,13 +253,13 @@ class PrayerNotificationService : Service() {
       maybePostPrayerArrivalAlert(plan, nowMs)
     }
 
-    val hijri = hijriDateString(cfg, zone, nowMs, plan.maghribMs)
+    val hijri = hijriDateString(cfg, nowMs, plan.maghribMs)
 
     postNotification(plan, hijri)
 
     // Target next event: either the upcoming prayer or midnight.
     // Exact wakeup for alertable prayers; midnight/sunrise stay inexact.
-    val (nextWakeMs, exact) = computeNextWake(nowMs, zone, plan)
+    val (nextWakeMs, exact) = computeNextWake(cfg, nowMs, plan)
     scheduleNextWakeup(nextWakeMs, exact)
   }
 
@@ -295,18 +291,19 @@ class PrayerNotificationService : Service() {
   /**
    * Next wakeup as (timestamp, exact): exact when the upcoming boundary
    * is an alertable prayer. Midnight and sunrise use inexact alarms
-   * (Chronometer display needs no exact wakeup).
+   * (Chronometer display needs no exact wakeup). Midnight boundaries come
+   * from Dart's precomputed `midnights` — no date math here.
    */
   private fun computeNextWake(
+    cfg: Config,
     nowMs: Long,
-    zone: TimeZone,
     plan: DayPlan
   ): Pair<Long, Boolean> {
-    val nowDate = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(zone).date
-    val nextMidnightMs = (nowDate.plus(1, kotlinx.datetime.DateTimeUnit.DAY))
-        .atStartOfDayIn(zone)
-        .toEpochMilliseconds()
+    val nextMidnightMs = cfg.midnights.firstOrNull { it > nowMs }
 
+    if (nextMidnightMs == null) {
+      return (plan.nextAtMs + 1000) to plan.nextIsPrayer
+    }
     // Wake 1 second after whichever event happens first
     return if (plan.nextAtMs in (nowMs + 1000)..nextMidnightMs) {
       (plan.nextAtMs + 1000) to plan.nextIsPrayer
@@ -412,7 +409,7 @@ class PrayerNotificationService : Service() {
       expanded.setChronometerCountDown(R.id.chronometer, true)
     }
 
-    val zone = currentZone()
+    val zoneId = currentZoneId()
 
     // When the device is in an RTL locale (Arabic), LinearLayout puts slot 1 (child 0)
     // on the physical RIGHT. When in an LTR locale (English), slot 6 (child 5) is on the physical RIGHT.
@@ -438,7 +435,7 @@ class PrayerNotificationService : Service() {
     PRAYER_SLOTS.forEachIndexed { i, (nameId, timeId) ->
       val event = orderedPrayers[i]
       expanded.setTextViewText(nameId, event.id.arabicName)
-      expanded.setTextViewText(timeId, formatTime(event.atMs, zone))
+      expanded.setTextViewText(timeId, formatTime(event.atMs, zoneId))
 
       if (event.id == plan.nextId) {
         expanded.setTextColor(nameId, NEXT_PRAYER_COLOR)
@@ -452,11 +449,11 @@ class PrayerNotificationService : Service() {
         .build()
   }
 
-  private fun currentZone(): TimeZone =
+  private fun currentZoneId(): String =
       try {
-        readConfig(this)?.zone() ?: TimeZone.UTC
+        readConfig(this)?.timezone?.ifEmpty { "UTC" } ?: "UTC"
       } catch (_: Exception) {
-        TimeZone.UTC
+        "UTC"
       }
 
   private val PRAYER_SLOTS = listOf(
@@ -499,9 +496,11 @@ class PrayerNotificationService : Service() {
   }
 
   // -------------------------------------------------------------------------
-  // Config & Calculations (cross-platform contract v1 — see Dart
-  // `models/prayer_schedule.dart`. Event IDs are stable enums here; Arabic
-  // labels exist ONLY in `EventId.arabicName` for rendering.)
+  // Config & precomputed timetables (cross-platform contract v2 — see Dart
+  // `models/prayer_schedule.dart`. Dart owns ALL solar math and writes
+  // `days` (N civil days × 6 epoch-ms) + `midnights` (N+1 boundaries).
+  // Kotlin only selects next/display and schedules alarms. Event IDs are
+  // stable enums here; Arabic labels exist ONLY in `EventId.arabicName`.)
   // -------------------------------------------------------------------------
 
   /** Stable event identifiers. SUNRISE.isPrayer == false: it advances the
@@ -522,15 +521,11 @@ class PrayerNotificationService : Service() {
   data class Config(
     val lat: Double,
     val lng: Double,
-    val method: String,
-    val asrCalculation: String,
-    val highLatitudeRule: String,
     val timezone: String,
-    val hijriOffset: Int
-  ) {
-    fun zone(): TimeZone =
-        try { TimeZone.of(timezone) } catch (_: Exception) { TimeZone.UTC }
-  }
+    val hijriOffset: Int,
+    val days: List<List<PrayerEvent>>,
+    val midnights: List<Long>
+  )
 
   private fun readConfig(context: Context): Config? {
     val raw = prefs(context).getString(KEY_CONFIG, null) ?: return null
@@ -539,14 +534,41 @@ class PrayerNotificationService : Service() {
       Config(
           lat = o.getDouble("lat"),
           lng = o.getDouble("lng"),
-          method = o.optString("method", "egyptian"),
-          asrCalculation = o.optString("asrCalculation", "shafi"),
-          highLatitudeRule = o.optString("highLatitudeRule", "middle_of_night"),
           timezone = o.optString("timezone", ""),
-          hijriOffset = o.optInt("hijriOffset", 0))
+          hijriOffset = o.optInt("hijriOffset", 0),
+          days = parseDays(o.optJSONArray("days")),
+          midnights = parseLongs(o.optJSONArray("midnights")))
     } catch (_: Exception) {
       null
     }
+  }
+
+  private fun parseDays(arr: JSONArray?): List<List<PrayerEvent>> {
+    if (arr == null) return emptyList()
+    val out = ArrayList<List<PrayerEvent>>(arr.length())
+    for (i in 0 until arr.length()) {
+      val d = arr.optJSONObject(i) ?: continue
+      val day = listOf(
+          PrayerEvent(EventId.FAJR, d.optLong("fajr", 0L)),
+          PrayerEvent(EventId.SUNRISE, d.optLong("sunrise", 0L)),
+          PrayerEvent(EventId.DHUHR, d.optLong("dhuhr", 0L)),
+          PrayerEvent(EventId.ASR, d.optLong("asr", 0L)),
+          PrayerEvent(EventId.MAGHRIB, d.optLong("maghrib", 0L)),
+          PrayerEvent(EventId.ISHA, d.optLong("isha", 0L)))
+      if (day.any { it.atMs <= 0L }) continue
+      out.add(day)
+    }
+    return out
+  }
+
+  private fun parseLongs(arr: JSONArray?): List<Long> {
+    if (arr == null) return emptyList()
+    val out = ArrayList<Long>(arr.length())
+    for (i in 0 until arr.length()) {
+      val v = arr.optLong(i, 0L)
+      if (v > 0L) out.add(v)
+    }
+    return out
   }
 
   private class DayPlan(
@@ -558,38 +580,53 @@ class PrayerNotificationService : Service() {
     val nextIsPrayer: Boolean get() = nextId.isPrayer
   }
 
-  private fun computePlan(cfg: Config, zone: TimeZone, nowMs: Long): DayPlan? {
-    val params = buildParams(cfg.method, cfg.asrCalculation, cfg.highLatitudeRule, cfg.lat)
-        ?: return null
-    val coordinates = Coordinates(cfg.lat, cfg.lng)
-    val now = Instant.fromEpochMilliseconds(nowMs).toLocalDateTime(zone)
+  /**
+   * Selects display + next from Dart-precomputed tables (no calculation).
+   * Display = the civil day containing `nowMs` (via `midnights`); next =
+   * first event strictly after `nowMs` across all days. After Isha this is
+   * tomorrow's Fajr. Returns null when the window is empty (v1 config /
+   * invalid settings) or expired (past the last midnight/event: one app
+   * open rewrites a fresh 30-day window).
+   */
+  private fun findPlan(cfg: Config, nowMs: Long): DayPlan? {
+    if (cfg.days.isEmpty() || cfg.midnights.isEmpty()) return null
+    if (nowMs >= (cfg.midnights.lastOrNull() ?: Long.MAX_VALUE)) return null
 
-    val todayTimes = prayerTimesList(coordinates, params, now.date, zone) ?: return null
-    val maghribMs = todayTimes.firstOrNull { it.id == EventId.MAGHRIB }?.atMs
-    val next = todayTimes.firstOrNull { it.atMs > nowMs }
-
-    if (next != null) {
-      return DayPlan(todayTimes, next.id, next.atMs, maghribMs)
+    var todayIdx = 0
+    for (i in cfg.midnights.indices) {
+      if (cfg.midnights[i] <= nowMs) {
+        todayIdx = i
+      } else {
+        break
+      }
     }
+    if (todayIdx >= cfg.days.size) return null
+    val times = cfg.days[todayIdx]
 
-    // After Isha: tomorrow's Fajr is the upcoming prayer
-    val tomorrow = now.date.plus(1, kotlinx.datetime.DateTimeUnit.DAY)
-    val tomorrowFajr = prayerTimesList(coordinates, params, tomorrow, zone)
-        ?.firstOrNull()?.atMs ?: return null
-    return DayPlan(todayTimes, EventId.FAJR, tomorrowFajr, maghribMs)
+    var next: PrayerEvent? = null
+    outer@ for (day in cfg.days) {
+      for (event in day) {
+        if (event.atMs > nowMs) {
+          next = event
+          break@outer
+        }
+      }
+    }
+    val n = next ?: return null
+    return DayPlan(times, n.id, n.atMs,
+        times.firstOrNull { it.id == EventId.MAGHRIB }?.atMs)
   }
 
-  private fun formatTime(ms: Long, zone: TimeZone): String {
+  private fun formatTime(ms: Long, zoneId: String): String {
     val fmt = SimpleDateFormat("hh:mm", Locale.US).apply {
-      timeZone = java.util.TimeZone.getTimeZone(zone.id)
+      timeZone = java.util.TimeZone.getTimeZone(zoneId.ifEmpty { "UTC" })
     }
-    val period = if (hourOf(ms, zone) < 12) "ص" else "م"
+    val period = if (hourOf(ms, zoneId) < 12) "ص" else "م"
     return "${fmt.format(Date(ms))} $period"
   }
 
   private fun hijriDateString(
     cfg: Config,
-    zone: TimeZone,
     nowMs: Long,
     maghribMs: Long?
   ): String {
@@ -599,7 +636,7 @@ class PrayerNotificationService : Service() {
     // uses the `hijri` Dart package (Umm al-Qura table). The ICU default is
     // the tabular civil calendar, which drifts 1-2 days from Umm al-Qura.
     return try {
-      val tz = android.icu.util.TimeZone.getTimeZone(zone.id)
+      val tz = android.icu.util.TimeZone.getTimeZone(cfg.timezone.ifEmpty { "UTC" })
       val cal = android.icu.util.IslamicCalendar(
           tz, android.icu.util.ULocale.ENGLISH)
       cal.setCalculationType(
@@ -632,87 +669,10 @@ class PrayerNotificationService : Service() {
     else -> "ذو الحجة"
   }
 
-  private fun hourOf(ms: Long, zone: TimeZone): Int =
-      Instant.fromEpochMilliseconds(ms).toLocalDateTime(zone).hour
-
-  private fun prayerTimesList(
-    coordinates: Coordinates,
-    params: CalculationParameters,
-    date: kotlinx.datetime.LocalDate,
-    zone: TimeZone
-  ): List<PrayerEvent>? {
-    return try {
-      val pt = PrayerTimes(coordinates, DateComponents(date.year, date.monthNumber,
-          date.dayOfMonth), params)
-      listOf(
-          PrayerEvent(EventId.FAJR, pt.fajr.toEpochMilliseconds()),
-          PrayerEvent(EventId.SUNRISE, pt.sunrise.toEpochMilliseconds()),
-          PrayerEvent(EventId.DHUHR, pt.dhuhr.toEpochMilliseconds()),
-          PrayerEvent(EventId.ASR, pt.asr.toEpochMilliseconds()),
-          PrayerEvent(EventId.MAGHRIB, pt.maghrib.toEpochMilliseconds()),
-          PrayerEvent(EventId.ISHA, pt.isha.toEpochMilliseconds()))
-    } catch (_: Exception) {
-      null
-    }
-  }
-
-  /**
-   * Stable method IDs — must match Dart [PrayerMethods] (contract v1).
-   * Strict like Dart: unknown method/madhab returns null (visible fallback
-   * notification) instead of silently substituting a different method.
-   * NOTE (Tehran): adhan2 0.0.5 has no TEHRAN method and no maghribAngle
-   * field, so Tehran is approximated as OTHER(fajr 17.7, isha 14.0) while
-   * Dart uses the full Tehran parameters (fajr 17.7, isha 14, maghribAngle
-   * 4.5). Expect Maghrib to differ by a few minutes for `tehran` until
-   * adhan2 is upgraded. Covered by the parity-test tolerance carve-out.
-   */
-  private fun buildParams(
-    method: String,
-    asrCalculation: String,
-    highLatitudeRule: String,
-    lat: Double
-  ): CalculationParameters? {
-    var params: CalculationParameters = when (method) {
-      "egyptian" -> CalculationMethod.EGYPTIAN.parameters
-      "karachi" -> CalculationMethod.KARACHI.parameters
-      "muslim_world_league" -> CalculationMethod.MUSLIM_WORLD_LEAGUE.parameters
-      "dubai" -> CalculationMethod.DUBAI.parameters
-      "qatar" -> CalculationMethod.QATAR.parameters
-      "kuwait" -> CalculationMethod.KUWAIT.parameters
-      "turkey" -> CalculationMethod.TURKEY.parameters
-      "tehran" -> CalculationMethod.OTHER.parameters.copy(fajrAngle = 17.7, ishaAngle = 14.0)
-      "singapore" -> CalculationMethod.SINGAPORE.parameters
-      "umm_al_qura" -> CalculationMethod.UMM_AL_QURA.parameters
-      "north_america" -> CalculationMethod.NORTH_AMERICA.parameters
-      "moon_sighting_committee" -> CalculationMethod.MOON_SIGHTING_COMMITTEE.parameters
-      else -> {
-        android.util.Log.w("PrayerNotify", "Unknown prayer method \"$method\": refusing to guess")
-        return null
-      }
-    }
-
-    params = when (asrCalculation) {
-      "shafi" -> params.copy(madhab = Madhab.SHAFI)
-      "hanafi" -> params.copy(madhab = Madhab.HANAFI)
-      else -> {
-        android.util.Log.w("PrayerNotify", "Unknown madhab \"$asrCalculation\": refusing to guess")
-        return null
-      }
-    }
-
-    if (kotlin.math.abs(lat) > 48.0) {
-      val rule = when (highLatitudeRule) {
-        "middle_of_night" -> HighLatitudeRule.MIDDLE_OF_THE_NIGHT
-        "seventh_of_night" -> HighLatitudeRule.SEVENTH_OF_THE_NIGHT
-        "twilight_angle" -> HighLatitudeRule.TWILIGHT_ANGLE
-        else -> {
-          android.util.Log.w("PrayerNotify", "Unknown high-latitude rule \"$highLatitudeRule\": using middle_of_night")
-          HighLatitudeRule.MIDDLE_OF_THE_NIGHT
-        }
-      }
-      params = params.copy(highLatitudeRule = rule)
-    }
-
-    return params
+  private fun hourOf(ms: Long, zoneId: String): Int {
+    val cal = java.util.Calendar.getInstance(
+        java.util.TimeZone.getTimeZone(zoneId.ifEmpty { "UTC" }))
+    cal.timeInMillis = ms
+    return cal.get(java.util.Calendar.HOUR_OF_DAY)
   }
 }

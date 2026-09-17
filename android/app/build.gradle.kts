@@ -80,8 +80,3 @@ kotlin {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
-
-dependencies {
-    // Native prayer-time calculation (same algorithm as adhan_dart on Dart).
-    implementation("com.batoulapps.adhan:adhan2:0.0.5")
-}

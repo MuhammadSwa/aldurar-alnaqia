@@ -1,28 +1,30 @@
 // models/prayer_schedule.dart
 //
-// Single Flutter prayer domain model (contract v1).
+// Single Flutter prayer domain model (contract v2).
 //
-// This is the sole source of truth for prayer calculation inputs/outputs on
-// the Dart side. The pure [PrayerScheduleCalculator] takes an explicit
-// [PrayerSettings] + date and never touches SharedPreferences or the global
-// `tz.local`, so it is unit-testable with a fixed date/timezone.
+// This is the sole source of truth for prayer calculation on both sides.
+// Dart precomputes N days of epoch-ms timetables; the native Kotlin service
+// is a dumb renderer + alarm scheduler and performs no solar calculation.
+// (contract v1 duplicated the calculator in Kotlin via adhan2; v2 deletes
+// that duplication, including the old Tehran maghribAngle divergence.)
 //
-// Cross-platform contract (must match Kotlin `PrayerNotificationService`):
+// Cross-platform contract (Kotlin `PrayerNotificationService` reads only):
 //   - stable method IDs: egyptian, karachi, muslim_world_league, dubai, qatar,
 //     kuwait, turkey, tehran, singapore, umm_al_qura, north_america,
-//     moon_sighting_committee
-//   - madhab IDs: shafi | hanafi
+//     moon_sighting_committee (informational in the payload; Kotlin does not
+//     calculate from them)
+//   - madhab IDs: shafi | hanafi (informational only, same as above)
 //   - high-latitude IDs: middle_of_night | seventh_of_night | twilight_angle
-//   - timezone: required IANA ID (e.g. Africa/Cairo); empty is invalid
+//     (informational only)
+//   - timezone: required IANA ID (e.g. Africa/Cairo); empty is invalid.
+//     Kotlin uses it only to format display strings, never for math.
 //   - event IDs: [PrayerEventId] (never Arabic strings) in business logic;
 //     Arabic labels only at render time via [prayerEventArabicName]
-//   - timestamps cross the platform boundary as epoch milliseconds
-//
-// Known divergence (documented, not silent): adhan2 0.0.5 on Kotlin has no
-// TEHRAN method and no maghribAngle field, so Kotlin approximates Tehran as
-// OTHER(fajrAngle 17.7, ishaAngle 14.0) while Dart uses the full Tehran
-// parameters (fajr 17.7, isha 14, maghribAngle 4.5). Expect Maghrib to differ
-// by a few minutes for `tehran` until adhan2 is upgraded.
+//     (Kotlin mirrors this with its own `EventId.arabicName` for rendering)
+//   - timestamps cross the platform boundary as epoch milliseconds:
+//     `days[i]` holds one civil day's 6 events, `midnights` holds the
+//     N+1 civil-midnight boundaries in the same zone so Kotlin can pick
+//     "today" and schedule midnight rollover without any date math.
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -31,8 +33,13 @@ import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 /// Version of the cross-platform prayer-settings contract. Persisted with the
 /// native config so a future contract change can migrate instead of silently
-/// misreading old JSON.
-const int prayerConfigVersion = 1;
+/// misreading old JSON. v2: Dart precomputes timetables; Kotlin renders.
+const int prayerConfigVersion = 2;
+
+/// Days of timetable precomputed per native-config write. 30 days lets the
+/// native service survive app-kill/reboot without any Dart execution; the
+/// next app open recomputes a fresh window.
+const int nativePrecomputeDays = 30;
 
 /// Stable event identifiers. `sunrise.isPrayer == false` so it can never
 /// accidentally trigger an adhan/arrival alert.
@@ -429,4 +436,84 @@ abstract final class PrayerScheduleCalculator {
 
   static tz.TZDateTime _zoned(DateTime time, tz.Location location) =>
       tz.TZDateTime.from(time, location);
+
+  /// Calculates [days] consecutive schedules starting at [startDate]'s civil
+  /// day in [settings.timezone]. Pure (no prefs/`tz.local`); skips days that
+  /// fail instead of aborting the whole window.
+  static List<PrayerSchedule> calculateRange({
+    required PrayerSettings settings,
+    required DateTime startDate,
+    int days = nativePrecomputeDays,
+  }) {
+    if (settings.validate() != null || days <= 0) return [];
+    final out = <PrayerSchedule>[];
+    for (var i = 0; i < days; i++) {
+      final date = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+      ).add(Duration(days: i));
+      final s = calculate(settings: settings, date: date);
+      if (s != null) out.add(s);
+    }
+    return out;
+  }
+}
+
+/// Builds the full native-service payload (contract v2): settings plus
+/// precomputed `days` (one map of 6 epoch-ms per civil day) and `midnights`
+/// (N+1 civil-midnight epoch-ms boundaries in [settings.timezone]).
+///
+/// Never throws: invalid settings or missing tz data yield a settings-only
+/// payload with empty lists, which Kotlin renders as a visible fallback.
+/// The `now` parameter exists for tests; callers omit it.
+Map<String, Object?> buildNativeConfigMap(
+  PrayerSettings settings, {
+  DateTime? now,
+}) {
+  final base = settings.toNativeMap();
+  List<Map<String, int>> days = [];
+  List<int> midnights = [];
+  try {
+    if (settings.validate() == null) {
+      final location = tz.getLocation(settings.timezone);
+      final ref = now != null
+          ? tz.TZDateTime.from(now, location)
+          : tz.TZDateTime.now(location);
+      final startMidnight =
+          tz.TZDateTime(location, ref.year, ref.month, ref.day);
+      final schedules = PrayerScheduleCalculator.calculateRange(
+        settings: settings,
+        startDate: startMidnight,
+      );
+      days = schedules
+          .map(
+            (s) => {
+              'fajr':
+                  s.events[PrayerEventId.fajr]!.time.millisecondsSinceEpoch,
+              'sunrise': s.events[PrayerEventId.sunrise]!.time
+                  .millisecondsSinceEpoch,
+              'dhuhr':
+                  s.events[PrayerEventId.dhuhr]!.time.millisecondsSinceEpoch,
+              'asr': s.events[PrayerEventId.asr]!.time.millisecondsSinceEpoch,
+              'maghrib': s.events[PrayerEventId.maghrib]!.time
+                  .millisecondsSinceEpoch,
+              'isha':
+                  s.events[PrayerEventId.isha]!.time.millisecondsSinceEpoch,
+            },
+          )
+          .toList();
+      midnights = List.generate(
+        days.length + 1,
+        (i) => startMidnight
+            .add(Duration(days: i))
+            .millisecondsSinceEpoch,
+      );
+    }
+  } catch (e) {
+    logWarn('Native payload precompute failed ($e); writing settings only.');
+    days = [];
+    midnights = [];
+  }
+  return {...base, 'days': days, 'midnights': midnights};
 }

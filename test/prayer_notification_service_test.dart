@@ -72,6 +72,9 @@ void main() {
       expect(config['timezone'], 'Africa/Cairo');
       expect(config['version'], isNotNull);
       expect(config['hijriOffset'], 0);
+      // Contract v2: precomputed tables ride along.
+      expect((config['days'] as List).length, 30);
+      expect((config['midnights'] as List).length, 31);
     });
 
     test('empty prefs write defaults without throwing', () async {
@@ -83,6 +86,8 @@ void main() {
               as Map<String, dynamic>;
       expect(config['method'], PrayerMethods.egyptian);
       expect(config['timezone'], isEmpty);
+      expect((config['days'] as List), isEmpty);
+      expect((config['midnights'] as List), isEmpty);
     });
   });
 

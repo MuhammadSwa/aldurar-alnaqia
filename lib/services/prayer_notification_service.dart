@@ -5,6 +5,9 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
+    show buildNativeConfigMap;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart'
     show PrefsKeys, SharedPreferencesService;
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
@@ -12,11 +15,11 @@ import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 // ---------------------------------------------------------------------------
 // Native prayer-notification bridge (Android only)
 //
-// The persistent prayer-times notification is implemented fully in native
-// Kotlin (see android/.../PrayerNotificationService.kt). This file is the
-// single Dart-side entry point: it requests the notification permission,
-// persists the toggle + config, and forwards start/stop/refresh commands
-// over the `app/prayer_notification` method channel. No Dart code runs
+// Dart owns all prayer math (adhan_dart via `PrayerScheduleCalculator`).
+// The native Kotlin service (`PrayerNotificationService.kt`) is a dumb
+// renderer + AlarmManager scheduler: it reads precomputed epoch-ms
+// timetables from the config JSON and performs no solar calculation, so it
+// keeps working while the Dart VM is killed. No Dart code runs
 // while the app UI is closed.
 // ---------------------------------------------------------------------------
 
@@ -92,14 +95,19 @@ Future<void> refreshPrayerNotification() async {
 
 Future<void> _writeConfig() async {
   final prefs = await SharedPreferences.getInstance();
-  // Single serialization path: typed settings -> native map. The native
-  // service must never observe half-saved coordinates/timezone/method, so
-  // all writers go through `savePrayerSettings` (one refresh per save).
-  // Policy is always-exact: alertable prayers wake the device on time.
+  // Single serialization path: typed settings + precomputed timetables ->
+  // native map. The native service must never observe half-saved
+  // coordinates/timezone/method, so all writers go through
+  // `savePrayerSettings` (one refresh per save). Policy is always-exact:
+  // alertable prayers wake the device on time.
+  // tz init is idempotent; _writeConfig can run before the provider init.
+  try {
+    tzdata.initializeTimeZones();
+  } catch (_) {}
   final settings = SharedPreferencesService.loadPrayerSettings();
   await prefs.setString(
     PrefsKeys.prayerNativeConfig,
-    jsonEncode(settings.toNativeMap()),
+    jsonEncode(buildNativeConfigMap(settings)),
   );
 }
 

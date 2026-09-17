@@ -1,14 +1,14 @@
-// Parity + regression fixtures for the prayer domain.
+// Native payload + regression fixtures for the prayer domain.
 //
-// Same fixture set must pass in Dart and Kotlin (see
-// android/.../PrayerNotificationService parity notes). Golden epoch-ms values
-// below were produced by `PrayerScheduleCalculator` (adhan_dart 2.0.1) for
-// the stated civil dates. Allow ±60s tolerance for library rounding; larger
-// drift fails.
+// Dart is the single source of prayer math (adhan_dart); Kotlin only renders
+// precomputed tables (contract v2, see `buildNativeConfigMap`). Golden
+// epoch-ms values below were produced by `PrayerScheduleCalculator`
+// (adhan_dart 2.0.1) for the stated civil dates. Allow ±60s tolerance for
+// library rounding; larger drift fails.
 //
 // Covers: Cairo, Makkah, Karachi, London, NYC DST transition, both madhabs,
 // boundary selection, after-Isha→tomorrow-Fajr, Maghrib Islamic-day flip,
-// invalid-config rejection, sunrise-never-alertable.
+// invalid-config rejection, sunrise-never-alertable, native payload shape.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -302,6 +302,65 @@ void main() {
       final restored = PrayerSettings.fromNativeMap(_cairo.toNativeMap());
       expect(restored.fingerprint, _cairo.fingerprint);
       expect(restored.validate(), isNull);
+    });
+
+    test('native payload precomputes 30 days + 31 midnights', () {
+      final payload = buildNativeConfigMap(
+        _cairo,
+        now: DateTime.utc(2024, 6, 15, 12),
+      );
+      expect(payload['version'], prayerConfigVersion);
+      final days = payload['days'] as List;
+      final midnights = payload['midnights'] as List;
+      expect(days.length, nativePrecomputeDays);
+      expect(midnights.length, nativePrecomputeDays + 1);
+      // Day 1 matches the golden fixture.
+      final day1 = days.first as Map;
+      expect((day1['fajr'] as int) - 1718413652000 <= 60000, isTrue);
+      expect((day1['isha'] as int) - 1718476282000 <= 60000, isTrue);
+      // Strictly increasing events and midnights; each day ordered.
+      var prev = 0;
+      for (final m in midnights) {
+        expect((m as int) > prev, isTrue);
+        prev = m;
+      }
+      for (final d in days) {
+        final m = d as Map;
+        final ordered = [
+          m['fajr'],
+          m['sunrise'],
+          m['dhuhr'],
+          m['asr'],
+          m['maghrib'],
+          m['isha'],
+        ].cast<int>();
+        for (var i = 1; i < ordered.length; i++) {
+          expect(ordered[i] > ordered[i - 1], isTrue);
+        }
+      }
+      // Cross-day continuity: day-2 fajr matches a direct calculation.
+      final day2calc = PrayerScheduleCalculator.calculate(
+        settings: _cairo,
+        date: DateTime.utc(2024, 6, 16),
+      )!;
+      final day2 = days[1] as Map;
+      expect(
+        ((day2['fajr'] as int) -
+                    day2calc.events[PrayerEventId.fajr]!.time
+                        .millisecondsSinceEpoch)
+                .abs() <=
+            1000,
+        isTrue,
+      );
+    });
+
+    test('native payload is empty for invalid settings', () {
+      final payload = buildNativeConfigMap(
+        _cairo.copyWith(timezone: ''),
+        now: DateTime.utc(2024, 6, 15, 12),
+      );
+      expect((payload['days'] as List), isEmpty);
+      expect((payload['midnights'] as List), isEmpty);
     });
   });
 }

@@ -2,32 +2,30 @@
 
 ## Ownership
 
-- **Flutter** owns interactive display state while the app is open.
-- **Kotlin** (`PrayerNotificationService`) owns background notification/alarm
-  execution. It must work after the Dart VM is killed — so both sides keep
-  their own calculator.
+- **Flutter** owns all prayer math (`adhan_dart` via `PrayerScheduleCalculator`)
+  and precomputes a 30-day epoch-ms timetable on every settings save / startup.
+- **Kotlin** (`PrayerNotificationService`) is a dumb renderer + alarm scheduler:
+  it reads the precomputed `days`/`midnights` tables and performs no solar
+  calculation, so it keeps working after the Dart VM is killed. Single source
+  of truth — no method/madhab divergence possible.
 
-## Cross-platform contract (v1)
+## Cross-platform contract (v2)
 
-Defined once in Dart (`lib/screens/prayer_timings_screen/models/prayer_schedule.dart`)
-and mirrored in `PrayerNotificationService.kt`:
+Defined in Dart (`lib/screens/prayer_timings_screen/models/prayer_schedule.dart`,
+`buildNativeConfigMap`) and read in `PrayerNotificationService.kt`:
 
-- stable method IDs: `egyptian`, `karachi`, `muslim_world_league`, `dubai`,
-  `qatar`, `kuwait`, `turkey`, `tehran`, `singapore`, `umm_al_qura`,
-  `north_america`, `moon_sighting_committee`
-- madhab IDs: `shafi` | `hanafi`
-- high-latitude IDs: `middle_of_night` | `seventh_of_night` | `twilight_angle`
-- timezone: required IANA ID; empty/invalid is rejected visibly, never guessed
+- settings echo (informational; Kotlin does not calculate from them):
+  `method`, `asrCalculation`, `highLatitudeRule` (+ `lat`/`lng` for the
+  no-location sentinel, `timezone` for display formatting, `hijriOffset`)
+- `days`: 30 maps of `{fajr, sunrise, dhuhr, asr, maghrib, isha}` epoch-ms,
+  one per civil day in `timezone` starting today
+- `midnights`: 31 civil-midnight epoch-ms boundaries in `timezone`
 - event IDs are typed enums on both sides (`PrayerEventId` / `EventId`);
   Arabic labels exist **only** at render time, never as identifiers
 - timestamps cross the boundary as epoch milliseconds
 - native config JSON carries a `version` field for future migrations
-
-Known divergence: adhan2 0.0.5 (Kotlin) has no TEHRAN method and no
-`maghribAngle`, so Kotlin approximates Tehran as
-`OTHER(fajr 17.7, isha 14.0)` while Dart uses full Tehran parameters
-(fajr 17.7, isha 14, maghribAngle 4.5). Expect Maghrib to differ by a few
-minutes for `tehran` until adhan2 is upgraded.
+  (v1 = old dual-calculator config with no tables; Kotlin treats it as
+  expired and shows "open the app to refresh" until one app open rewrites v2)
 
 ## Flutter timing model
 
@@ -61,8 +59,10 @@ minutes for `tehran` until adhan2 is upgraded.
 
 `test/prayer_schedule_test.dart` holds golden epoch-ms fixtures (Cairo,
 Makkah, Karachi, London high-lat, NYC DST transition, both madhabs,
-boundaries, after-Isha→Fajr, Maghrib flip) with ±60s tolerance. The same
-fixture set should be mirrored in Kotlin tests; any larger mismatch fails.
+boundaries, after-Isha→Fajr, Maghrib flip) with ±60s tolerance, plus
+`buildNativeConfigMap` range tests (30 days, 31 midnights, strictly
+increasing, day-1 matches goldens). Kotlin has no calculator left to
+mirror — its table-selection (`findPlan`) is covered by review, not fixtures.
 
 ## Profiling (before/after)
 
