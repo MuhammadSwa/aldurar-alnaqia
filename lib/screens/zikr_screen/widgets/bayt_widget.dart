@@ -7,10 +7,18 @@ import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/zikr_inline_text.dar
 /// form (sadr on the right, ajz on the left). Narrow screens stack them
 /// (sadr right-aligned, ajz left-aligned) so long verses never squeeze.
 class BaytWidget extends StatelessWidget {
-  const BaytWidget({super.key, required this.sadr, required this.ajz});
+  const BaytWidget({
+    super.key,
+    required this.sadr,
+    required this.ajz,
+    required this.fontSize,
+  });
 
   final String sadr;
   final String ajz;
+
+  /// Base font size from the page-level `fontSizeProvider` watch.
+  final double fontSize;
 
   /// Width at and above which hemistichs sit side by side.
   static const double wideThreshold = 600;
@@ -26,12 +34,15 @@ class BaytWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child:
-                      ZikrInlineText(text: sadr, textAlign: TextAlign.right),
+                  child: ZikrInlineText(
+                      text: sadr,
+                      fontSize: fontSize,
+                      textAlign: TextAlign.right,),
                 ),
                 const SizedBox(width: 28),
                 Expanded(
-                  child: ZikrInlineText(text: ajz, textAlign: TextAlign.left),
+                  child: ZikrInlineText(
+                      text: ajz, fontSize: fontSize, textAlign: TextAlign.left,),
                 ),
               ],
             ),
@@ -40,9 +51,11 @@ class BaytWidget extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ZikrInlineText(text: sadr, textAlign: TextAlign.right),
+            ZikrInlineText(
+                text: sadr, fontSize: fontSize, textAlign: TextAlign.right,),
             const SizedBox(height: 2),
-            ZikrInlineText(text: ajz, textAlign: TextAlign.left),
+            ZikrInlineText(
+                text: ajz, fontSize: fontSize, textAlign: TextAlign.left,),
           ],
         );
       },

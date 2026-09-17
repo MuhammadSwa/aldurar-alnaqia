@@ -154,40 +154,61 @@ class ZikrContentWidget extends ConsumerWidget {
     if (zikr == null) {
       return const Center(child: Text('لم يتم العثور على هذا الذكر'));
     }
+    // Single subscription for the whole page. Previously every paragraph
+    // subscribed via ZikrInlineText, multiplying rebuild work.
     final fontSize = ref.watch(fontSizeProvider);
-    final blocks = parseZikrBlocks(zikr.content);
+    // Parsed once per zikr id; long contents (dalayil/yousria) no longer
+    // re-split on every font-size/theme rebuild.
+    final blocks = blocksForZikr(id: zikr.id, content: zikr.content);
+    final hasNotes = zikr.notes != '';
+    final hasFooter = zikr.footer != '';
+    final itemCount =
+        blocks.length + (hasNotes ? 1 : 0) + (hasFooter ? 1 : 0);
 
-    return SingleChildScrollView(
-        child: Padding(
+    // Lazily built: only visible paragraphs run regex styling + layout.
+    // Previously SingleChildScrollView + Column built all N blocks upfront.
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (zikr.notes != '') ...[
-            ZikrInlineText(
-              text: zikr.notes,
-              textAlign: TextAlign.start,
-              sizeFactor: .7,
-            ),
-            const Divider(),
-          ],
-          for (var i = 0; i < blocks.length; i++) ...[
-            if (i > 0)
-              SizedBox(
-                  height: _gapBefore(blocks[i - 1], blocks[i], fontSize),),
-            _blockWidget(blocks[i]),
-          ],
-          if (zikr.footer != '') ...[
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (hasNotes && index == 0) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ZikrInlineText(
+                text: zikr.notes,
+                fontSize: fontSize,
+                textAlign: TextAlign.start,
+                sizeFactor: .7,
+              ),
+              const Divider(),
+            ],
+          );
+        }
+        final blockIndex = index - (hasNotes ? 1 : 0);
+        if (blockIndex < blocks.length) {
+          final topGap = blockIndex > 0
+              ? _gapBefore(blocks[blockIndex - 1], blocks[blockIndex], fontSize)
+              : 0.0;
+          return Padding(
+            padding: EdgeInsets.only(top: topGap),
+            child: _blockWidget(blocks[blockIndex], fontSize),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             const Divider(),
             ZikrInlineText(
               text: zikr.footer,
+              fontSize: fontSize,
               textAlign: TextAlign.start,
               sizeFactor: .7,
             ),
           ],
-        ],
-      ),
-    ),);
+        );
+      },
+    );
   }
 
   /// Tighter rhythm inside a qasida; airier spacing around prose/headings.
@@ -198,17 +219,18 @@ class ZikrContentWidget extends ConsumerWidget {
     return fontSize * .7;
   }
 
-  Widget _blockWidget(ZikrBlock block) {
+  Widget _blockWidget(ZikrBlock block, double fontSize) {
     return switch (block) {
-      ProseBlock(:final text) => ZikrInlineText(text: text),
+      ProseBlock(:final text) => ZikrInlineText(text: text, fontSize: fontSize),
       HeadingBlock(:final text) => ZikrInlineText(
           text: text,
+          fontSize: fontSize,
           textAlign: TextAlign.center,
           sizeFactor: 1.15,
           bold: true,
         ),
       BaytBlock(:final sadr, :final ajz) =>
-        BaytWidget(sadr: sadr, ajz: ajz),
+        BaytWidget(sadr: sadr, ajz: ajz, fontSize: fontSize),
     };
   }
 }

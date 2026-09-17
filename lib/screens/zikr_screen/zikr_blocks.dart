@@ -81,3 +81,14 @@ List<ZikrBlock> parseZikrBlocks(String content) {
   flushProse();
   return blocks;
 }
+
+/// Memoized block parsing keyed by stable zikr id.
+///
+/// [parseZikrBlocks] splits + trims + runs a heading regex on every call.
+/// [ZikrContentWidget] rebuilds on any font-size/theme change, so parsing
+/// the same multi-KB content repeatedly janks long pages (dalayil/yousria).
+/// Cache once per id; content strings are `const` and never mutate.
+final Map<String, List<ZikrBlock>> _blocksCache = {};
+
+List<ZikrBlock> blocksForZikr({required String id, required String content}) =>
+    _blocksCache.putIfAbsent(id, () => parseZikrBlocks(content));
