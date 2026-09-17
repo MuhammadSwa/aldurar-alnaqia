@@ -54,6 +54,14 @@ YousriaDayInfo getYousriaDayInfo() {
   );
 }
 
+/// The beginning date that makes [day] (1..6) today's part.
+/// Single source of truth for the setup sheet and the settings dropdown:
+/// choosing part [day] today means the cycle started (day - 1) days ago.
+DateTime impliedStartForDay(int day) {
+  final effectiveMidnight = _midnight(islamicEffectiveDate());
+  return effectiveMidnight.subtract(Duration(days: day - 1));
+}
+
 List<String> getYousriaForToday() {
   return <String>[getYousriaDayInfo().zikrId];
 }

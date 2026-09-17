@@ -224,10 +224,23 @@ class EmptyBookmarks extends StatelessWidget {
               width: 56,
               height: 56,
               alignment: Alignment.center,
-              child: Icon(
-                Icons.folder_special_rounded,
-                size: 26,
-                color: scheme.primary,
+              // icon
+              child: Container(
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Icon(
+                  Icons.favorite_border,
+                  size: 28,
+                  color: scheme.primary,
+                ),
               ),
             ),
             const SizedBox(height: 14),

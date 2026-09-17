@@ -56,7 +56,7 @@ class YousriaBanner extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'اختر صلوات اليوم وسيتم حفظ ترتيب الصلوات تلقائيًّا',
+              'اختر صلوات اليوم وسيتم حفظ ترتيب الصلوات تلقائيًا',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSecondaryContainer,
               ),
@@ -72,7 +72,7 @@ class YousriaBanner extends StatelessWidget {
                 const SizedBox(width: 4),
                 FilledButton.tonal(
                   onPressed: onSetup,
-                  child: const Text('تحديد البداية'),
+                  child: const Text('تحديد اليوم'),
                 ),
               ],
             ),
@@ -114,7 +114,7 @@ class YousriaHideConfirmation extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'يمكنك تغيير البداية لاحقًا من القائمة الجانبية.',
+                'يمكنك تغيير اليوم لاحقًا من القائمة الجانبية.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),

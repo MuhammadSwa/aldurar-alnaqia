@@ -15,12 +15,6 @@ Future<bool?> showYousriaSetupSheet(
     context: context,
     showDragHandle: true,
     builder: (sheetContext) {
-      final effectiveDate = islamicEffectiveDate();
-      final effectiveMidnight = DateTime(
-        effectiveDate.year,
-        effectiveDate.month,
-        effectiveDate.day,
-      );
       return Directionality(
         textDirection: TextDirection.rtl,
         child: SafeArea(
@@ -48,10 +42,9 @@ Future<bool?> showYousriaSetupSheet(
                 for (var day = 1; day <= 6; day++)
                   Builder(
                     builder: (context) {
-                      // Choosing part [day] today means the cycle started
-                      // (day - 1) days ago.
-                      final impliedStart =
-                          effectiveMidnight.subtract(Duration(days: day - 1));
+                      // Shared math: choosing part [day] today means the
+                      // cycle started (day - 1) days ago.
+                      final impliedStart = impliedStartForDay(day);
                       final title = yousriaDayZikr(day).title;
                       final selected = day == current.dayNumber;
                       return ListTile(
