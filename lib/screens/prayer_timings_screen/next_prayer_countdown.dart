@@ -182,7 +182,7 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                               vertical: 2,
                             ),
                             child: Text(
-                              '${_formatDuration(_timeLeft)}',
+                              _formatDuration(_timeLeft),
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.primary,
                                 fontFeatures: const [

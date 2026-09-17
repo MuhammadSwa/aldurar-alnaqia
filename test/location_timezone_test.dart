@@ -233,4 +233,166 @@ void main() {
       );
     });
   });
+
+  group('LocationTimezone.nearestCity', () {
+    // Equatorial fixtures so 1° of latitude ≈ 111.32 km exactly-ish and
+    // longitude distortion stays out of the assertions.
+    const origin = City(
+      nameEn: 'Origin',
+      nameAr: null,
+      countryCode: 'XX',
+      latitude: 0,
+      longitude: 0,
+      timeZone: 'Etc/UTC',
+    );
+    const far = City(
+      nameEn: 'Far',
+      nameAr: null,
+      countryCode: 'XX',
+      latitude: 10,
+      longitude: 10,
+      timeZone: 'Etc/UTC',
+    );
+    const cities2 = [origin, far];
+
+    test('returns the city at the exact point', () {
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 0,
+          longitude: 0,
+          cities: cities2,
+        )?.nameEn,
+        'Origin',
+      );
+    });
+
+    test('returns cities within the default 50 km', () {
+      // 0.4° of latitude ≈ 44.5 km < 50 km.
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 0.4,
+          longitude: 0,
+          cities: cities2,
+        )?.nameEn,
+        'Origin',
+      );
+    });
+
+    test('returns null beyond the default 50 km', () {
+      // 0.5° of latitude ≈ 55.7 km > 50 km; Far is ~1500 km away.
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 0.5,
+          longitude: 0,
+          cities: cities2,
+        ),
+        isNull,
+      );
+    });
+
+    test('a custom maxKm widens the search', () {
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 0.5,
+          longitude: 0,
+          cities: cities2,
+          maxKm: 60,
+        )?.nameEn,
+        'Origin',
+      );
+    });
+
+    test('picks the nearer city, not just the first', () {
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 9.9,
+          longitude: 9.9,
+          cities: cities2,
+          maxKm: 200,
+        )?.nameEn,
+        'Far',
+      );
+    });
+
+    test('works for GPS points near real cities', () {
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 30.05,
+          longitude: 31.24,
+          cities: cities,
+        )?.nameEn,
+        'Cairo',
+      );
+    });
+
+    test('returns null in the middle of nowhere', () {
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 0,
+          longitude: -140,
+          cities: cities,
+        ),
+        isNull,
+      );
+    });
+
+    test('does not require a timezone (labels only)', () {
+      // Unlike resolve, the label scan must not skip timezone-less towns.
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 0,
+          longitude: 0,
+          cities: const [noTimezone],
+        )?.nameEn,
+        'Nowhere',
+      );
+    });
+
+    test('rejects invalid coordinates and empty input', () {
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 91,
+          longitude: 0,
+          cities: cities2,
+        ),
+        isNull,
+      );
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 0,
+          longitude: 0,
+          cities: const [],
+        ),
+        isNull,
+      );
+    });
+
+    test('a distance tie resolves to the first city (deterministic)', () {
+      const north = City(
+        nameEn: 'North',
+        nameAr: null,
+        countryCode: 'XX',
+        latitude: 1,
+        longitude: 0,
+        timeZone: 'First/Zone',
+      );
+      const south = City(
+        nameEn: 'South',
+        nameAr: null,
+        countryCode: 'XX',
+        latitude: -1,
+        longitude: 0,
+        timeZone: 'Second/Zone',
+      );
+      expect(
+        LocationTimezone.nearestCity(
+          latitude: 0,
+          longitude: 0,
+          cities: const [north, south],
+          maxKm: 200,
+        )?.nameEn,
+        'North',
+      );
+    });
+  });
 }

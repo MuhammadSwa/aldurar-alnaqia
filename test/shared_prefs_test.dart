@@ -1,8 +1,18 @@
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/prayer_schedule.dart'
-    show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods;
+    show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods, PrayerSettings;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+const _cairo = City(
+  nameEn: 'Cairo',
+  nameAr: 'القاهرة',
+  countryCode: 'EG',
+  latitude: 30.0444,
+  longitude: 31.2357,
+  timeZone: 'Africa/Cairo',
+);
 
 void main() {
   setUp(() async {
@@ -174,6 +184,173 @@ void main() {
       await SharedPreferencesService.setPdfLastPage('burda', 42);
       expect(SharedPreferencesService.getPdfLastPage('burda'), 42);
       expect(SharedPreferencesService.getPdfLastPage('other'), isNull);
+    });
+  });
+
+  group('city storage', () {
+    test('absent city is null', () {
+      expect(SharedPreferencesService.getCity(), isNull);
+    });
+
+    test('setCity/getCity round-trips names; coords come from keys', () async {
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 30.05,
+        longitude: 31.24,
+        method: PrayerMethods.egyptian,
+        asrCalculation: PrayerMadhabs.shafi,
+        timezone: 'Africa/Cairo',
+        city: _cairo,
+      );
+      final city = SharedPreferencesService.getCity();
+      expect(city, isNotNull);
+      expect(city!.nameEn, 'Cairo');
+      expect(city.nameAr, 'القاهرة');
+      expect(city.countryCode, 'EG');
+      // Stored cityInfo keeps names only; coordinates stay in their keys.
+      expect(city.latitude, 30.05);
+      expect(city.longitude, 31.24);
+    });
+
+    test('setCity(null) clears a GPS-picked city', () async {
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 30.05,
+        longitude: 31.24,
+        method: PrayerMethods.egyptian,
+        asrCalculation: PrayerMadhabs.shafi,
+        timezone: 'Africa/Cairo',
+        city: _cairo,
+      );
+      expect(SharedPreferencesService.getCity(), isNotNull);
+      SharedPreferencesService.setCity(null);
+      expect(SharedPreferencesService.getCity(), isNull);
+      // Coordinates are untouched by clearing the city.
+      expect(SharedPreferencesService.getLatitude(), 30.05);
+    });
+
+    test('(0, 0) coordinates mean no city even with stored info', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'cityInfo': '{"en":"Cairo","ar":"القاهرة","country":"EG"}',
+      });
+      await SharedPreferencesService().init();
+      expect(SharedPreferencesService.getCity(), isNull);
+    });
+
+    test('corrupt city info is dropped and returns null', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'cityInfo': 'not-json',
+        'latitude': 30.0,
+        'longitude': 31.0,
+      });
+      await SharedPreferencesService().init();
+      expect(SharedPreferencesService.getCity(), isNull);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('cityInfo'), isNull);
+    });
+  });
+
+  group('savePrayerSettings/loadPrayerSettings', () {
+    test('saves interdependent settings together', () async {
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 21.4225,
+        longitude: 39.8262,
+        method: PrayerMethods.ummAlQura,
+        asrCalculation: PrayerMadhabs.hanafi,
+        timezone: 'Asia/Riyadh',
+        highLatitudeRule: PrayerHighLatitudeRules.seventhOfNight,
+      );
+      final PrayerSettings loaded =
+          SharedPreferencesService.loadPrayerSettings();
+      expect(loaded.latitude, 21.4225);
+      expect(loaded.longitude, 39.8262);
+      expect(loaded.method, PrayerMethods.ummAlQura);
+      expect(loaded.madhab, PrayerMadhabs.hanafi);
+      expect(
+        loaded.highLatitudeRule,
+        PrayerHighLatitudeRules.seventhOfNight,
+      );
+      expect(loaded.timezone, 'Asia/Riyadh');
+    });
+
+    test('null highLatitudeRule leaves the stored rule unchanged', () async {
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 30.04,
+        longitude: 31.23,
+        method: PrayerMethods.egyptian,
+        asrCalculation: PrayerMadhabs.shafi,
+        timezone: 'Africa/Cairo',
+        highLatitudeRule: PrayerHighLatitudeRules.seventhOfNight,
+      );
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 30.04,
+        longitude: 31.23,
+        method: PrayerMethods.egyptian,
+        asrCalculation: PrayerMadhabs.shafi,
+        timezone: 'Africa/Cairo',
+      );
+      expect(
+        SharedPreferencesService.getHighLatitudeRule(),
+        PrayerHighLatitudeRules.seventhOfNight,
+      );
+    });
+
+    test('load carries the hijri offset into settings', () {
+      SharedPreferencesService.setHijriDayOffset(1);
+      expect(SharedPreferencesService.loadPrayerSettings().hijriOffset, 1);
+    });
+  });
+
+  group('prayer city label storage', () {
+    test('absent label is empty', () {
+      expect(SharedPreferencesService.getPrayerCityLabel(), isEmpty);
+    });
+
+    test('round-trips a label', () async {
+      await SharedPreferencesService.setPrayerCityLabel('القاهرة، مصر');
+      expect(
+        SharedPreferencesService.getPrayerCityLabel(),
+        'القاهرة، مصر',
+      );
+    });
+
+    test('savePrayerSettings stores the label with the settings', () async {
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 30.0444,
+        longitude: 31.2357,
+        method: PrayerMethods.egyptian,
+        asrCalculation: PrayerMadhabs.shafi,
+        timezone: 'Africa/Cairo',
+        city: _cairo,
+        cityLabel: 'القاهرة، مصر',
+      );
+      expect(
+        SharedPreferencesService.getPrayerCityLabel(),
+        'القاهرة، مصر',
+      );
+    });
+
+    test('null cityLabel leaves the stored label unchanged', () async {
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 30.0444,
+        longitude: 31.2357,
+        method: PrayerMethods.egyptian,
+        asrCalculation: PrayerMadhabs.shafi,
+        timezone: 'Africa/Cairo',
+        city: _cairo,
+        cityLabel: 'القاهرة، مصر',
+      );
+      await SharedPreferencesService.savePrayerSettings(
+        latitude: 30.05,
+        longitude: 31.24,
+        method: PrayerMethods.egyptian,
+        asrCalculation: PrayerMadhabs.shafi,
+        timezone: 'Africa/Cairo',
+        city: null,
+      );
+      expect(
+        SharedPreferencesService.getPrayerCityLabel(),
+        'القاهرة، مصر',
+      );
+      expect(SharedPreferencesService.getCity(), isNull);
     });
   });
 }
