@@ -50,6 +50,7 @@ class _AwradListScreenState extends ConsumerState<AwradListScreen> {
         ],
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           children: [
             const ZikrListViewTile(

@@ -67,35 +67,47 @@ class ZikrCollection {
 /// Search, audio sections, week wird and lookups all derive from here.
 const allCollections = <ZikrCollection>[
   ZikrCollection(
-      id: 'hadra', title: 'الحضرة الصديقية', items: alhadraCollection,),
+    id: 'hadra',
+    title: 'الحضرة الصديقية',
+    items: alhadraCollection,
+  ),
   ZikrCollection(
-      id: 'yousria',
-      title: 'الصلوات اليسرية',
-      items: salawatYousriaCollection,),
+    id: 'yousria',
+    title: 'الصلوات اليسرية',
+    items: salawatYousriaCollection,
+  ),
   ZikrCollection(
-      id: 'dalayil', title: 'دلائل الخيرات', items: dalayilAlkhayratCollection,),
+    id: 'dalayil',
+    title: 'دلائل الخيرات',
+    items: dalayilAlkhayratCollection,
+  ),
   ZikrCollection(
-      id: 'khitam',
-      title: 'أوراد ختام الصلاة',
-      items: khitamAlSalahCollection,),
+    id: 'khitam',
+    title: 'أوراد ختام الصلاة',
+    items: khitamAlSalahCollection,
+  ),
   ZikrCollection(
-      id: 'gomari',
-      title: 'أوراد سيدي عبد الله بن الصديق الغماري',
-      items: azkarAlgomariCollection,),
+    id: 'gomari',
+    title: 'الأوراد الغمارية',
+    items: azkarAlgomariCollection,
+  ),
   ZikrCollection(id: 'ahzab', title: 'الأحزاب', items: ahzabCollection),
   ZikrCollection(id: 'qasaed', title: 'قصائد', items: poemsCollection),
   ZikrCollection(
-      id: 'salawat-mukhtara',
-      title: 'صلوات مختارة على النبي ﷺ',
-      items: chosenSalawatCollection,),
+    id: 'salawat-mukhtara',
+    title: 'صلوات مختارة على النبي ﷺ',
+    items: chosenSalawatCollection,
+  ),
   ZikrCollection(
-      id: 'ibn-ata-allah',
-      title: 'أوراد سيدي ابن عطاء الله',
-      items: ibnAtaAllahCollection,),
+    id: 'ibn-ata-allah',
+    title: 'أوراد سيدي ابن عطاء الله',
+    items: ibnAtaAllahCollection,
+  ),
   ZikrCollection(
-      id: 'tarajem',
-      title: 'تراجم رجال الطريقة',
-      items: tareeqaBiosCollection,),
+    id: 'tarajem',
+    title: 'تراجم رجال الطريقة',
+    items: tareeqaBiosCollection,
+  ),
 ];
 
 /// Azkar that belong to no collection (shown as individual tiles).
@@ -196,7 +208,10 @@ class AudioSection {
 
 final audioSections = <AudioSection>[
   const AudioSection(
-      id: 'dalayil', title: 'دلائل الخيرات', items: dalayilAlkhayratCollection,),
+    id: 'dalayil',
+    title: 'دلائل الخيرات',
+    items: dalayilAlkhayratCollection,
+  ),
   const AudioSection(
     id: 'yousria-days',
     title: 'الصلوات اليسرية',
@@ -224,15 +239,20 @@ final audioSections = <AudioSection>[
     ],
   ),
   const AudioSection(
-      id: 'hadra', title: 'الحضرة الصديقية', items: alhadraCollection,),
+    id: 'hadra',
+    title: 'الحضرة الصديقية',
+    items: alhadraCollection,
+  ),
   const AudioSection(
-      id: 'salawat-mukhtara',
-      title: 'صلوات مختارة على النبي ﷺ',
-      items: chosenSalawatCollection,),
+    id: 'salawat-mukhtara',
+    title: 'صلوات مختارة على النبي ﷺ',
+    items: chosenSalawatCollection,
+  ),
   const AudioSection(
-      id: 'ibn-ata-allah',
-      title: 'أوراد سيدي ابن عطاء الله',
-      items: ibnAtaAllahCollection,),
+    id: 'ibn-ata-allah',
+    title: 'أوراد سيدي ابن عطاء الله',
+    items: ibnAtaAllahCollection,
+  ),
   const AudioSection(
     id: 'daily',
     title: 'أوراد يومية',
@@ -244,5 +264,8 @@ final audioSections = <AudioSection>[
     ],
   ),
   const AudioSection(
-      id: 'asr-jumua', title: 'ورد عصر يوم الجمعة', items: [asrGomaa],),
+    id: 'asr-jumua',
+    title: 'ورد عصر يوم الجمعة',
+    items: [asrGomaa],
+  ),
 ];

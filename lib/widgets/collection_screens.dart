@@ -19,6 +19,7 @@ class WeekCollectionScreen extends StatelessWidget {
         title: const Text('أوراد الأسبوع'),
       ),
       body: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: days.length,
         itemBuilder: (context, index) {
           final day = days[index];

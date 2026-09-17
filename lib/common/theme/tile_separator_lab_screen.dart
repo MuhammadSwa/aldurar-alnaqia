@@ -58,7 +58,7 @@ class TileSeparatorLabScreen extends StatelessWidget {
           _Section(
             number: '5',
             name: 'صفوف محددة (Outlined)',
-            note: 'حد Outline رفيع + مستدير — فصل بدون ثقل اللون.',
+            note: 'حد Outline رفيع + مربع — فصل بدون ثقل اللون.',
             child: _V5Outlined(samples: _samples),
           ),
           _Section(
@@ -285,25 +285,145 @@ class _V5Outlined extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           for (var i = 0; i < samples.length; i++) ...[
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: scheme.outline.withValues(alpha: 0.5),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: 1),
+              duration: Duration(milliseconds: 400 + i * 90),
+              curve: Curves.easeOutCubic,
+              builder: (context, t, child) => Opacity(
+                opacity: t,
+                child: Transform.translate(
+                  offset: Offset(0, 24 * (1 - t)),
+                  child: child,
                 ),
-                borderRadius: BorderRadius.circular(12),
               ),
-              child: _mockTile(samples[i]),
+              child: _ModernTile(title: samples[i]),
             ),
-            if (i != samples.length - 1) const SizedBox(height: 8),
+            if (i != samples.length - 1) const SizedBox(height: 6),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _ModernTile extends StatefulWidget {
+  final String title;
+  const _ModernTile({required this.title});
+
+  @override
+  State<_ModernTile> createState() => _ModernTileState();
+}
+
+class _ModernTileState extends State<_ModernTile> {
+  bool _hover = false;
+  bool _bookmarked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = scheme.primary; // one unified color everywhere
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {},
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _hover
+                    ? accent.withValues(alpha: 0.55)
+                    : scheme.outlineVariant.withValues(alpha: 0.35),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: scheme.shadow.withValues(alpha: _hover ? 0.12 : 0.05),
+                  blurRadius: _hover ? 16 : 6,
+                  offset: Offset(0, _hover ? 6 : 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Solid bookmark chip — taps to toggle state
+                InkWell(
+                  borderRadius: BorderRadius.circular(13),
+                  onTap: () => setState(() => _bookmarked = !_bookmarked),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 42,
+                    height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(13),
+                      color: _bookmarked
+                          ? accent.withValues(alpha: 0.15)
+                          : scheme.surfaceContainerHighest,
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (child, t) =>
+                          ScaleTransition(scale: t, child: child),
+                      child: Icon(
+                        _bookmarked
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_outline_rounded,
+                        key: ValueKey(_bookmarked),
+                        size: 20,
+                        color: accent,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    // Same container as your AppBar, NavigationBar, and ElevatedButtons
+                    color: _hover ? scheme.primary : scheme.secondaryContainer,
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    // Green at rest (matches your global iconTheme); onPrimary when filled
+                    color: _hover ? scheme.onPrimary : scheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

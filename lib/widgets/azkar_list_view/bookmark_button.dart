@@ -22,27 +22,62 @@ class BookmarkButton extends ConsumerWidget {
       bookmarksProvider.select((bookmarks) => bookmarks.contains(bookmarkId)),
     );
 
-    return IconButton(
-      highlightColor:
-          Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-      onPressed: () {
-        final wasBookmark =
-            ref.read(bookmarksProvider.notifier).toggleBookmark(bookmarkId);
+    final scheme = Theme.of(context).colorScheme;
+    final accent = scheme.primary;
 
-        // Call the callback if provided
-        onBookmarkToggled?.call(wasBookmark);
+    return Semantics(
+      button: true,
+      label: isBookmarked ? 'إزالة من المحفوظات' : 'إضافة إلى المحفوظات',
+      child: Tooltip(
+        message: isBookmarked ? 'إزالة من المحفوظات' : 'إضافة إلى المحفوظات',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(13),
+            onTap: () {
+              final wasBookmark = ref
+                  .read(bookmarksProvider.notifier)
+                  .toggleBookmark(bookmarkId);
 
-        // Show snackbar if enabled (helper hides the current one first).
-        if (showSnackBarBool) {
-          final message = wasBookmark
-              ? 'تم الحذف من المحفوظات'
-              : 'تم الإضافة إلى المحفوظات';
-          showSnackBar(context, message);
-        }
-      },
-      icon: isBookmarked
-          ? const Icon(Icons.bookmark)
-          : const Icon(Icons.bookmark_outline_rounded),
+              // Call the callback if provided
+              onBookmarkToggled?.call(wasBookmark);
+
+              // Show snackbar if enabled (helper hides the current one first).
+              if (showSnackBarBool) {
+                final message = wasBookmark
+                    ? 'تم الحذف من المحفوظات'
+                    : 'تم الإضافة إلى المحفوظات';
+                showSnackBar(context, message);
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(13),
+                color: isBookmarked
+                    ? accent.withValues(alpha: 0.15)
+                    : scheme.surfaceContainerHighest,
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                transitionBuilder: (child, t) =>
+                    ScaleTransition(scale: t, child: child),
+                child: Icon(
+                  isBookmarked
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_outline_rounded,
+                  key: ValueKey(isBookmarked),
+                  size: 20,
+                  color: accent,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

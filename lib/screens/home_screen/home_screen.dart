@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
@@ -52,6 +53,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         ],
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 16),
         child: Column(
           children: [
             const Padding(
@@ -71,33 +73,47 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ],
               ),
             ),
-            Column(
-              children: [
-                ListTile(
-                  title: Text(
-                    'ورد يوم ${arabicWeekdays[dayIndex]}',
-                  ),
-                  leading: const Icon(Icons.arrow_right),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => const TodaysZikrTarget().go(context),
-                ),
-                ListTile(
-                  title: Text(
-                    'دلائل الخيرات ورد يوم ${arabicWeekdays[dayIndex]}',
-                  ),
-                  leading: const Icon(Icons.arrow_right),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    AppNav.goToZikr(
-                      context,
-                      ZikrBranch.home,
-                      dalayilAlkhayratCollection[dayIndex].id,
-                    );
-                  },
-                ),
-              ],
+            AppTile(
+              title: 'ورد يوم ${arabicWeekdays[dayIndex]}',
+              leading: const AppTileLeadingIcon(
+                icon: Icons.calendar_today_rounded,
+              ),
+              onTap: () => const TodaysZikrTarget().go(context),
             ),
-            const Divider(),
+            AppTile(
+              title: 'دلائل الخيرات ورد يوم ${arabicWeekdays[dayIndex]}',
+              leading: const AppTileLeadingIcon(
+                icon: Icons.auto_stories_rounded,
+              ),
+              onTap: () {
+                AppNav.goToZikr(
+                  context,
+                  ZikrBranch.home,
+                  dalayilAlkhayratCollection[dayIndex].id,
+                );
+              },
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Divider(),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 6, 16, 8),
+              child: Row(
+                textDirection: TextDirection
+                    .rtl, // Ensures icon is on the right for Arabic
+                children: [
+                  Icon(Icons.today_rounded),
+                  SizedBox(width: 8),
+                  Text(
+                    'المحفوظات',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const BookmarksTilesHomeScreen(),
           ],
         ),

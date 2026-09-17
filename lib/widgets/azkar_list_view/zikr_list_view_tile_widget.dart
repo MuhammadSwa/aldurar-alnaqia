@@ -1,17 +1,20 @@
+import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart';
 import 'package:flutter/material.dart';
 
-/// A single azkar list entry. Navigation is expressed as a typed
-/// [ZikrTarget] instead of a raw path string, so ids are always
-/// encoded correctly. Display titles resolve from stable ids.
+/// A single azkar list entry styled with [AppTile] (V5Outlined).
+/// Navigation is expressed as a typed [ZikrTarget] instead of a raw
+/// path string, so ids are always encoded correctly. Display titles
+/// resolve from stable ids.
 class ZikrListViewTile extends StatelessWidget {
   const ZikrListViewTile({
     super.key,
     required this.zikrId,
     this.title,
     required this.target,
+    this.margin,
   });
 
   /// Stable id ([Zikr.id], collection id, or day-wird/week bookmark id).
@@ -21,6 +24,9 @@ class ZikrListViewTile extends StatelessWidget {
   final String? title;
 
   final ZikrTarget target;
+
+  /// Optional margin override. Defaults to [AppTile]'s standard margin.
+  final EdgeInsetsGeometry? margin;
 
   static String displayTitle(String id, [String? override]) {
     if (override != null) return override;
@@ -40,14 +46,11 @@ class ZikrListViewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        displayTitle(zikrId, title),
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-      trailing: const Icon(Icons.chevron_right),
+    return AppTile(
+      title: displayTitle(zikrId, title),
       leading: BookmarkButton(bookmarkId: zikrId),
       onTap: () => target.go(context),
+      margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
     );
   }
 }

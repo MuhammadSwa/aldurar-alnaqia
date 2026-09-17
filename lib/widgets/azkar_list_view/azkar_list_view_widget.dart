@@ -24,17 +24,21 @@ class AzkarListViewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-        physics: scrollable
-            ? const AlwaysScrollableScrollPhysics()
-            : const NeverScrollableScrollPhysics(),
-        itemCount: zikrIds.length,
-        shrinkWrap: true,
-        itemBuilder: (context, index) {
-          final id = zikrIds[index];
-          return ZikrListViewTile(
-            zikrId: id,
-            target: targetBuilder(id, index),
-          );
-        },);
+      padding: scrollable
+          ? const EdgeInsets.symmetric(vertical: 8)
+          : EdgeInsets.zero,
+      physics: scrollable
+          ? const AlwaysScrollableScrollPhysics()
+          : const NeverScrollableScrollPhysics(),
+      itemCount: zikrIds.length,
+      shrinkWrap: true,
+      itemBuilder: (context, index) {
+        final id = zikrIds[index];
+        return ZikrListViewTile(
+          zikrId: id,
+          target: targetBuilder(id, index),
+        );
+      },
+    );
   }
 }
