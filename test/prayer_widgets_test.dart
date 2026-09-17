@@ -167,7 +167,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 2));
 
-      expect(find.text('الظهر'), findsOneWidget);
+      expect(find.text('الظهر بعد'), findsOneWidget);
       expect(find.textContaining('بعد'), findsOneWidget);
       expect(find.textContaining('00:00:00'), findsNothing);
     });

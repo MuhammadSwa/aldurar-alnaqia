@@ -28,22 +28,40 @@ class PrayerTimingsCard extends ConsumerWidget {
     final placeholderTime = tz.TZDateTime(tz.local, 1, 1, 1);
     final sunnah = schedule.sunnah;
 
-    final prayers = [
+    // Main box: fard prayers + sunrise. Sunnah times live in their own
+    // box below, mirroring the same listing style.
+    final fardPrayers = [
       _PrayerTime('المغرب', schedule.events[PrayerEventId.maghrib]!.time),
       _PrayerTime('العشاء', schedule.events[PrayerEventId.isha]!.time),
-      _PrayerTime('منتصف الليل', sunnah?.middleOfNight ?? placeholderTime,
-          isSunnah: true,),
-      _PrayerTime('الثلث الأخير', sunnah?.lastThirdOfNight ?? placeholderTime,
-          isSunnah: true,),
       _PrayerTime('الفجر', schedule.events[PrayerEventId.fajr]!.time),
       _PrayerTime('الشروق', schedule.events[PrayerEventId.sunrise]!.time),
-      _PrayerTime('الضحى', sunnah?.duha ?? placeholderTime, isSunnah: true),
       _PrayerTime('الظهر', schedule.events[PrayerEventId.dhuhr]!.time),
       _PrayerTime('العصر', schedule.events[PrayerEventId.asr]!.time),
     ];
 
+    final sunnahPrayers = [
+      _PrayerTime('منتصف الليل', sunnah?.middleOfNight ?? placeholderTime,
+          isSunnah: true,),
+      _PrayerTime('الثلث الأخير', sunnah?.lastThirdOfNight ?? placeholderTime,
+          isSunnah: true,),
+      _PrayerTime('الضحى', sunnah?.duha ?? placeholderTime, isSunnah: true),
+    ];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildCard(context, fardPrayers, nextPrayerName),
+        const SizedBox(height: 8),
+        _buildCard(context, sunnahPrayers, nextPrayerName),
+      ],
+    );
+  }
+
+  Widget _buildCard(
+      BuildContext context, List<_PrayerTime> prayers, String nextPrayerName,) {
     return Card(
       elevation: 4,
+      margin: EdgeInsets.zero,
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
@@ -115,34 +133,71 @@ class PrayerTimingsCard extends ConsumerWidget {
   // Helper method to build the placeholder table to avoid code duplication
   Widget _buildPlaceholderTable(BuildContext context) {
     final placeholderTime = tz.TZDateTime(tz.local, 1, 1, 1);
-    final prayers = [
+    final fardPrayers = [
       _PrayerTime('المغرب', placeholderTime),
       _PrayerTime('العشاء', placeholderTime),
-      _PrayerTime('منتصف الليل', placeholderTime, isSunnah: true),
-      _PrayerTime('الثلث الأخير', placeholderTime, isSunnah: true),
       _PrayerTime('الفجر', placeholderTime),
       _PrayerTime('الشروق', placeholderTime),
-      _PrayerTime('الضحى', placeholderTime, isSunnah: true),
       _PrayerTime('الظهر', placeholderTime),
       _PrayerTime('العصر', placeholderTime),
     ];
+    final sunnahPrayers = [
+      _PrayerTime('منتصف الليل', placeholderTime, isSunnah: true),
+      _PrayerTime('الثلث الأخير', placeholderTime, isSunnah: true),
+      _PrayerTime('الضحى', placeholderTime, isSunnah: true),
+    ];
 
-    return Card(
-      elevation: 4,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-              color:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),),
-          borderRadius: BorderRadius.circular(8),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Card(
+          elevation: 4,
+          margin: EdgeInsets.zero,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.2),),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Table(
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(1),
+              },
+              children: fardPrayers
+                  .map((prayer) => _buildTableRow(context, prayer, false))
+                  .toList(),
+            ),
+          ),
         ),
-        child: Table(
-          columnWidths: const {0: FlexColumnWidth(2), 1: FlexColumnWidth(1)},
-          children: prayers
-              .map((prayer) => _buildTableRow(context, prayer, false))
-              .toList(),
+        const SizedBox(height: 8),
+        Card(
+          elevation: 4,
+          margin: EdgeInsets.zero,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.2),),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Table(
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(1),
+              },
+              children: sunnahPrayers
+                  .map((prayer) => _buildTableRow(context, prayer, false))
+                  .toList(),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,8 +48,8 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
     _tick();
     // Align ticks to the wall-clock second to avoid drift.
     final now = DateTime.now();
-    final toNextSecond =
-        Duration(milliseconds: 1000 - now.millisecond) + const Duration(milliseconds: 50);
+    final toNextSecond = Duration(milliseconds: 1000 - now.millisecond) +
+        const Duration(milliseconds: 50);
     _timer = Timer(toNextSecond, () {
       if (!mounted) return;
       _tick();
@@ -83,9 +84,13 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isInitialized =
         ref.watch(prayerProvider.select((s) => s.isInitialized));
     final next = ref.watch(prayerProvider.select((s) => s.nextPrayerInfo));
+    final cityLabel = ref.watch(prayerProvider.select((s) => s.cityLabel));
+    final isUnset = cityLabel.isEmpty;
 
     // The ticker re-syncs only while it runs. If the target appeared while
     // it was idle (first setup: null → first prayer), (re)start it. The
@@ -102,59 +107,104 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
       }
     }
 
-    return SizedBox(
-      height: 100, // Fixed height
-      child: Card(
-        elevation: 4,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            child: !isInitialized
-                ? const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 8),
-                      Text('جاري تحميل أوقات الصلاة...'),
-                    ],
-                  )
-                : Builder(builder: (context) {
-                    final prayerName = next.$2;
+    return Card(
+      elevation: 4,
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: !isInitialized
+            ? const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Text('جاري تحميل أوقات الصلاة...'),
+                ],
+              )
+            : Builder(
+                builder: (context) {
+                  final prayerName = next.$2;
 
-                    if (prayerName.isEmpty) {
-                      return const Text(
-                        'خطأ في حساب أوقات الصلاة',
-                        style: TextStyle(fontSize: 16),
-                        textAlign: TextAlign.center,
-                      );
-                    }
-
+                  if (prayerName.isEmpty) {
                     return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          prayerName,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                          textAlign: TextAlign.center,
+                        _LocationLine(
+                          label: cityLabel,
+                          isUnset: isUnset,
+                          onTap: () => _openSettings(context),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'بعد ${_formatDuration(_timeLeft)}',
-                          style: Theme.of(context).textTheme.titleMedium,
+                        const SizedBox(height: 4),
+                        const Text(
+                          'خطأ في حساب أوقات الصلاة',
+                          style: TextStyle(fontSize: 14),
                           textAlign: TextAlign.center,
                         ),
                       ],
                     );
-                  },),
-          ),
-        ),
+                  }
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _LocationLine(
+                        label: cityLabel,
+                        isUnset: isUnset,
+                        onTap: () => _openSettings(context),
+                      ),
+                      const SizedBox(height: 6),
+                      // Next-prayer hero: name + countdown in one line.
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        children: [
+                          Icon(
+                            Icons.schedule_outlined,
+                            size: 18,
+                            color: colorScheme.primary,
+                          ),
+                          Text(
+                            '$prayerName بعد',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 2,
+                            ),
+                            child: Text(
+                              '${_formatDuration(_timeLeft)}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.primary,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                              textDirection: TextDirection.rtl,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
       ),
     );
+  }
+
+  void _openSettings(BuildContext context) {
+    showDialog(context: context, builder: (_) => const PrayerSettingsDialog());
   }
 
   String _formatDuration(Duration duration) {
@@ -166,5 +216,59 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
     return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
+  }
+}
+
+/// Tappable location line shown above the countdown.
+/// Unset state invites the user to pick a location.
+class _LocationLine extends StatelessWidget {
+  final String label;
+  final bool isUnset;
+  final VoidCallback onTap;
+
+  const _LocationLine({
+    required this.label,
+    required this.isUnset,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isUnset
+                  ? Icons.location_off_outlined
+                  : Icons.location_on_outlined,
+              size: 14,
+              color: isUnset ? theme.hintColor : theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                isUnset ? 'اضغط لتحديد الموقع' : label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isUnset
+                      ? theme.hintColor
+                      : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

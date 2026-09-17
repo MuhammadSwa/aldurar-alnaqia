@@ -1,23 +1,31 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/gregorian_date_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_controller.dart'
     show prayerProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The location label comes from prayer controller state 
-// (persisted at save time — no directory load needed to render);
-// when unconfigured, the line invites the user to set up,
-// and tapping it opens the settings dialog.
+/// The day name comes from prayer controller state (flips at Maghrib);
+// the dates below are Hijri | Gregorian.
 class PrayerDateRow extends ConsumerWidget {
   const PrayerDateRow({super.key});
+
+  static const Map<int, String> _arabicDayNames = {
+    7: 'الأحد',
+    1: 'الإثنين',
+    2: 'الثلاثاء',
+    3: 'الأربعاء',
+    4: 'الخميس',
+    5: 'الجمعة',
+    6: 'السبت',
+  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final label = ref.watch(prayerProvider.select((s) => s.cityLabel));
-    final isUnset = label.isEmpty;
+    final isInitialized =
+        ref.watch(prayerProvider.select((s) => s.isInitialized));
+    final weekday = ref.watch(prayerProvider.select((s) => s.islamicWeekday));
 
     return Card(
       margin: EdgeInsets.zero,
@@ -26,40 +34,16 @@ class PrayerDateRow extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ---- Location line ----
-            InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () => _openSettings(context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      isUnset
-                          ? Icons.location_off_outlined
-                          : Icons.location_on_outlined,
-                      size: 16,
-                      color:
-                          isUnset ? theme.hintColor : theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        isUnset ? 'اضغط لتحديد الموقع' : label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isUnset
-                              ? theme.hintColor
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            // ---- Day name line (in place of the old location line) ----
+            Text(
+              !isInitialized ? '...' : (_arabicDayNames[weekday] ?? '...'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             // ---- Dates row: Hijri | Gregorian ----
@@ -83,9 +67,5 @@ class PrayerDateRow extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  void _openSettings(BuildContext context) {
-    showDialog(context: context, builder: (_) => const PrayerSettingsDialog());
   }
 }

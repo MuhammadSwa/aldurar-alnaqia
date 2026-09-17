@@ -1,7 +1,6 @@
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/day_name.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_action_buttons.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_date_row.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
@@ -72,6 +71,17 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
           tooltip: 'فتح القائمة',
         ),
         actions: [
+          IconButton(
+            tooltip: 'الإعدادات',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PrayerTimingsSettingsScreen(),
+                ),
+              );
+            },
+          ),
           if (AppPlatform.isAndroid)
             FutureBuilder<bool>(
               future: isPrayerNotificationEnabled(),
@@ -126,21 +136,9 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            PrayerActionButtonsRow(),
-            SizedBox(height: 14),
             PrayerDateRow(),
             SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ArabicDayNameWidget(),
-                ),
-                SizedBox(width: 16), // Space between widgets
-                Expanded(
-                  child: NextPrayerCountdown(),
-                ),
-              ],
-            ),
+            NextPrayerCountdown(),
             SizedBox(height: 8),
             PrayerTimingsCard(),
           ],

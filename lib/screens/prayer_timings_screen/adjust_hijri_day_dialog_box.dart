@@ -1,5 +1,4 @@
-import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_adjust_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hijri/hijri_calendar.dart';
@@ -20,63 +19,14 @@ HijriCalendar hijriDayWithOffset({
   return HijriCalendar.fromDate(adjustedDate);
 }
 
-class AdjustHijriDayDialogbox extends ConsumerStatefulWidget {
+class AdjustHijriDayDialogbox extends ConsumerWidget {
   const AdjustHijriDayDialogbox({super.key});
 
   @override
-  ConsumerState<AdjustHijriDayDialogbox> createState() =>
-      _AdjustHijriDayDialogboxState();
-}
-
-class _AdjustHijriDayDialogboxState
-    extends ConsumerState<AdjustHijriDayDialogbox> {
-  late int _selectedOffset = ref.read(hijriOffsetProvider);
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-                'التعديل الحالي: ${_selectedOffset > 0 ? '+' : ''}$_selectedOffset يوم',
-                textAlign: TextAlign.center,),
-            const SizedBox(height: 16),
-            SegmentedButton<int>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment<int>(value: -2, label: Text('-2')),
-                ButtonSegment<int>(value: -1, label: Text('-1')),
-                ButtonSegment<int>(value: 0, label: Text('0')),
-                ButtonSegment<int>(value: 1, label: Text('+1')),
-                ButtonSegment<int>(value: 2, label: Text('+2')),
-              ],
-              selected: <int>{_selectedOffset},
-              onSelectionChanged: (Set<int> newSelection) {
-                setState(() {
-                  _selectedOffset = newSelection.first;
-                });
-              },
-            ),
-          ],
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              ref.read(hijriOffsetProvider.notifier).set(_selectedOffset);
-              Navigator.of(context).pop();
-
-              showSnackBar(context, 'تم تعديل اليوم الهجري بنجاح.');
-            },
-            child: const Text('حفظ'),
-          ),
-        ],);
+  Widget build(BuildContext context, WidgetRef ref) {
+    return const AlertDialog(
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      content: HijriAdjustForm(showCancel: true),
+    );
   }
 }
