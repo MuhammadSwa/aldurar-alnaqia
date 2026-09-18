@@ -1,6 +1,10 @@
 // lib/screens/download_manager_screen/download_manager_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/common/helpers/file_size.dart';
+import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
+import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
+import 'package:aldurar_alnaqia/common/widgets/confirm_dialog.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_controller.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
@@ -23,43 +27,73 @@ class DownloadManagerTile extends ConsumerWidget {
     return DownloadStatusBuilder(
       item: item,
       builder: (context, ref, downloader, isDownloading, isDownloaded) {
-        return ListTile(
-          title: Text(
-            item.title,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          subtitle: subtitle == null
-              ? null
-              : Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
+        // Size exists only for completed files; the stat is cheap and
+        // re-runs only when the download status changes.
+        final sizeFuture = isDownloaded
+            ? ref.read(storageProvider).fileSizeBytes(item.type, item.id)
+            : Future<int?>.value(null);
+        return FutureBuilder<int?>(
+          future: sizeFuture,
+          builder: (context, snapshot) {
+            // Size lives under the action button, never inside the
+            // single-line ellipsized subtitle where long descriptions
+            // would truncate it away.
+            final sizeLabel = snapshot.data == null
+                ? null
+                : formatBytes(snapshot.data!);
+            return AppTile(
+              title: item.title,
+              subtitle: subtitle,
+              leading: AppTileLeadingIcon(
+                icon: item.type == DownloadType.books
+                    ? Icons.menu_book_rounded
+                    : Icons.audiotrack_rounded,
+              ),
+              trailing: SizedBox(
+                width: 100,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Builder(
+                      builder: (context) {
+                        if (isDownloading) {
+                          return _DownloadProgressIndicator(
+                            id: item.id,
+                            onCancel: () => downloader.cancelDownload(
+                              item.id,
+                              item.type,
+                            ),
+                          );
+                        } else if (isDownloaded) {
+                          return _DeleteButton(
+                            onDelete: () =>
+                                downloader.deleteFile(item.id, item.type),
+                            title: item.title,
+                          );
+                        } else {
+                          return _DownloadButton(
+                            onDownload: () => downloader.startDownload(item),
+                          );
+                        }
+                      },
+                    ),
+                    if (sizeLabel != null)
+                      Text(
+                        sizeLabel,
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                  ],
                 ),
-          trailing: SizedBox(
-            width: 100,
-            child: Builder(
-              builder: (context) {
-                if (isDownloading) {
-                  return _DownloadProgressIndicator(
-                    id: item.id,
-                    onCancel: () =>
-                        downloader.cancelDownload(item.id, item.type),
-                  );
-                } else if (isDownloaded) {
-                  return _DeleteButton(
-                    onDelete: () =>
-                        downloader.deleteFile(item.id, item.type),
-                    title: item.title,
-                  );
-                } else {
-                  return _DownloadButton(
-                    onDownload: () => downloader.startDownload(item),
-                  );
-                }
-              },
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -89,30 +123,13 @@ class _DeleteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return IconButton(
-      onPressed: () {
-        showDialog(
+      onPressed: () async {
+        final confirmed = await showConfirmDialog(
           context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('تأكيد الحذف'),
-            content: Text('هل أنت متأكد من حذف "$title"؟'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('إلغاء'),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.error,
-                    foregroundColor: colorScheme.onError,),
-                onPressed: () {
-                  onDelete();
-                  Navigator.of(dialogContext).pop();
-                },
-                child: const Text('حذف'),
-              ),
-            ],
-          ),
+          title: 'تأكيد الحذف',
+          content: 'هل أنت متأكد من حذف "$title"؟',
         );
+        if (confirmed) onDelete();
       },
       icon: Icon(Icons.delete_outline, color: colorScheme.error),
       tooltip: 'حذف الملف',
@@ -162,7 +179,108 @@ class _DownloadProgressIndicator extends ConsumerWidget {
   }
 }
 
-class DownloadSection extends StatelessWidget {
+/// Rebuilds [builder] with the total bytes and count of downloaded [items],
+/// refreshing on every download-status change. State is kept across rebuilds
+/// so the last known values stay visible while re-stat'ing.
+class _DownloadedStats extends ConsumerStatefulWidget {
+  const _DownloadedStats({required this.items, required this.builder});
+
+  final List<DownloadItem> items;
+  final Widget Function(BuildContext context, int bytes, int count) builder;
+
+  @override
+  ConsumerState<_DownloadedStats> createState() => _DownloadedStatsState();
+}
+
+class _DownloadedStatsState extends ConsumerState<_DownloadedStats> {
+  int _bytes = 0;
+  int _count = 0;
+  int _generation = 0;
+
+  // Saved in initState: ref must never be touched in dispose.
+  ValueNotifier<int>? _revision;
+
+  @override
+  void initState() {
+    super.initState();
+    _revision = ref.read(downloaderProvider).statusRevision;
+    _revision!.addListener(_refresh);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    _revision?.removeListener(_refresh);
+    super.dispose();
+  }
+
+  Future<void> _refresh() async {
+    final generation = ++_generation;
+    final downloader = ref.read(downloaderProvider);
+    final storage = ref.read(storageProvider);
+    var bytes = 0;
+    var count = 0;
+    for (final item in widget.items) {
+      if (await downloader.ensureKnown(item.id, item.type)) {
+        final size = await storage.fileSizeBytes(item.type, item.id);
+        if (size != null) {
+          bytes += size;
+          count++;
+        }
+      }
+    }
+    if (!mounted || generation != _generation) return;
+    setState(() {
+      _bytes = bytes;
+      _count = count;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context, _bytes, _count);
+}
+
+/// Compact downloaded-total pill for the app bar: small type on a tonal
+/// background so it reads as a stat, not a second title.
+class _TotalPill extends StatelessWidget {
+  const _TotalPill({required this.bytes});
+
+  final int bytes;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.sd_storage_rounded,
+            size: 14,
+            color: scheme.onPrimaryContainer,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            formatBytes(bytes),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: scheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DownloadSection extends StatefulWidget {
   const DownloadSection({
     super.key,
     required this.title,
@@ -173,28 +291,59 @@ class DownloadSection extends StatelessWidget {
   final List<DownloadItem> items;
 
   @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) return const SizedBox.shrink();
+  State<DownloadSection> createState() => _DownloadSectionState();
+}
 
-    // Use a Card for better UI and visual separation of each section.
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias, // Ensures ripple effect is contained
-      child: ExpansionTile(
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+class _DownloadSectionState extends State<DownloadSection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.items.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _DownloadedStats(
+          items: widget.items,
+          builder: (context, bytes, count) {
+            final parts = [
+              '${widget.items.length} عناصر',
+              if (count > 0) '$count محمّلة • ${formatBytes(bytes)}',
+            ];
+            return AppTile(
+              title: widget.title,
+              subtitle: parts.join(' • '),
+              leading: const AppTileLeadingIcon(
+                icon: Icons.library_music_rounded,
               ),
+              trailing: AnimatedRotation(
+                turns: _expanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              onTap: () => setState(() => _expanded = !_expanded),
+            );
+          },
         ),
-        // The children are the list of downloadable items.
-        // They will only be built and shown when the tile is expanded.
-        iconColor: Theme.of(context).primaryColor,
-        collapsedIconColor: Theme.of(context).textTheme.bodySmall?.color,
-        children: items.map((item) => DownloadManagerTile(item: item)).toList(),
-      ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _expanded
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final item in widget.items)
+                      DownloadManagerTile(item: item),
+                  ],
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
     );
   }
 }
@@ -220,10 +369,35 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
   late final audioSections = DownloadManagerData.loadAudioSections();
   late final bookItems = DownloadManagerData.loadBookItems();
 
+  /// Every downloadable item across both tabs.
+  late final allItems = [
+    ...bookItems,
+    for (final items in audioSections.values) ...items,
+  ];
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _clearAll(int count) async {
+    final confirmed = await showConfirmDialog(
+      context: context,
+      title: 'حذف جميع التحميلات',
+      content:
+          'سيتم حذف $count من العناصر المحمّلة نهائيًا. هل أنت متأكد؟',
+      confirmLabel: 'حذف الكل',
+      icon: Icons.delete_sweep_outlined,
+    );
+    if (!confirmed || !mounted) return;
+    final downloader = ref.read(downloaderProvider);
+    for (final item in allItems) {
+      if (await downloader.ensureKnown(item.id, item.type)) {
+        await downloader.deleteFile(item.id, item.type);
+      }
+    }
+    if (mounted) showSnackBar(context, 'تم حذف جميع التحميلات');
   }
 
   @override
@@ -233,6 +407,23 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
       child: Scaffold(
         appBar: AppBar(
           title: const Text('إدارة التحميلات'),
+          actions: [
+            _DownloadedStats(
+              items: allItems,
+              builder: (context, bytes, count) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (count > 0) _TotalPill(bytes: bytes),
+                  IconButton(
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                    tooltip: 'حذف جميع التحميلات',
+                    onPressed:
+                        count == 0 ? null : () => _clearAll(count),
+                  ),
+                ],
+              ),
+            ),
+          ],
           bottom: TabBar(
             controller: _tabController,
             tabs: const [

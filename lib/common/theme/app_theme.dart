@@ -122,11 +122,13 @@ abstract final class AppTheme {
         titleMedium: const TextStyle(fontSize: 20),
         // Same size in both brightnesses (was dark-only 17).
         titleSmall: const TextStyle(fontSize: 17),
-        // for numbering e.g. (12.)
+        // Small metadata (sizes, stats). Nothing in the app may repurpose
+        // this for body-size text: numbering is styled inline in
+        // ZikrInlineText, and Material components read this as-is.
         labelSmall: TextStyle(
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w500,
           color: labelSmallColor,
-          fontSize: 20,
+          fontSize: 12,
         ),
       ),
       appBarTheme: AppBarTheme(

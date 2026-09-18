@@ -58,6 +58,17 @@ class StorageService {
   /// Ensures the directory for this type exists
   Future<void> ensureTypeDir(DownloadType type) => _ensureDir(_typeDir(type));
 
+  /// Size of a stored item in bytes, or null when missing/unreadable.
+  Future<int?> fileSizeBytes(DownloadType type, String id) async {
+    try {
+      final file = File(pathFor(type, id));
+      if (!await file.exists()) return null;
+      return file.length();
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<bool> exists(DownloadType type, String id) async {
     final file = File(pathFor(type, id));
     return file.exists();
