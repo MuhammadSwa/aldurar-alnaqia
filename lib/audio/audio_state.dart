@@ -81,7 +81,14 @@ class AudioState {
 
   bool get isVisible => status != AudioStatus.stopped && track != null;
 
-  bool get hasQueue => queue.length > 1 && queueIndex >= 0;
+  /// Whether this state has a usable multi-track queue for the selected
+  /// track. Keeping the validation here makes all queue consumers safe if a
+  /// future caller constructs incomplete playlist state.
+  bool get hasQueue =>
+      queue.length > 1 &&
+      queueIndex >= 0 &&
+      queueIndex < queue.length &&
+      track == queue[queueIndex];
 
   bool get hasNext =>
       hasQueue && queueIndex >= 0 && queueIndex + 1 < queue.length;

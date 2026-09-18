@@ -271,8 +271,11 @@ void main() {
     final stopGate = Completer<void>();
     engine.stopGate = () => stopGate.future;
     final stopping = notifier.stopPlayer();
-    expect(container.read(audioProvider).isVisible, isFalse,
-        reason: 'close should update the UI without waiting for the platform');
+    expect(
+      container.read(audioProvider).isVisible,
+      isFalse,
+      reason: 'close should update the UI without waiting for the platform',
+    );
 
     await notifier.playTrack(trackFor(id: 'zikr-2'));
     engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
