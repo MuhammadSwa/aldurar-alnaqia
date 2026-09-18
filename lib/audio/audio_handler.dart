@@ -116,14 +116,6 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
     _broadcastState();
   }
 
-  void clearTrackMetadata() {
-    // Push null (not an empty MediaItem): an empty item keeps a black,
-    // button-less notification alive, while null lets the service remove it.
-    // No state broadcast here — [stop] pushes the final state itself and
-    // [_broadcastState] is suppressed while stopping.
-    mediaItem.add(null);
-  }
-
   // -------------------------------------------------------------------
   // PlaybackState -> notification controls
   // -------------------------------------------------------------------
@@ -146,18 +138,20 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
       closeControl,
     ];
 
-    playbackState.add(PlaybackState(
-      controls: controls,
-      systemActions: const {
-        MediaAction.seek,
-      },
-      processingState: _mapProcessing(player?.processingState),
-      playing: playing,
-      updatePosition: player?.position ?? Duration.zero,
-      bufferedPosition: player?.bufferedPosition ?? Duration.zero,
-      speed: player?.speed ?? 1.0,
-      queueIndex: 0,
-    ),);
+    playbackState.add(
+      PlaybackState(
+        controls: controls,
+        systemActions: const {
+          MediaAction.seek,
+        },
+        processingState: _mapProcessing(player?.processingState),
+        playing: playing,
+        updatePosition: player?.position ?? Duration.zero,
+        bufferedPosition: player?.bufferedPosition ?? Duration.zero,
+        speed: player?.speed ?? 1.0,
+        queueIndex: 0,
+      ),
+    );
   }
 
   AudioProcessingState _mapProcessing(ProcessingState? state) {

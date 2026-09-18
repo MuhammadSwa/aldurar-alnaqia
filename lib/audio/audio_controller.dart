@@ -48,16 +48,64 @@ class AudioController extends Notifier<AudioState> {
 
   /// Plays [track]: prefers the downloaded file when it exists, otherwise
   /// streams the remote URL directly.
-  Future<void> playTrack(AudioTrack track) async {
+  ///
+  /// When [queue] is given, the track is treated as part of that playlist
+  /// (e.g. the slidable azkar list) so the mini player can offer continuous
+  /// playback and prev/next navigation. Items missing locally are streamed
+  /// automatically on advance, same as a direct tap.
+  Future<void> playTrack(AudioTrack track, {List<AudioTrack>? queue}) async {
+    if (queue == null) {
+      await _loadTrack(track, queue: const <AudioTrack>[], queueIndex: -1);
+    } else {
+      final index = queue.indexWhere((t) => t.id == track.id);
+      await _loadTrack(
+        track,
+        queue: List<AudioTrack>.unmodifiable(queue),
+        queueIndex: index >= 0 ? index : 0,
+      );
+    }
+  }
+
+  /// Advances to the next queued track; returns false when there is none.
+  Future<bool> playNext() async {
+    final next = state.nextTrack;
+    if (next == null) return false;
+    await _loadTrack(next, queueIndex: state.queueIndex + 1);
+    return true;
+  }
+
+  /// Goes back to the previous queued track; returns false when at the start.
+  Future<bool> playPrevious() async {
+    final prev = state.previousTrack;
+    if (prev == null) return false;
+    await _loadTrack(prev, queueIndex: state.queueIndex - 1);
+    return true;
+  }
+
+  /// Toggles continuous playback of the queued list.
+  void toggleAutoAdvance() {
+    state = state.copyWith(autoAdvance: !state.autoAdvance);
+  }
+
+  /// Single load path: entering a new queue ([playTrack]), moving inside it
+  /// ([playNext]/[playPrevious]/auto-advance), or retrying after an error.
+  /// Omitted [queue]/[queueIndex] keep the current values, so retries and
+  /// advances never drop the playlist context.
+  Future<void> _loadTrack(
+    AudioTrack track, {
+    List<AudioTrack>? queue,
+    int? queueIndex,
+  }) async {
     state = state.copyWith(
       status: AudioStatus.loading,
       track: track,
+      queue: queue,
+      queueIndex: queueIndex,
       clearError: true,
       position: Duration.zero,
       buffered: Duration.zero,
       duration: Duration.zero,
     );
-
     final request = await _resolveRequest(track);
     _currentRequest = request;
     await _tryLoad(request);
@@ -76,9 +124,10 @@ class AudioController extends Notifier<AudioState> {
         await _engine.play();
         break;
       case AudioStatus.error:
-        // Terminal error: start over.
+        // Terminal error: start over. Queue context is preserved by
+        // [_loadTrack], so continuous playback and prev/next keep working.
         if (state.track != null) {
-          await playTrack(state.track!);
+          await _loadTrack(state.track!);
         }
         break;
       case AudioStatus.stopped:
@@ -89,7 +138,7 @@ class AudioController extends Notifier<AudioState> {
   Future<void> stopPlayer() async {
     _currentRequest = null;
     await _engine.stop();
-    state = AudioState(speed: state.speed);
+    state = AudioState(speed: state.speed, autoAdvance: state.autoAdvance);
   }
 
   Future<void> seek(Duration position) async {
@@ -156,8 +205,11 @@ class AudioController extends Notifier<AudioState> {
           await _engine.load(fallback);
           return;
         } catch (e2, st2) {
-          logError('Audio fallback stream failed for "${request.title}"',
-              e2, st2,);
+          logError(
+            'Audio fallback stream failed for "${request.title}"',
+            e2,
+            st2,
+          );
         }
       }
       _fail();
@@ -180,18 +232,16 @@ class AudioController extends Notifier<AudioState> {
           duration: duration,
         );
         break;
-      case EngineFailed():
-        logWarn('Audio engine reported failure');
+      case EngineFailed(:final message):
+        logWarn('Audio engine reported failure: $message');
         final request = _currentRequest;
         // Broken local file that only fails asynchronously: try streaming.
-        final fallback =
-            request == null ? null : _remoteFallbackFor(request);
+        final fallback = request == null ? null : _remoteFallbackFor(request);
         if (fallback != null) {
           _currentRequest = fallback;
           state = state.copyWith(status: AudioStatus.loading);
           unawaited(_tryLoad(fallback));
-        } else if (state.track != null &&
-            state.status != AudioStatus.stopped) {
+        } else if (state.track != null && state.status != AudioStatus.stopped) {
           _fail();
         }
         break;
@@ -206,8 +256,7 @@ class AudioController extends Notifier<AudioState> {
         }
         break;
       case EnginePlaybackState.playing:
-        state =
-            state.copyWith(status: AudioStatus.playing, clearError: true);
+        state = state.copyWith(status: AudioStatus.playing, clearError: true);
         break;
       case EnginePlaybackState.paused:
         if (state.status != AudioStatus.error &&
@@ -216,6 +265,24 @@ class AudioController extends Notifier<AudioState> {
         }
         break;
       case EnginePlaybackState.completed:
+        // Only the actively-playing track finishing counts. The engine can
+        // emit `completed` more than once per finished track (playing flag
+        // and processing state flip in separate emissions); a duplicate
+        // arriving while the next track is still loading must not rewind,
+        // pause, or skip it — that parked the next track in paused state
+        // instead of auto-playing it.
+        if (state.status != AudioStatus.playing &&
+            state.status != AudioStatus.paused) {
+          break;
+        }
+        // Continuous mode with more items ahead: stream (or play locally)
+        // the next zikr automatically until the list is done.
+        if (state.autoAdvance && state.hasNext) {
+          final next = state.nextTrack!;
+          final nextIndex = state.queueIndex + 1;
+          unawaited(_loadTrack(next, queueIndex: nextIndex));
+          break;
+        }
         // Rewind so the user can replay (previous app behavior).
         state = state.copyWith(
           status: AudioStatus.paused,
@@ -234,7 +301,8 @@ class AudioController extends Notifier<AudioState> {
             (state.status == AudioStatus.playing ||
                 state.status == AudioStatus.paused ||
                 state.status == AudioStatus.error)) {
-          state = AudioState(speed: state.speed);
+          state =
+              AudioState(speed: state.speed, autoAdvance: state.autoAdvance);
         }
         break;
     }

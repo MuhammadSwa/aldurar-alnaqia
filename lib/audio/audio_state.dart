@@ -25,16 +25,12 @@ class AudioTrack {
     required this.id,
     required this.title,
     required this.remoteUrl,
-    this.isLocal = false,
   });
 
   /// Stable id of the zikr/narration (used for local-file lookup).
   final String id;
   final String title;
   final String remoteUrl;
-
-  /// Whether the engine loaded the downloaded file instead of streaming.
-  final bool isLocal;
 
   @override
   bool operator ==(Object other) =>
@@ -58,6 +54,9 @@ class AudioState {
     this.duration = Duration.zero,
     this.speed = 1.0,
     this.errorMessage,
+    this.queue = const [],
+    this.queueIndex = -1,
+    this.autoAdvance = false,
   });
 
   final AudioStatus status;
@@ -68,9 +67,30 @@ class AudioState {
   final double speed;
   final String? errorMessage;
 
+  /// Ordered playlist the current track was started from (e.g. the azkar
+  /// list the user is sliding through). Empty when the track was played
+  /// standalone.
+  final List<AudioTrack> queue;
+
+  /// Index of [track] inside [queue], or -1 when there is no queue.
+  final int queueIndex;
+
+  /// When true and [hasNext] holds, finishing the current track starts the
+  /// next one automatically (each item resolves locally-first, else streams).
+  final bool autoAdvance;
+
   bool get isVisible => status != AudioStatus.stopped && track != null;
 
-  bool get isPlayingThisTrack => status == AudioStatus.playing;
+  bool get hasQueue => queue.length > 1 && queueIndex >= 0;
+
+  bool get hasNext =>
+      hasQueue && queueIndex >= 0 && queueIndex + 1 < queue.length;
+
+  bool get hasPrevious => hasQueue && queueIndex > 0;
+
+  AudioTrack? get nextTrack => hasNext ? queue[queueIndex + 1] : null;
+
+  AudioTrack? get previousTrack => hasPrevious ? queue[queueIndex - 1] : null;
 
   AudioState copyWith({
     AudioStatus? status,
@@ -81,16 +101,21 @@ class AudioState {
     double? speed,
     String? errorMessage,
     bool clearError = false,
-    bool clearTrack = false,
+    List<AudioTrack>? queue,
+    int? queueIndex,
+    bool? autoAdvance,
   }) {
     return AudioState(
       status: status ?? this.status,
-      track: clearTrack ? null : (track ?? this.track),
+      track: track ?? this.track,
       position: position ?? this.position,
       buffered: buffered ?? this.buffered,
       duration: duration ?? this.duration,
       speed: speed ?? this.speed,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      queue: queue ?? this.queue,
+      queueIndex: queueIndex ?? this.queueIndex,
+      autoAdvance: autoAdvance ?? this.autoAdvance,
     );
   }
 
@@ -103,10 +128,22 @@ class AudioState {
       other.buffered == buffered &&
       other.duration == duration &&
       other.speed == speed &&
-      other.errorMessage == errorMessage;
+      other.errorMessage == errorMessage &&
+      listEquals(other.queue, queue) &&
+      other.queueIndex == queueIndex &&
+      other.autoAdvance == autoAdvance;
 
   @override
-  int get hashCode =>
-      Object.hash(status, track, position, buffered, duration, speed,
-          errorMessage,);
+  int get hashCode => Object.hash(
+        status,
+        track,
+        position,
+        buffered,
+        duration,
+        speed,
+        errorMessage,
+        Object.hashAll(queue),
+        queueIndex,
+        autoAdvance,
+      );
 }

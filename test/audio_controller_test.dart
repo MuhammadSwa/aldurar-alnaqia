@@ -133,6 +133,11 @@ void main() {
 
     final notifier = container.read(audioProvider.notifier);
     await notifier.playTrack(trackFor());
+    // Realistic event order: the fresh load reports playing first; only a
+    // completion from the actively-playing track rewinds it. (A completion
+    // arriving while still loading is a stale duplicate and is ignored.)
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
     engine.emit(const EnginePlaybackChanged(EnginePlaybackState.completed));
     await Future<void>.delayed(Duration.zero);
 

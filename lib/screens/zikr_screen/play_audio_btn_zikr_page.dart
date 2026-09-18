@@ -13,11 +13,17 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
     required this.title,
     required this.url,
     required this.id,
+    this.queue,
   });
 
   final String title;
   final String? url;
   final String id;
+
+  /// Playlist context (e.g. the slidable azkar list). When provided, the
+  /// mini player can auto-advance through it; each item streams automatically
+  /// when not downloaded locally.
+  final List<AudioTrack>? queue;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,7 +60,7 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
 
         if (isFileDownloaded) {
           return IconButton(
-            onPressed: () => _playLocally(ref),
+            onPressed: () => _play(ref),
             icon: const Icon(Icons.volume_up),
             tooltip: 'تشغيل الصوت (محلي)',
           );
@@ -69,13 +75,12 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
     );
   }
 
-  void _playLocally(WidgetRef ref) {
+  /// Single play path: the controller resolves the downloaded file first
+  /// and streams automatically when it is missing locally.
+  void _play(WidgetRef ref) {
     ref.read(audioProvider.notifier).playTrack(
-          AudioTrack(
-            id: id,
-            title: title,
-            remoteUrl: url!,
-          ),
+          AudioTrack(id: id, title: title, remoteUrl: url!),
+          queue: queue,
         );
   }
 
@@ -84,7 +89,7 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
     final action = ref.read(fileOpenActionProvider);
     switch (action) {
       case FileOpenAction.open:
-        _streamDirectly(ref);
+        _play(ref);
         break;
       case FileOpenAction.download:
         _downloadDirectly(ref);
@@ -93,12 +98,6 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
         _showStreamDownloadDialog(context, ref);
         break;
     }
-  }
-
-  void _streamDirectly(WidgetRef ref) {
-    ref.read(audioProvider.notifier).playTrack(
-          AudioTrack(id: id, title: title, remoteUrl: url!),
-        );
   }
 
   void _downloadDirectly(WidgetRef ref) {
@@ -124,9 +123,7 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
       context: context,
       ref: ref,
       item: downloadItem,
-      onOpen: () => ref.read(audioProvider.notifier).playTrack(
-            AudioTrack(id: id, title: title, remoteUrl: url!),
-          ),
+      onOpen: () => _play(ref),
     );
   }
 }

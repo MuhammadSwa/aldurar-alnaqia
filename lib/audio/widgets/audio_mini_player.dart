@@ -160,16 +160,34 @@ class _TransportRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(audioProvider.select((s) => s.status));
+    final hasQueue = ref.watch(audioProvider.select((s) => s.hasQueue));
+    final hasNext = ref.watch(audioProvider.select((s) => s.hasNext));
+    final hasPrevious = ref.watch(audioProvider.select((s) => s.hasPrevious));
 
     return Stack(
       alignment: Alignment.center,
       children: [
         const Align(alignment: Alignment.topRight, child: SpeedSliderButton()),
+        if (hasQueue)
+          const Align(
+            alignment: Alignment.topLeft,
+            child: AutoAdvanceButton(),
+          ),
         Align(
           alignment: Alignment.topCenter,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (hasQueue) ...[
+                _SkipButton(
+                  icon: Icons.skip_previous,
+                  tooltip: 'السابق',
+                  onPressed: hasPrevious
+                      ? () => ref.read(audioProvider.notifier).playPrevious()
+                      : null,
+                ),
+                const SizedBox(width: 4),
+              ],
               _SkipButton(
                 icon: Icons.forward_10,
                 tooltip: '+10',
@@ -183,6 +201,16 @@ class _TransportRow extends ConsumerWidget {
                 tooltip: '-10',
                 onPressed: () => _skip(ref, const Duration(seconds: 10)),
               ),
+              if (hasQueue) ...[
+                const SizedBox(width: 4),
+                _SkipButton(
+                  icon: Icons.skip_next,
+                  tooltip: 'التالي',
+                  onPressed: hasNext
+                      ? () => ref.read(audioProvider.notifier).playNext()
+                      : null,
+                ),
+              ],
             ],
           ),
         ),
@@ -293,6 +321,35 @@ class SpeedSliderButton extends ConsumerWidget {
         value: ref.read(audioProvider).speed,
         onChanged: ref.read(audioProvider.notifier).setSpeed,
       ),
+    );
+  }
+}
+
+/// Toggle for continuous playback of the queued azkar list.
+///
+/// Visible only when the current track belongs to a multi-item queue.
+/// When enabled, finishing a track automatically starts the next one
+/// (local file when downloaded, otherwise streaming) until the list ends.
+class AutoAdvanceButton extends ConsumerWidget {
+  const AutoAdvanceButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final autoAdvance = ref.watch(audioProvider.select((s) => s.autoAdvance));
+    final position = ref.watch(audioProvider.select((s) => s.queueIndex));
+    final total = ref.watch(audioProvider.select((s) => s.queue.length));
+
+    return IconButton(
+      icon: Icon(
+        autoAdvance ? Icons.repeat_on : Icons.repeat,
+      ),
+      color:
+          autoAdvance ? colorScheme.primary : colorScheme.onSecondaryContainer,
+      tooltip: autoAdvance
+          ? 'تشغيل متتابع: مفعّل (${position + 1}/$total) — اضغط للإيقاف'
+          : 'تشغيل متتابع للقائمة (${position + 1}/$total)',
+      onPressed: () => ref.read(audioProvider.notifier).toggleAutoAdvance(),
     );
   }
 }
