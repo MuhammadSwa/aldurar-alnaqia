@@ -81,7 +81,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               onTap: () => const TodaysZikrTarget().go(context),
             ),
             AppTile(
-              title: 'دلائل الخيرات ورد يوم ${arabicWeekdays[dayIndex]}',
+              title: 'دلائل الخيرات',
+              subtitle: 'ورد يوم ${arabicWeekdays[dayIndex]}',
               leading: const AppTileLeadingIcon(
                 icon: Icons.auto_stories_rounded,
               ),
