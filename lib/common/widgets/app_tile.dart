@@ -88,7 +88,26 @@ class _AppTileState extends State<AppTile> {
                 child: Row(
                   children: [
                     if (widget.leading != null) ...[
-                      widget.leading!,
+                      Stack(
+                        children: [
+                          widget.leading!,
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: AnimatedOpacity(
+                                opacity: _active ? 1 : 0,
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOut,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(13),
+                                    color: accent.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(width: 14),
                     ],
                     Expanded(
@@ -123,11 +142,17 @@ class _AppTileState extends State<AppTile> {
                     ),
                     const SizedBox(width: 10),
                     widget.trailing ??
-                        Icon(
-                          Icons.chevron_right,
-                          color: _active
-                              ? accent
-                              : scheme.surfaceTint.withValues(alpha: .55),
+                        TweenAnimationBuilder<Color?>(
+                          tween: ColorTween(
+                            end: _active
+                                ? accent.withValues(alpha: 0.55)
+                                : scheme.outlineVariant.withValues(alpha: 0.9),
+                          ),
+                          duration: const Duration(milliseconds: 180),
+                          builder: (context, color, _) => Icon(
+                            Icons.chevron_right,
+                            color: color,
+                          ),
                         ),
                   ],
                 ),
