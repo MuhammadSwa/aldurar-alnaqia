@@ -9,6 +9,7 @@ import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
 import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
 import 'package:aldurar_alnaqia/screens/awrad_list_screen/awrad_list_screen.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/book_viewer_screen.dart';
@@ -106,8 +107,27 @@ class AppRouter {
           path: RoutePaths.timings,
           name: RouteNames.timings,
           builder: (context, state) => const PrayerTimingsScreen(),
+          routes: [
+            _createTimingsSettingsRoute(),
+          ],
         ),
       ],
+    );
+  }
+
+  /// Settings page nested under the timings branch so re-tapping the
+  /// prayers bottom-nav destination pops back to `/timings`
+  /// (`goBranch(initialLocation: true)` only resets go_router locations —
+  /// an imperative `Navigator.push` bypasses it and gets stuck).
+  static GoRoute _createTimingsSettingsRoute() {
+    return GoRoute(
+      path: RoutePaths.timingsSettingsSegment,
+      name: RouteNames.timingsSettings,
+      pageBuilder: (context, state) {
+        return RouteTransitions.slideTransition(
+          const PrayerTimingsSettingsScreen(),
+        );
+      },
     );
   }
 

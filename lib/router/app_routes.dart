@@ -29,6 +29,7 @@ class RoutePaths {
 
   // Nested segments (relative, used only inside app_router.dart).
   static const String todaysZikrSegment = 'todaysZikr';
+  static const String timingsSettingsSegment = 'settings';
   static const String weekCollectionSegment = 'weekCollection';
   static const String zikrCollectionSegment = 'zikrCollection/:collection';
   static const String zikrSegment = 'zikr/:zikr';
@@ -43,6 +44,7 @@ class RouteNames {
   static const String awrad = 'awrad';
   static const String library = 'library';
   static const String todayZikr = 'todayZikr';
+  static const String timingsSettings = 'timingsSettings';
   static const String heliaNasab = 'heliaNasab';
   static const String pdfViewer = 'pdfViewer';
 
@@ -102,6 +104,9 @@ class AppRoutes {
       '${weekCollectionPath(branch)}/$day';
 
   static String todaysZikrPath() => '${RoutePaths.home}/todaysZikr';
+
+  static String timingsSettingsPath() =>
+      '${RoutePaths.timings}/${RoutePaths.timingsSettingsSegment}';
 
   static String downloadManager(int tabIndex) =>
       '${RoutePaths.downloadManager}/$tabIndex';

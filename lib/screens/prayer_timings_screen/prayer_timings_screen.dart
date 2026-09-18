@@ -1,8 +1,8 @@
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_header_card.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
@@ -11,6 +11,7 @@ import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class PrayerTimingsScreen extends ConsumerStatefulWidget {
   const PrayerTimingsScreen({super.key});
@@ -77,11 +78,10 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
             tooltip: 'الإعدادات',
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const PrayerTimingsSettingsScreen(),
-                ),
-              );
+              // Nested go_router location (not an imperative Navigator.push)
+              // so re-tapping the prayers tab pops back via
+              // goBranch(initialLocation: true).
+              context.pushNamed(RouteNames.timingsSettings);
             },
           ),
           if (AppPlatform.isAndroid)
