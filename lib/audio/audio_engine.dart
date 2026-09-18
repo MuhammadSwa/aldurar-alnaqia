@@ -201,8 +201,10 @@ class JustAudioEngine implements AudioEngine {
 
   @override
   Future<void> load(EngineLoadRequest request) async {
-    await _player.stop();
-
+    // No explicit stop(): setAudioSource replaces the current source, so a
+    // skip never produces the transient idle state that used to be mistaken
+    // for "user closed playback" and hide the mini player mid-skip.
+    //
     // Plain progressive streaming: direct https to the server, no localhost
     // proxy, so it works on Android/iOS with no extra platform config.
     final AudioSource source = request.isLocal
@@ -244,7 +246,9 @@ class JustAudioEngine implements AudioEngine {
     // Removes the media notification as well. No seek after stop: it
     // would emit extra player events that could resurrect an empty
     // (black) notification after the service is stopped.
-    await _notifications?.stop();
+    // stopLocally (not stop()): stop() would delegate back to the
+    // controller, which is already awaiting us — that would recurse.
+    await _notifications?.stopLocally();
   }
 
   @override

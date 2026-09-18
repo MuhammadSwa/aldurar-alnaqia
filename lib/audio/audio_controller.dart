@@ -27,6 +27,12 @@ class AudioController extends Notifier<AudioState> {
   /// fallback when the engine reports an async failure.
   EngineLoadRequest? _currentRequest;
 
+  /// Monotonic id of the latest load. Every [_loadTrack] takes the next id
+  /// and async continuations bail out when theirs is stale, so a superseded
+  /// load (double-tapped skip, auto-advance racing a manual skip, close
+  /// mid-load) can never clobber the newer state with a late failure.
+  int _loadGeneration = 0;
+
   @override
   AudioState build() {
     ref.onDispose(_dispose);
@@ -96,6 +102,7 @@ class AudioController extends Notifier<AudioState> {
     List<AudioTrack>? queue,
     int? queueIndex,
   }) async {
+    final generation = ++_loadGeneration;
     state = state.copyWith(
       status: AudioStatus.loading,
       track: track,
@@ -107,8 +114,19 @@ class AudioController extends Notifier<AudioState> {
       duration: Duration.zero,
     );
     final request = await _resolveRequest(track);
+    // A newer skip/stop started while resolving: abandon, the newer load
+    // owns the player now.
+    if (generation != _loadGeneration) return;
     _currentRequest = request;
-    await _tryLoad(request);
+    await _tryLoad(request, generation);
+    if (generation != _loadGeneration &&
+        state.status == AudioStatus.stopped &&
+        _currentRequest == null) {
+      // Stopped (or replaced-then-stopped) while the native load was in
+      // flight: it may have started playing underneath with no UI. Silence
+      // it. Skipped whenever a newer load owns the player.
+      await _engine.stop();
+    }
   }
 
   /// Toggles play/pause; restarts the current track after a terminal error.
@@ -136,6 +154,9 @@ class AudioController extends Notifier<AudioState> {
   }
 
   Future<void> stopPlayer() async {
+    // Invalidate any in-flight load so its late completion cannot resurrect
+    // state (or leave ghost audio) after the close.
+    _loadGeneration++;
     _currentRequest = null;
     await _engine.stop();
     state = AudioState(speed: state.speed, autoAdvance: state.autoAdvance);
@@ -192,19 +213,23 @@ class AudioController extends Notifier<AudioState> {
   }
 
   /// Loads [request]; on a local-file failure retries once over the network
-  /// before surfacing an error.
-  Future<void> _tryLoad(EngineLoadRequest request) async {
+  /// before surfacing an error. Bails out silently when superseded by a
+  /// newer load instead of failing the new track.
+  Future<void> _tryLoad(EngineLoadRequest request, int generation) async {
     try {
       await _engine.load(request);
     } catch (e, st) {
+      if (generation != _loadGeneration) return;
       logError('Audio load failed for "${request.title}"', e, st);
       final fallback = _remoteFallbackFor(request);
       if (fallback != null) {
+        if (generation != _loadGeneration) return;
         _currentRequest = fallback;
         try {
           await _engine.load(fallback);
           return;
         } catch (e2, st2) {
+          if (generation != _loadGeneration) return;
           logError(
             'Audio fallback stream failed for "${request.title}"',
             e2,
@@ -212,7 +237,7 @@ class AudioController extends Notifier<AudioState> {
           );
         }
       }
-      _fail();
+      _fail(request);
     }
   }
 
@@ -240,9 +265,9 @@ class AudioController extends Notifier<AudioState> {
         if (fallback != null) {
           _currentRequest = fallback;
           state = state.copyWith(status: AudioStatus.loading);
-          unawaited(_tryLoad(fallback));
+          unawaited(_tryLoad(fallback, _loadGeneration));
         } else if (state.track != null && state.status != AudioStatus.stopped) {
-          _fail();
+          _fail(request);
         }
         break;
     }
@@ -292,24 +317,25 @@ class AudioController extends Notifier<AudioState> {
         _engine.pause();
         break;
       case EnginePlaybackState.idle:
-        // Idle arrives after a notification close (X) which stops the player
-        // directly in the handler, bypassing [stopPlayer]. Mirror it into a
-        // stopped UI state so the mini player disappears. Ignore while
-        // loading: [load] briefly stops the player before setting the new
-        // source, and intentional stops already reset the state themselves.
-        if (state.track != null &&
-            (state.status == AudioStatus.playing ||
-                state.status == AudioStatus.paused ||
-                state.status == AudioStatus.error)) {
-          state =
-              AudioState(speed: state.speed, autoAdvance: state.autoAdvance);
-        }
+        // Intentionally ignored. Idle is a transient native state (source
+        // teardown inside a skip, failed-source cleanup, ...), never proof
+        // that the user closed playback: it could surface *after* the new
+        // track was already playing and used to hide the mini player while
+        // audio and the notification kept going. The ONLY path to stopped
+        // is [stopPlayer], reached from the mini-player X and — via
+        // NarrationAudioHandler.onExternalStop — from the notification X.
         break;
     }
   }
 
-  void _fail() {
+  void _fail([EngineLoadRequest? failedRequest]) {
     if (state.track == null || state.status == AudioStatus.stopped) return;
+    // A late failure from a load that has since been superseded must not
+    // clobber the newer track (it surfaced as error, then the stale idle
+    // hid the player while the new audio kept playing).
+    if (failedRequest != null && !identical(failedRequest, _currentRequest)) {
+      return;
+    }
     state = state.copyWith(
       status: AudioStatus.error,
       errorMessage: 'تعذّر تشغيل الصوت',

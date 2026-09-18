@@ -21,6 +21,12 @@ class FakeEngine implements AudioEngine {
   int failNextLoads = 0;
   Object? loadError;
 
+  /// Optional hook to stall a native load (slow stream) for race tests.
+  Future<void> Function(EngineLoadRequest request)? loadGate;
+
+  /// How many times [stop] was called (ghost-audio detection).
+  int stops = 0;
+
   @override
   Stream<EngineEvent> get events => _controller.stream;
 
@@ -29,6 +35,8 @@ class FakeEngine implements AudioEngine {
   @override
   Future<void> load(EngineLoadRequest request) async {
     loads.add(request);
+    final gate = loadGate;
+    if (gate != null) await gate(request);
     if (failNextLoads > 0) {
       failNextLoads--;
       throw loadError ?? Exception('boom');
@@ -44,7 +52,9 @@ class FakeEngine implements AudioEngine {
   @override
   Future<void> setSpeed(double speed) async {}
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async {
+    stops++;
+  }
 
   int disposed = 0;
 
@@ -235,6 +245,130 @@ void main() {
     expect(state.isVisible, isFalse);
     expect(state.track, isNull);
     expect(state.speed, 1.0, reason: 'speed preference survives stops');
+  });
+
+  test('a superseded skip load failure cannot hide the newer track', () async {
+    // Double-tapped next (or auto-advance racing a manual skip): the first
+    // load hangs on a slow stream, the second one wins and starts playing.
+    // When the stale load finally fails, the playing track must survive.
+    final engine = FakeEngine();
+    final container = makeContainer(engine);
+    addTearDown(container.dispose);
+    final notifier = container.read(audioProvider.notifier);
+
+    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+
+    final slowGate = Completer<void>();
+    engine.loadGate = (request) async {
+      if (request.trackId == 'zikr-2') await slowGate.future;
+    };
+
+    final staleLoad = notifier.playTrack(trackFor(id: 'zikr-2'));
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(audioProvider).status, AudioStatus.loading);
+
+    await notifier.playTrack(trackFor(id: 'zikr-3'));
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(audioProvider).track?.id, 'zikr-3');
+
+    slowGate.completeError(Exception('stale load failed'));
+    await staleLoad;
+    await Future<void>.delayed(Duration.zero);
+
+    final state = container.read(audioProvider);
+    expect(state.isVisible, isTrue);
+    expect(state.status, AudioStatus.playing);
+    expect(state.track?.id, 'zikr-3');
+  });
+
+  test('idle from our own stop inside a skip load does not hide it', () async {
+    final engine = FakeEngine();
+    final container = makeContainer(engine);
+    addTearDown(container.dispose);
+    final notifier = container.read(audioProvider.notifier);
+
+    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+
+    final pending = notifier.playTrack(trackFor(id: 'zikr-2'));
+    // JustAudioEngine.load() calls player.stop() first, which surfaces as
+    // idle while the new track is still loading.
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.idle));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(audioProvider).isVisible, isTrue);
+    expect(container.read(audioProvider).status, AudioStatus.loading);
+
+    await pending;
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(audioProvider).track?.id, 'zikr-2');
+  });
+
+  test('late idle after the new track is playing does not hide it', () async {
+    // Regression for "skip hides the mini player but audio keeps playing":
+    // the native stop() tearing down the old stream can surface as idle
+    // AFTER the next track already started playing. Idle is never a close
+    // signal, so the playing track must survive it.
+    final engine = FakeEngine();
+    final container = makeContainer(engine);
+    addTearDown(container.dispose);
+    final notifier = container.read(audioProvider.notifier);
+
+    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+
+    await notifier.playTrack(trackFor(id: 'zikr-2'));
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(audioProvider).track?.id, 'zikr-2');
+
+    // The old track's delayed stop-idle arrives while the new one plays.
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.idle));
+    await Future<void>.delayed(Duration.zero);
+
+    final state = container.read(audioProvider);
+    expect(state.isVisible, isTrue);
+    expect(state.status, AudioStatus.playing);
+    expect(state.track?.id, 'zikr-2');
+  });
+
+  test('stop during a slow load keeps the player hidden', () async {
+    final engine = FakeEngine();
+    final container = makeContainer(engine);
+    addTearDown(container.dispose);
+    final notifier = container.read(audioProvider.notifier);
+
+    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+
+    final slowGate = Completer<void>();
+    engine.loadGate = (request) async {
+      if (request.trackId == 'zikr-2') await slowGate.future;
+    };
+
+    final pendingLoad = notifier.playTrack(trackFor(id: 'zikr-2'));
+    await Future<void>.delayed(Duration.zero);
+    await notifier.stopPlayer();
+    expect(container.read(audioProvider).isVisible, isFalse);
+
+    // The native load finishes after the stop and would start ghost audio.
+    slowGate.complete();
+    await pendingLoad;
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(audioProvider).isVisible, isFalse);
+    expect(
+      engine.stops,
+      greaterThanOrEqualTo(2),
+      reason: 'stale load must silence the player it may have started',
+    );
   });
 }
 

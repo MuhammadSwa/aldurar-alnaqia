@@ -56,6 +56,14 @@ Future<ProviderContainer> _bootstrap() async {
     ],
   );
 
+  // Notification X / swipe-away stops through the controller, so the mini
+  // player hides in sync (the controller never infers "closed" from raw
+  // player-idle events — those also surface mid-skip).
+  if (audioHandler != null) {
+    audioHandler.onExternalStop =
+        () => container.read(audioProvider.notifier).stopPlayer();
+  }
+
   return container;
 }
 

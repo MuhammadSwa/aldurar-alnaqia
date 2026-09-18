@@ -32,6 +32,12 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
     action: MediaAction.stop,
   );
 
+  /// Routes OS-level stop requests (notification X, swipe-away) through the
+  /// app's [AudioController.stopPlayer], so the mini player hides in sync
+  /// with the notification. Wired once at bootstrap in main.dart; when null,
+  /// [stop] falls back to stopping locally.
+  Future<void> Function()? onExternalStop;
+
   AudioPlayer? _player;
   StreamSubscription<dynamic>? _stateSub;
   StreamSubscription<Duration?>? _durationSub;
@@ -186,6 +192,20 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> stop() async {
+    final external = onExternalStop;
+    if (external != null) {
+      // Single source of truth: the controller stops the player, dismisses
+      // the notification and hides the mini player together.
+      await external();
+      return;
+    }
+    await stopLocally();
+  }
+
+  /// Stops the player and dismisses the notification without touching app
+  /// state. Called by the engine after the controller already reset the UI —
+  /// it must never delegate back to [onExternalStop], that would recurse.
+  Future<void> stopLocally() async {
     // Idempotent: the notification X can arrive when the player is
     // already stopped (e.g. mini player closed first). Still run
     // `super.stop()` so the notification is always dismissed.
