@@ -108,7 +108,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (showAsrWird)
               AppTile(
                 title: 'ورد عصر يوم الجمعة',
-                subtitle: 'يقرأ ما بين عصر الجمعة إلى مغربها',
                 leading: const AppTileLeadingIcon(
                   icon: Icons.wb_sunny_outlined,
                 ),
