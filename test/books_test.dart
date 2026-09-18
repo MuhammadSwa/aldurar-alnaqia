@@ -22,8 +22,9 @@ void main() {
       expect(bookById('no-such-book'), isNull);
     });
 
-    test('every book has a display title and an https url', () {
+    test('every book has a full title, a display title and an https url', () {
       for (final book in books) {
+        expect(book.fullTitle, isNotEmpty);
         expect(book.title, isNotEmpty);
         expect(book.url, startsWith('https://'));
       }

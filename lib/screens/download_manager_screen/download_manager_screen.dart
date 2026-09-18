@@ -8,7 +8,6 @@ import 'package:aldurar_alnaqia/common/widgets/confirm_dialog.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_controller.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
-import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 
 class DownloadManagerTile extends ConsumerWidget {
@@ -21,9 +20,6 @@ class DownloadManagerTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Books carry a descriptive second line; audio items are title-only.
-    final subtitle =
-        item.type == DownloadType.books ? bookById(item.id)?.subtitle : null;
     return DownloadStatusBuilder(
       item: item,
       builder: (context, ref, downloader, isDownloading, isDownloaded) {
@@ -42,11 +38,9 @@ class DownloadManagerTile extends ConsumerWidget {
                 ? null
                 : formatBytes(snapshot.data!);
             return AppTile(
+              // Full name, title-only: it wraps to two lines.
               title: item.title,
-              // Same as the azkar list: audio/book titles are stable
-              // download ids, so long ones wrap instead of truncating.
               maxTitleLines: 2,
-              subtitle: subtitle,
               leading: AppTileLeadingIcon(
                 icon: item.type == DownloadType.books
                     ? Icons.menu_book_rounded

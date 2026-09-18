@@ -177,7 +177,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     ref.read(downloaderProvider).startDownload(
           DownloadItem(
             id: _id,
-            title: _book?.title ?? _id,
+            title: _book?.fullTitle ?? _id,
             url: url,
             type: DownloadType.books,
           ),

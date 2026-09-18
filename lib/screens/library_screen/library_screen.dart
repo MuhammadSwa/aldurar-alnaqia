@@ -49,11 +49,9 @@ class _BookListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // id stays the legacy full title (storage / prefs / downloads key on it);
-    // title is the short display name.
     final item = DownloadItem(
       id: book.id,
-      title: book.title,
+      title: book.fullTitle,
       url: book.url,
       type: DownloadType.books,
     );
@@ -61,8 +59,9 @@ class _BookListTile extends ConsumerWidget {
       item: item,
       builder: (context, ref, downloader, isDownloading, isDownloaded) {
         return AppTile(
-          title: book.title,
-          subtitle: book.subtitle,
+          // Full name, title-only: it wraps to two lines.
+          title: book.fullTitle,
+          maxTitleLines: 2,
           leading: _buildLeadingIcon(
             isDownloading: isDownloading,
             isDownloaded: isDownloaded,
@@ -109,7 +108,7 @@ class _BookListTile extends ConsumerWidget {
         ref.read(downloaderProvider).startDownload(
               DownloadItem(
                 id: book.id,
-                title: book.title,
+                title: book.fullTitle,
                 url: book.url,
                 type: DownloadType.books,
               ),
@@ -127,7 +126,7 @@ class _BookListTile extends ConsumerWidget {
       ref: ref,
       item: DownloadItem(
         id: book.id,
-        title: book.title,
+        title: book.fullTitle,
         url: book.url,
         type: DownloadType.books,
       ),

@@ -28,12 +28,12 @@ class DownloadManagerData {
   }
 
   static List<DownloadItem> loadBookItems() {
-    // id stays the legacy full title (storage / prefs key on it);
-    // title is the short display name.
+    // id is the slug (storage / prefs key on it);
+    // title is the full display name.
     return books.map((book) {
       return DownloadItem(
         id: book.id,
-        title: book.title,
+        title: book.fullTitle,
         url: book.url,
         type: DownloadType.books,
       );
