@@ -35,14 +35,18 @@ class BaytWidget extends StatelessWidget {
               children: [
                 Expanded(
                   child: ZikrInlineText(
-                      text: sadr,
-                      fontSize: fontSize,
-                      textAlign: TextAlign.right,),
+                    text: sadr,
+                    fontSize: fontSize,
+                    textAlign: TextAlign.right,
+                  ),
                 ),
                 const SizedBox(width: 28),
                 Expanded(
                   child: ZikrInlineText(
-                      text: ajz, fontSize: fontSize, textAlign: TextAlign.left,),
+                    text: ajz,
+                    fontSize: fontSize,
+                    textAlign: TextAlign.left,
+                  ),
                 ),
               ],
             ),
@@ -52,10 +56,16 @@ class BaytWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ZikrInlineText(
-                text: sadr, fontSize: fontSize, textAlign: TextAlign.right,),
+              text: sadr,
+              fontSize: fontSize,
+              textAlign: TextAlign.right,
+            ),
             const SizedBox(height: 2),
             ZikrInlineText(
-                text: ajz, fontSize: fontSize, textAlign: TextAlign.left,),
+              text: ajz,
+              fontSize: fontSize,
+              textAlign: TextAlign.left,
+            ),
           ],
         );
       },

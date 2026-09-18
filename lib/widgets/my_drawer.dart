@@ -41,6 +41,20 @@ class MyDrawer extends StatelessWidget {
             const FontSizeSettingsWidget(
               cardStyle: SettingsCardStyle.outlined,
             ),
+
+            _buildDrawerItem(
+              context: context,
+              icon: Icon(
+                Icons.cloud_download_rounded,
+                color: colorScheme.onSecondaryContainer,
+                size: 20,
+              ),
+              title: 'إدارة التحميلات',
+              onTap: () {
+                Navigator.pop(context);
+                AppNav.goToDownloadManager(context, 0);
+              },
+            ),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Divider(height: 1),
@@ -148,19 +162,6 @@ class MyDrawer extends StatelessWidget {
             //         builder: (_) => const TileSeparatorLabScreen(),
             //       ),
             //     );
-            //   },
-            // ),
-            // _buildDrawerItem(
-            //   context: context,
-            //   icon: Icon(
-            //     Icons.cloud_download_rounded,
-            //     color: colorScheme.onSecondaryContainer,
-            //     size: 20,
-            //   ),
-            //   title: 'إدارة التحميلات',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     AppNav.goToDownloadManager(context, 0);
             //   },
             // ),
           ],

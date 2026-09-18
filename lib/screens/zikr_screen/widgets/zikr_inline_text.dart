@@ -41,7 +41,8 @@ class ZikrInlineText extends StatelessWidget {
   static final RegExp _sourcePattern = RegExp(
     r'\[[\u0600-\u06FF\s]+:[^\]]+[0-9\u0660-\u0669\u06F0-\u06F9]\]|\[تقرأ مرة واحدة للمتعجل\]',
   );
-  static final RegExp _numberingPattern = RegExp(r'^[0-9/]+\.', multiLine: true);
+  static final RegExp _numberingPattern =
+      RegExp(r'^[0-9/]+\.', multiLine: true);
 
   @override
   Widget build(BuildContext context) {

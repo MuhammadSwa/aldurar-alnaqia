@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,8 +38,18 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
 
   void _updateCurrentZikr(int index) {
     _currentId = widget.zikrIds[index];
-    _currentZikr =
-        resolveZikr(_currentId) ?? zikrById.values.first;
+    _currentZikr = resolveZikr(_currentId) ?? zikrById.values.first;
+  }
+
+  /// Playlist for continuous playback: every list item that has audio, in
+  /// slide order. The controller plays local files first and streams the
+  /// rest automatically.
+  List<AudioTrack> _audioQueue() {
+    return [
+      for (final id in widget.zikrIds)
+        if (resolveZikr(id) case final Zikr z when z.hasAudio)
+          AudioTrack(id: z.id, title: z.title, remoteUrl: z.url!),
+    ];
   }
 
   @override
@@ -53,11 +64,14 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
       appBar: AppBar(
         title: Text(_currentZikr.title),
         actions: [
-          // The action button updates reactively based on the current Zikr
+          // The action button updates reactively based on the current Zikr.
+          // The full slide order is passed as a queue so the mini player
+          // can auto-advance through it.
           PlayAudioBtnZikrPage(
             id: _currentZikr.id,
             title: _currentZikr.title,
             url: _currentZikr.url,
+            queue: _audioQueue(),
           ),
         ],
       ),
@@ -118,8 +132,10 @@ class ZikrScreen extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(title: Text(zikrId)),
         body: const Center(
-          child: Text('لم يتم العثور على هذا الذكر',
-              style: TextStyle(fontSize: 18),),
+          child: Text(
+            'لم يتم العثور على هذا الذكر',
+            style: TextStyle(fontSize: 18),
+          ),
         ),
       );
     }
@@ -162,8 +178,7 @@ class ZikrContentWidget extends ConsumerWidget {
     final blocks = blocksForZikr(id: zikr.id, content: zikr.content);
     final hasNotes = zikr.notes != '';
     final hasFooter = zikr.footer != '';
-    final itemCount =
-        blocks.length + (hasNotes ? 1 : 0) + (hasFooter ? 1 : 0);
+    final itemCount = blocks.length + (hasNotes ? 1 : 0) + (hasFooter ? 1 : 0);
 
     // Lazily built: only visible paragraphs run regex styling + layout.
     // Previously SingleChildScrollView + Column built all N blocks upfront.
