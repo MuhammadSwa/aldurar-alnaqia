@@ -1,4 +1,6 @@
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/swipe_hint_dialog.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +36,24 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
     final safeIndex = widget.initialIndex.clamp(0, widget.zikrIds.length - 1);
     _pageController = PageController(initialPage: safeIndex);
     _updateCurrentZikr(safeIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSwipeHint());
+  }
+
+  /// Shows the hand-slide onboarding once, the first time the user opens a
+  /// collection with more than one zikr to swipe through.
+  Future<void> _maybeShowSwipeHint() async {
+    if (!mounted || widget.zikrIds.length < 2) return;
+    if (!SharedPreferencesService.isInitialized) return;
+    if (SharedPreferencesService.getSwipeHintSeen()) return;
+    await SharedPreferencesService.setSwipeHintSeen(true);
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => SwipeHintDialog(
+        onDismiss: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
   }
 
   void _updateCurrentZikr(int index) {

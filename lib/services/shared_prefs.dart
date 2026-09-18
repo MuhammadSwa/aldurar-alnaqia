@@ -30,6 +30,7 @@ abstract final class PrefsKeys {
   static const String fileOpenAction = 'file_open_action';
   static const String prayerForegroundEnabled = 'prayer_foreground_enabled';
   static const String prayerNativeConfig = 'prayer_native_config';
+  static const String swipeHintSeen = 'swipe_hint_seen';
 
   static String pdfLastPage(String title) => 'pdf_last_page_$title';
 }
@@ -368,6 +369,16 @@ class AppearancePrefs {
     final ok = await _prefs.setString(PrefsKeys.fileOpenAction, action);
     if (!ok) logWarn('Failed to persist file open action "$action"');
   }
+
+  /// First-run swipe hint for slidable zikr collections. False until the
+  /// user has seen/dismissed the hand-slide onboarding once.
+  bool getSwipeHintSeen() =>
+      _prefs.getBool(PrefsKeys.swipeHintSeen) ?? false;
+
+  Future<void> setSwipeHintSeen(bool seen) async {
+    final ok = await _prefs.setBool(PrefsKeys.swipeHintSeen, seen);
+    if (!ok) logWarn('Failed to persist swipe hint flag');
+  }
 }
 
 /// Per-book PDF reading positions.
@@ -555,6 +566,12 @@ class SharedPreferencesService {
 
   static Future<void> setFileOpenAction(String action) =>
       _require().appearance.setFileOpenAction(action);
+
+  static bool getSwipeHintSeen() =>
+      _require().appearance.getSwipeHintSeen();
+
+  static Future<void> setSwipeHintSeen(bool seen) =>
+      _require().appearance.setSwipeHintSeen(seen);
 
   // --- PDF shims ---
 
