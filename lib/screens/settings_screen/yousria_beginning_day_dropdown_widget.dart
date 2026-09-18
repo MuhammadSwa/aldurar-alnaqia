@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart'; // <-- add this
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/setting_popup_tile.dart';
@@ -34,9 +35,17 @@ class YousriaBeginningDayDropDown extends ConsumerWidget {
       values: const [1, 2, 3, 4, 5, 6],
       labelFor: (day) => yousriaDayZikr(day).title,
       cardStyle: cardStyle,
-      onSelected: (day) => ref
-          .read(yousriaBeginningProvider.notifier)
-          .setBeginning(impliedStartForDay(day)),
+      onSelected: (day) {
+        ref
+            .read(yousriaBeginningProvider.notifier)
+            .setBeginning(impliedStartForDay(day));
+        if (!context.mounted) return;
+        showSnackBar(
+          context,
+          'تم إعداد أيام الصلوات اليسرية. ستتوالى بقية الأيام تلقائيًا.',
+          duration: const Duration(seconds: 4),
+        );
+      },
     );
   }
 }
