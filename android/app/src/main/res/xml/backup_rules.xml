@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto Backup / full backup rules: downloaded books and narrations are
+     re-downloadable, so they must not consume the user's backup quota.
+     getApplicationSupportDirectory() maps to the files dir (domain "file"). -->
+<full-backup-content>
+    <exclude domain="file" path="books/" />
+    <exclude domain="file" path="narrations/" />
+</full-backup-content>

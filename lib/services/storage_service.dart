@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:aldurar_alnaqia/models/download_models.dart';
@@ -7,8 +8,14 @@ import 'package:aldurar_alnaqia/models/download_models.dart';
 /// StorageService centralizes where we keep persistent files
 /// (e.g., downloaded books and narrations) under the app's
 /// Application Support directory, and ensures subfolders exist.
+///
+/// Download folders hold re-downloadable content, so they are excluded from
+/// OS backups: `isExcludedFromBackup` on iOS (via the `app/storage` channel)
+/// and `backup_rules.xml` on Android.
 class StorageService {
   late final String supportDirPath;
+
+  static const _backupChannel = MethodChannel('app/storage');
 
   Future<StorageService> init() async {
     final supportDir = await getApplicationSupportDirectory();
@@ -27,6 +34,19 @@ class StorageService {
     final dir = Directory(path);
     if (!await dir.exists()) {
       await dir.create(recursive: true);
+    }
+    // Re-applied every launch so pre-existing installs get excluded too.
+    await _excludeFromBackup(path);
+  }
+
+  /// Best-effort iCloud backup exclusion (iOS only). Never throws: tests and
+  /// unsupported hosts simply skip it.
+  Future<void> _excludeFromBackup(String path) async {
+    if (!Platform.isIOS) return;
+    try {
+      await _backupChannel.invokeMethod('excludeFromBackup', {'path': path});
+    } catch (_) {
+      // Exclusion is an optimization, not a requirement.
     }
   }
 

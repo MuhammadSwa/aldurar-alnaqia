@@ -93,7 +93,14 @@ class DownloaderService {
       case TaskStatus.failed:
       case TaskStatus.notFound:
         _retireProgressNotifier(taskId);
-        if (type != null) _fileStatusCache[_statusKey(taskId, type)] = false;
+        // A failed/canceled task can leave a partial file behind; without
+        // cleanup a later exists() check would mistake it for a download.
+        if (type != null) {
+          _fileStatusCache[_statusKey(taskId, type)] = false;
+          if (update.status != TaskStatus.notFound) {
+            unawaited(_deletePartial(taskId, type));
+          }
+        }
         changed = true;
         break;
       case TaskStatus.enqueued:
@@ -177,9 +184,22 @@ class DownloaderService {
     } catch (e, st) {
       logError('Failed to cancel download "$id"', e, st);
     }
+    // The native side may leave a partial file; remove it so exists()
+    // never reports a canceled download as complete.
+    await _deletePartial(id, type);
     _retireProgressNotifier(id);
     _fileStatusCache[_statusKey(id, type)] = false;
     _bumpStatusRevision();
+  }
+
+  /// Deletes a leftover partial file, if any. Best-effort: never throws.
+  Future<void> _deletePartial(String id, DownloadType type) async {
+    try {
+      final file = File(_getFilePath(id, type));
+      if (await file.exists()) await file.delete();
+    } catch (e, st) {
+      logError('Failed to delete partial file "$id"', e, st);
+    }
   }
 
   Future<void> deleteFile(String id, DownloadType type) async {
