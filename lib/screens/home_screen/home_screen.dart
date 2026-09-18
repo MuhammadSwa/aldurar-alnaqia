@@ -11,6 +11,8 @@ import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -30,10 +32,17 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final islamicWeekday =
-        ref.watch(prayerViewProvider.select((view) => view?.weekday)) ??
-            DateTime.now().weekday;
+    // Full view (not just weekday): the Friday Hadra / Asr-wird gates need
+    // today's Dhuhr + Asr times, and watching the view rebuilds this screen
+    // at every prayer boundary via the nudge timer (Dhuhr show, Asr show,
+    // Maghrib hide when the Islamic weekday flips to Saturday).
+    final view = ref.watch(prayerViewProvider);
+    final islamicWeekday = view?.weekday ?? DateTime.now().weekday;
     final dayIndex = islamicWeekday - 1;
+
+    final fridayTiles = _fridayTilesVisibility(view);
+    final showHadra = fridayTiles.showHadra;
+    final showAsrWird = fridayTiles.showAsrWird;
 
     return Scaffold(
       appBar: AppBar(
@@ -80,6 +89,36 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               onTap: () => const TodaysZikrTarget().go(context),
             ),
+            // Friday-only tiles, prayer-gated. Hadra from Dhuhr, Asr wird
+            // from Asr; both vanish at Maghrib when the Islamic weekday
+            // flips to Saturday (same rollover as the tiles above).
+            // Unconfigured (view == null): hidden — without Dhuhr/Asr times
+            // there is no correct gate, so never guess.
+            if (showHadra)
+              AppTile(
+                title: 'الحضرة الصديقية',
+                leading: const AppTileLeadingIcon(
+                  icon: Icons.groups_rounded,
+                ),
+                onTap: () => const ZikrCollectionViewTarget(
+                  ZikrBranch.home,
+                  collection: 'hadra',
+                ).go(context),
+              ),
+            if (showAsrWird)
+              AppTile(
+                title: 'ورد عصر يوم الجمعة',
+                subtitle: 'يقرأ ما بين عصر الجمعة إلى مغربها',
+                leading: const AppTileLeadingIcon(
+                  icon: Icons.wb_sunny_outlined,
+                ),
+                onTap: () => AppNav.goToZikr(
+                  context,
+                  ZikrBranch.home,
+                  'wird-asr-jumua',
+                ),
+              ),
+
             AppTile(
               title: 'دلائل الخيرات',
               subtitle: 'ورد يوم ${arabicWeekdays[dayIndex]}',
@@ -118,6 +157,60 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
+}
+
+/// Friday-only home tiles visibility. Pure for tests.
+class FridayTilesVisibility {
+  final bool showHadra;
+  final bool showAsrWird;
+  const FridayTilesVisibility({
+    required this.showHadra,
+    required this.showAsrWird,
+  });
+}
+
+FridayTilesVisibility fridayTilesVisibility({
+  required int islamicWeekday,
+  required DateTime now,
+  required DateTime? dhuhr,
+  required DateTime? asr,
+}) {
+  if (islamicWeekday != DateTime.friday) {
+    return const FridayTilesVisibility(
+      showHadra: false,
+      showAsrWird: false,
+    );
+  }
+  if (dhuhr == null || asr == null) {
+    return const FridayTilesVisibility(
+      showHadra: false,
+      showAsrWird: false,
+    );
+  }
+  final showHadra = !now.isBefore(dhuhr);
+  final showAsrWird = !now.isBefore(asr);
+  return FridayTilesVisibility(
+    showHadra: showHadra,
+    showAsrWird: showAsrWird,
+  );
+}
+
+FridayTilesVisibility _fridayTilesVisibility(PrayerView? view) {
+  if (view == null) {
+    return const FridayTilesVisibility(
+      showHadra: false,
+      showAsrWird: false,
+    );
+  }
+  // Live clock (not view.today): a rebuild triggered by e.g. a bookmark
+  // change must still gate on the actual instant, not a stale snapshot.
+  final now = tz.TZDateTime.now(view.schedule.civilDate.location);
+  return fridayTilesVisibility(
+    islamicWeekday: view.weekday,
+    now: now,
+    dhuhr: view.schedule.events[PrayerEventId.dhuhr]?.time,
+    asr: view.schedule.events[PrayerEventId.asr]?.time,
+  );
 }
 
 class BookmarksTilesHomeScreen extends ConsumerWidget {
