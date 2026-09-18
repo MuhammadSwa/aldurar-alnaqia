@@ -47,10 +47,11 @@ class DownloadManagerTile extends ConsumerWidget {
                     : Icons.audiotrack_rounded,
               ),
               trailing: SizedBox(
-                width: 100,
+                width: 104,
                 // Every state shares one footprint: a 48-high action row
-                // end-aligned in the same 100px slot, so starting/cancelling
-                // a download never moves the icon (or the title).
+                // end-aligned in the same slot. The circle sits exactly
+                // where the download/delete icon sat; the X appears beside
+                // it, so nothing already on screen ever moves.
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -157,10 +158,16 @@ class _DownloadProgressIndicator extends ConsumerWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            // Circle first, cancel last: the X lands on the exact pixels
+            // X first, circle last: the circle lands on the exact pixels
             // the download/delete icon occupies in the other states.
+            IconButton(
+              onPressed: onCancel,
+              icon: const Icon(Icons.cancel_outlined, size: 20),
+              tooltip: 'إلغاء التحميل',
+            ),
+            const SizedBox(width: 8),
             SizedBox(
-              width: 44,
+              width: 48,
               height: 48,
               child: Center(
                 child: Stack(
@@ -174,12 +181,6 @@ class _DownloadProgressIndicator extends ConsumerWidget {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: onCancel,
-              icon: const Icon(Icons.cancel_outlined, size: 20),
-              tooltip: 'إلغاء التحميل',
             ),
           ],
         );
