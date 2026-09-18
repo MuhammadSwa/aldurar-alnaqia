@@ -84,8 +84,10 @@ AudioTrack trackFor({String id = 'zikr-1'}) => AudioTrack(
       remoteUrl: 'https://archive.org/download/x/$id.mp3',
     );
 
-ProviderContainer makeContainer(FakeEngine engine,
-    {StorageService? storage,}) {
+ProviderContainer makeContainer(
+  FakeEngine engine, {
+  StorageService? storage,
+}) {
   return ProviderContainer(
     overrides: [
       audioEngineProvider.overrideWithValue(engine),
@@ -128,11 +130,13 @@ void main() {
     addTearDown(container.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
-    engine.emit(const EngineProgress(
-      position: Duration(seconds: 5),
-      buffered: Duration(seconds: 30),
-      duration: Duration(minutes: 20),
-    ),);
+    engine.emit(
+      const EngineProgress(
+        position: Duration(seconds: 5),
+        buffered: Duration(seconds: 30),
+        duration: Duration(minutes: 20),
+      ),
+    );
     await Future<void>.delayed(Duration.zero);
 
     final state = container.read(audioProvider);
@@ -189,14 +193,16 @@ void main() {
     }
 
     final engine = FakeEngine()..failNextLoads = 1;
-    final container =
-        makeContainer(engine, storage: storageWithLocal());
+    final container = makeContainer(engine, storage: storageWithLocal());
     addTearDown(container.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
 
-    expect(engine.loads, hasLength(2),
-        reason: 'local attempt + one remote fallback',);
+    expect(
+      engine.loads,
+      hasLength(2),
+      reason: 'local attempt + one remote fallback',
+    );
     expect(engine.loads[0].isLocal, isTrue);
     expect(engine.loads[1].isLocal, isFalse);
     expect(container.read(audioProvider).status, isNot(AudioStatus.error));
@@ -288,9 +294,9 @@ void main() {
     addTearDown(container.dispose);
 
     await container.read(audioProvider.notifier).playTrack(
-          trackFor(id: 'zikr-1'),
-          queue: [trackFor(id: 'zikr-2')],
-        );
+      trackFor(id: 'zikr-1'),
+      queue: [trackFor(id: 'zikr-2')],
+    );
 
     final state = container.read(audioProvider);
     expect(state.track?.id, 'zikr-1');
