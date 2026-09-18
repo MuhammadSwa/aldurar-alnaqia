@@ -47,7 +47,10 @@ class ZikrListViewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppTile(
+      // Two lines: zikr titles are stable ids (search, bookmarks, audio,
+      // downloads) so they can't be shortened — long ones wrap instead.
       title: displayTitle(zikrId, title),
+      maxTitleLines: 2,
       leading: BookmarkButton(bookmarkId: zikrId),
       onTap: () => target.go(context),
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
