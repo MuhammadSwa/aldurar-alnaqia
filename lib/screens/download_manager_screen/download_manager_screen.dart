@@ -43,6 +43,9 @@ class DownloadManagerTile extends ConsumerWidget {
                 : formatBytes(snapshot.data!);
             return AppTile(
               title: item.title,
+              // Same as the azkar list: audio/book titles are stable
+              // download ids, so long ones wrap instead of truncating.
+              maxTitleLines: 2,
               subtitle: subtitle,
               leading: AppTileLeadingIcon(
                 icon: item.type == DownloadType.books

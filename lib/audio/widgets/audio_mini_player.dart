@@ -78,7 +78,11 @@ class _TitleBar extends ConsumerWidget {
             child: Text(
               title,
               textAlign: TextAlign.center,
-              maxLines: 1,
+              // Same call as the azkar/download tiles: track titles are
+              // stable ids, so long ones wrap. No marquee: it needs a
+              // ticker dependency, fights RTL scroll direction, and harms
+              // readability/motion-sensitive users for a glanceable bar.
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: colorScheme.onSecondaryContainer,
@@ -178,9 +182,10 @@ class _TransportRow extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // icons for RTL, this is not a bug
               if (hasQueue) ...[
                 _SkipButton(
-                  icon: Icons.skip_previous,
+                  icon: Icons.skip_next,
                   tooltip: 'السابق',
                   onPressed: hasPrevious
                       ? () => ref.read(audioProvider.notifier).playPrevious()
@@ -204,7 +209,7 @@ class _TransportRow extends ConsumerWidget {
               if (hasQueue) ...[
                 const SizedBox(width: 4),
                 _SkipButton(
-                  icon: Icons.skip_next,
+                  icon: Icons.skip_previous,
                   tooltip: 'التالي',
                   onPressed: hasNext
                       ? () => ref.read(audioProvider.notifier).playNext()
