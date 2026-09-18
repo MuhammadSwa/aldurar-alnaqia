@@ -54,8 +54,12 @@ class DownloadManagerTile extends ConsumerWidget {
               ),
               trailing: SizedBox(
                 width: 100,
+                // Every state shares one footprint: a 48-high action row
+                // end-aligned in the same 100px slot, so starting/cancelling
+                // a download never moves the icon (or the title).
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Builder(
                       builder: (context) {
@@ -159,21 +163,29 @@ class _DownloadProgressIndicator extends ConsumerWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // Circle first, cancel last: the X lands on the exact pixels
+            // the download/delete icon occupies in the other states.
+            SizedBox(
+              width: 44,
+              height: 48,
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(value: progress),
+                    Text(
+                      '${(progress * 100).toInt()}%',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
             IconButton(
               onPressed: onCancel,
               icon: const Icon(Icons.cancel_outlined, size: 20),
               tooltip: 'إلغاء التحميل',
-            ),
-            const SizedBox(width: 8),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(value: progress),
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
             ),
           ],
         );

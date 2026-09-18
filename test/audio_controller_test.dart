@@ -27,6 +27,9 @@ class FakeEngine implements AudioEngine {
   /// How many times [stop] was called (ghost-audio detection).
   int stops = 0;
 
+  /// Optional hook to stall stop while another command is issued.
+  Future<void> Function()? stopGate;
+
   @override
   Stream<EngineEvent> get events => _controller.stream;
 
@@ -54,6 +57,8 @@ class FakeEngine implements AudioEngine {
   @override
   Future<void> stop() async {
     stops++;
+    final gate = stopGate;
+    if (gate != null) await gate();
   }
 
   int disposed = 0;
@@ -245,6 +250,52 @@ void main() {
     expect(state.isVisible, isFalse);
     expect(state.track, isNull);
     expect(state.speed, 1.0, reason: 'speed preference survives stops');
+  });
+
+  test('a finishing stop cannot clear a newer track', () async {
+    final engine = FakeEngine();
+    final container = makeContainer(engine);
+    addTearDown(container.dispose);
+    final notifier = container.read(audioProvider.notifier);
+
+    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+
+    final stopGate = Completer<void>();
+    engine.stopGate = () => stopGate.future;
+    final stopping = notifier.stopPlayer();
+    expect(container.read(audioProvider).isVisible, isFalse,
+        reason: 'close should update the UI without waiting for the platform');
+
+    await notifier.playTrack(trackFor(id: 'zikr-2'));
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+
+    stopGate.complete();
+    await stopping;
+
+    final state = container.read(audioProvider);
+    expect(state.isVisible, isTrue);
+    expect(state.status, AudioStatus.playing);
+    expect(state.track?.id, 'zikr-2');
+  });
+
+  test('a queue missing its selected track becomes standalone playback',
+      () async {
+    final engine = FakeEngine();
+    final container = makeContainer(engine);
+    addTearDown(container.dispose);
+
+    await container.read(audioProvider.notifier).playTrack(
+          trackFor(id: 'zikr-1'),
+          queue: [trackFor(id: 'zikr-2')],
+        );
+
+    final state = container.read(audioProvider);
+    expect(state.track?.id, 'zikr-1');
+    expect(state.hasQueue, isFalse);
+    expect(state.queueIndex, -1);
   });
 
   test('a superseded skip load failure cannot hide the newer track', () async {

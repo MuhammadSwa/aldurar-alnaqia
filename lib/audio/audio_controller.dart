@@ -64,10 +64,19 @@ class AudioController extends Notifier<AudioState> {
       await _loadTrack(track, queue: const <AudioTrack>[], queueIndex: -1);
     } else {
       final index = queue.indexWhere((t) => t.id == track.id);
+      // A queue is only useful when it actually contains the selected item.
+      // Treat malformed caller input as a normal standalone playback rather
+      // than starting at index zero and showing controls for a different
+      // track. This also keeps the controller safe for future call sites.
+      if (index < 0) {
+        logWarn('Audio queue does not contain track "${track.id}"');
+        await _loadTrack(track, queue: const <AudioTrack>[], queueIndex: -1);
+        return;
+      }
       await _loadTrack(
         track,
         queue: List<AudioTrack>.unmodifiable(queue),
-        queueIndex: index >= 0 ? index : 0,
+        queueIndex: index,
       );
     }
   }
@@ -158,8 +167,11 @@ class AudioController extends Notifier<AudioState> {
     // state (or leave ghost audio) after the close.
     _loadGeneration++;
     _currentRequest = null;
-    await _engine.stop();
+    // Hide the player before awaiting platform work. Aside from making close
+    // responsive, this prevents a previously requested stop from resetting
+    // state after the user has already started another track.
     state = AudioState(speed: state.speed, autoAdvance: state.autoAdvance);
+    await _engine.stop();
   }
 
   Future<void> seek(Duration position) async {
@@ -274,6 +286,11 @@ class AudioController extends Notifier<AudioState> {
   }
 
   void _onPlaybackState(EnginePlaybackState engineState) {
+    // After an explicit stop, native callbacks from the source being torn
+    // down may still arrive. There is no track left for them to describe, so
+    // they must not revive a stopped controller state.
+    if (state.track == null) return;
+
     switch (engineState) {
       case EnginePlaybackState.buffering:
         if (state.track != null && state.status != AudioStatus.error) {
