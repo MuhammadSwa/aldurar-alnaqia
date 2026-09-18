@@ -12,10 +12,10 @@ import 'package:path_provider/path_provider.dart';
 /// and delivers results via task callbacks — overkill and racy for a simple
 /// open-and-preview flow with inline progress reporting.
 class BookTempLoader {
-  /// Temp cache file for [title]'s online preview.
-  static Future<File> tempFile(String title) async {
+  /// Temp cache file for [id]'s online preview.
+  static Future<File> tempFile(String id) async {
     final dir = await getTemporaryDirectory();
-    return File('${dir.path}/online_${title.hashCode}.pdf');
+    return File('${dir.path}/online_${id.hashCode}.pdf');
   }
 
   /// Downloads [url] to the temp dir, reporting progress via [onProgress].
@@ -26,11 +26,11 @@ class BookTempLoader {
   /// on non-200 responses.
   static Future<File> downloadToTemp({
     required String url,
-    required String title,
+    required String id,
     required void Function(int received, int? total) onProgress,
     bool fresh = false,
   }) async {
-    final file = await tempFile(title);
+    final file = await tempFile(id);
 
     if (!fresh && await file.exists() && await file.length() > 0) {
       return file;

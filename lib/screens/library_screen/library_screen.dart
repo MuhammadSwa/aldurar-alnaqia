@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
@@ -18,16 +19,6 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
-  late final List<DownloadItem> bookItems = booksTitles.entries.map((entry) {
-    return DownloadItem(
-      // Use the book title as the unique and consistent ID
-      id: entry.key,
-      title: entry.key,
-      url: entry.value,
-      type: DownloadType.books,
-    );
-  }).toList();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,10 +32,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         ),
       ),
       body: ListView.builder(
-        itemCount: bookItems.length,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: books.length,
         itemBuilder: (context, index) {
-          final bookItem = bookItems[index];
-          return _BookListTile(item: bookItem);
+          return _BookListTile(book: books[index]);
         },
       ),
     );
@@ -52,28 +43,32 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 }
 
 class _BookListTile extends ConsumerWidget {
-  const _BookListTile({required this.item});
+  const _BookListTile({required this.book});
 
-  final DownloadItem item;
+  final BookInfo book;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // id stays the legacy full title (storage / prefs / downloads key on it);
+    // title is the short display name.
+    final item = DownloadItem(
+      id: book.id,
+      title: book.title,
+      url: book.url,
+      type: DownloadType.books,
+    );
     return DownloadStatusBuilder(
       item: item,
       builder: (context, ref, downloader, isDownloading, isDownloaded) {
-        return ListTile(
-          title: Text(
-            item.title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+        return AppTile(
+          title: book.title,
+          subtitle: book.subtitle,
           leading: _buildLeadingIcon(
-            context: context,
             isDownloading: isDownloading,
             isDownloaded: isDownloaded,
             progressNotifier: downloader.progressNotifierFor(item.id),
             onCancel: () => downloader.cancelDownload(item.id, item.type),
           ),
-          trailing: const Icon(Icons.chevron_right),
           onTap: () => _handleTap(context, ref, isDownloaded),
         );
       },
@@ -81,7 +76,6 @@ class _BookListTile extends ConsumerWidget {
   }
 
   Widget _buildLeadingIcon({
-    required BuildContext context,
     required bool isDownloading,
     required bool isDownloaded,
     required ValueNotifier<double>? progressNotifier,
@@ -91,28 +85,35 @@ class _BookListTile extends ConsumerWidget {
       return DownloadProgressIcon(
         progressNotifier: progressNotifier,
         onCancel: onCancel,
+        size: 42,
       );
     }
 
-    return Icon(
-      isDownloaded ? Icons.menu_book_sharp : Icons.cloud_outlined,
-      size: 30,
+    return AppTileLeadingIcon(
+      icon: isDownloaded ? Icons.menu_book_rounded : Icons.cloud_outlined,
     );
   }
 
   void _handleTap(BuildContext context, WidgetRef ref, bool isDownloaded) {
     if (isDownloaded) {
       // Open viewer; it will auto-restore last page.
-      AppNav.goToPdfViewer(context, item.title);
+      AppNav.goToPdfViewer(context, book.id);
       return;
     }
     final action = ref.read(fileOpenActionProvider);
     switch (action) {
       case FileOpenAction.open:
-        AppNav.goToPdfViewer(context, item.title);
+        AppNav.goToPdfViewer(context, book.id);
         break;
       case FileOpenAction.download:
-        ref.read(downloaderProvider).startDownload(item);
+        ref.read(downloaderProvider).startDownload(
+              DownloadItem(
+                id: book.id,
+                title: book.title,
+                url: book.url,
+                type: DownloadType.books,
+              ),
+            );
         break;
       case FileOpenAction.ask:
         _showDownloadOptionsDialog(context, ref);
@@ -124,8 +125,13 @@ class _BookListTile extends ConsumerWidget {
     showStreamOrDownloadDialog(
       context: context,
       ref: ref,
-      item: item,
-      onOpen: () => AppNav.goToPdfViewer(context, item.title),
+      item: DownloadItem(
+        id: book.id,
+        title: book.title,
+        url: book.url,
+        type: DownloadType.books,
+      ),
+      onOpen: () => AppNav.goToPdfViewer(context, book.id),
     );
   }
 }

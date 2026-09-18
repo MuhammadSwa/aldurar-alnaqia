@@ -19,11 +19,11 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 /// Simple book reader: opens the downloaded file when it exists, otherwise
 /// downloads the PDF to a temp file with progress and opens it.
 ///
-/// Remembers the last page per book title in [SharedPreferencesService].
+/// Remembers the last page per book in [SharedPreferencesService].
 class BookViewerScreen extends ConsumerStatefulWidget {
-  const BookViewerScreen({super.key, required this.title});
+  const BookViewerScreen({super.key, required this.bookId});
 
-  final String title;
+  final String bookId;
 
   @override
   ConsumerState<BookViewerScreen> createState() => _BookViewerScreenState();
@@ -38,8 +38,9 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   int _receivedBytes = 0;
   int? _totalBytes;
 
-  String get _title => widget.title;
-  String? get _url => booksTitles[_title];
+  String get _id => widget.bookId;
+  BookInfo? get _book => bookById(_id);
+  String? get _url => _book?.url;
 
   @override
   void initState() {
@@ -75,10 +76,10 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       late final PdfDocument document;
       var isLocal = false;
 
-      if (await storage.exists(DownloadType.books, _title)) {
+      if (await storage.exists(DownloadType.books, _id)) {
         isLocal = true;
         document = await PdfDocument.openFile(
-            storage.pathFor(DownloadType.books, _title),);
+            storage.pathFor(DownloadType.books, _id),);
       } else {
         // NOTE: temp previews intentionally stay on foreground HttpClient via
         // [BookTempLoader] and do NOT use `background_downloader`. The offline
@@ -97,14 +98,14 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
           }
         }
 
-        final cached = await BookTempLoader.tempFile(_title);
+        final cached = await BookTempLoader.tempFile(_id);
         final useCache = !freshDownload &&
             await cached.exists() &&
             await cached.length() > 0;
         if (useCache) {
           final file = await BookTempLoader.downloadToTemp(
             url: url,
-            title: _title,
+            id: _id,
             fresh: freshDownload,
             onProgress: onProgress,
           );
@@ -114,7 +115,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
           try {
             final file = await BookTempLoader.downloadToTemp(
               url: url,
-              title: _title,
+              id: _id,
               fresh: freshDownload,
               onProgress: onProgress,
             );
@@ -130,7 +131,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
         return;
       }
 
-      final lastPage = SharedPreferencesService.getPdfLastPage(_title) ?? 1;
+      final lastPage = SharedPreferencesService.getPdfLastPage(_id) ?? 1;
       final controller = PdfControllerPinch(
         document: Future.value(document),
         initialPage: lastPage,
@@ -159,7 +160,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     // State disposes (children unmount first), crashing with Null check.
     final page = _controller?.pageListenable.value;
     if (page != null && page > 0) {
-      unawaited(SharedPreferencesService.setPdfLastPage(_title, page));
+      unawaited(SharedPreferencesService.setPdfLastPage(_id, page));
     }
   }
 
@@ -175,8 +176,8 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     if (url == null) return;
     ref.read(downloaderProvider).startDownload(
           DownloadItem(
-            id: _title,
-            title: _title,
+            id: _id,
+            title: _book?.title ?? _id,
             url: url,
             type: DownloadType.books,
           ),
@@ -237,7 +238,10 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_title, overflow: TextOverflow.ellipsis),
+          title: Text(
+            _book?.title ?? _id,
+            overflow: TextOverflow.ellipsis,
+          ),
           actions: [
             if (_controller != null)
               _PagePill(controller: _controller!, onTap: _showJumpToPage),
@@ -262,7 +266,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       controller: controller,
       padding: 8,
       onPageChanged: (page) =>
-          unawaited(SharedPreferencesService.setPdfLastPage(_title, page)),
+          unawaited(SharedPreferencesService.setPdfLastPage(_id, page)),
       onDocumentLoaded: (_) => setState(() {}),
       onDocumentError: (error) => setState(() => _error = error),
       documentLoaderBuilder: _buildLoading,

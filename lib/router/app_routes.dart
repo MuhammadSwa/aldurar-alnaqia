@@ -106,8 +106,8 @@ class AppRoutes {
   static String downloadManager(int tabIndex) =>
       '${RoutePaths.downloadManager}/$tabIndex';
 
-  static String pdfViewerPath(String bookTitle) =>
-      '${RoutePaths.library}/pdfViewer/$bookTitle';
+  static String pdfViewerPath(String bookId) =>
+      '${RoutePaths.library}/pdfViewer/$bookId';
 }
 
 // ---------------------------------------------------------------------------

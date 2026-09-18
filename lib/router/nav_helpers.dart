@@ -28,11 +28,11 @@ class AppNav {
     context.push(AppRoutes.downloadManager(tabIndex));
   }
 
-  static void goToPdfViewer(BuildContext context, String bookTitle) {
-    // Named route so go_router percent-encodes the Arabic title exactly once.
+  static void goToPdfViewer(BuildContext context, String bookId) {
+    // Named route so go_router percent-encodes the id exactly once.
     context.pushNamed(
       RouteNames.pdfViewer,
-      pathParameters: {'bookTitle': bookTitle},
+      pathParameters: {'bookId': bookId},
     );
   }
 }

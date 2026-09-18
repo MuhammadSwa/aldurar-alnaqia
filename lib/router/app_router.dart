@@ -283,11 +283,11 @@ class AppRouter {
 
   static GoRoute _createPdfViewerRoute() {
     return GoRoute(
-      path: 'pdfViewer/:bookTitle',
+      path: 'pdfViewer/:bookId',
       name: RouteNames.pdfViewer,
       builder: (context, state) {
-        final bookTitle = state.pathParameters['bookTitle']!;
-        return BookViewerScreen(title: bookTitle);
+        final bookId = state.pathParameters['bookId']!;
+        return BookViewerScreen(bookId: bookId);
       },
     );
   }

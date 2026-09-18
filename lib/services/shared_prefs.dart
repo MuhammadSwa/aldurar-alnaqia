@@ -558,9 +558,9 @@ class SharedPreferencesService {
 
   // --- PDF shims ---
 
-  static Future<void> setPdfLastPage(String title, int page) =>
-      _require().pdf.setLastPage(title, page);
+  static Future<void> setPdfLastPage(String bookId, int page) =>
+      _require().pdf.setLastPage(bookId, page);
 
-  static int? getPdfLastPage(String title) =>
-      _require().pdf.getLastPage(title);
+  static int? getPdfLastPage(String bookId) =>
+      _require().pdf.getLastPage(bookId);
 }

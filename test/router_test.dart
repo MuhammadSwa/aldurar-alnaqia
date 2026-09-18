@@ -36,15 +36,14 @@ void main() {
       expect(resolveZikr('ورد الأساس'), isNull);
     });
 
-    test('pdf viewer book title round-trips', () {
-      const bookTitle =
-          'الدرر النقية في أوراد الطريقة اليسرية الصديقية الشاذلية';
+    test('pdf viewer book id round-trips', () {
+      const bookId = 'dorar-awrad';
       final location = router.namedLocation(
         RouteNames.pdfViewer,
-        pathParameters: {'bookTitle': bookTitle},
+        pathParameters: {'bookId': bookId},
       );
       final uri = Uri.parse(location);
-      expect(uri.pathSegments.last, bookTitle);
+      expect(uri.pathSegments.last, bookId);
     });
   });
 

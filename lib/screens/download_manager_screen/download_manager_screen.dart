@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_controller.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 
 class DownloadManagerTile extends ConsumerWidget {
@@ -16,6 +17,9 @@ class DownloadManagerTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Books carry a descriptive second line; audio items are title-only.
+    final subtitle =
+        item.type == DownloadType.books ? bookById(item.id)?.subtitle : null;
     return DownloadStatusBuilder(
       item: item,
       builder: (context, ref, downloader, isDownloading, isDownloaded) {
@@ -24,6 +28,14 @@ class DownloadManagerTile extends ConsumerWidget {
             item.title,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
+          subtitle: subtitle == null
+              ? null
+              : Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
           trailing: SizedBox(
             width: 100,
             child: Builder(
