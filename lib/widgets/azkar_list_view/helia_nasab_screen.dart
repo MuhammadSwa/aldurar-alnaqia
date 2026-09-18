@@ -101,20 +101,21 @@ class TareeqaSanadContent extends StatefulWidget {
 }
 
 class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
-  late final PdfControllerPinch _controller;
+  PdfControllerPinch? _controller;
   bool _showPdf = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = PdfControllerPinch(
+  /// Lazily creates the PDF controller on first request, so opening the
+  /// page (which defaults to text) never reads/decodes the manuscript
+  /// until the user taps «المخطوط».
+  void _ensureController() {
+    _controller ??= PdfControllerPinch(
       document: _openBundledPdf('assets/pdfs/${_sanad.title}.pdf'),
     );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -147,22 +148,29 @@ class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
             ],
             selected: {_showPdf},
             onSelectionChanged: (selection) {
-              setState(() => _showPdf = selection.first);
+              final wantsPdf = selection.first;
+              if (wantsPdf) _ensureController();
+              setState(() => _showPdf = wantsPdf);
             },
           ),
         ),
         Expanded(
-          // NOTE: IndexedStack (not `if/else`) keeps PdfViewPinch mounted
+          // Lazy PDF: before the first tap on «المخطوط» there is no
+          // controller and no PdfViewPinch in the tree, so the manuscript
+          // bytes are never read/decoded on page open. After the first
+          // load, IndexedStack (not `if/else`) keeps PdfViewPinch mounted
           // when switching to text and back. Removing it from the tree
           // detaches its internal state from PdfControllerPinch, so the
-          // document would not reload on return.
-          child: IndexedStack(
-            index: _showPdf ? 0 : 1,
-            children: [
-              AppPdfView(controller: _controller),
-              const ZikrContentWidget(zikrId: 'sanad-tariqa'),
-            ],
-          ),
+          // document would reload on every return.
+          child: _controller == null
+              ? const ZikrContentWidget(zikrId: 'sanad-tariqa')
+              : IndexedStack(
+                  index: _showPdf ? 0 : 1,
+                  children: [
+                    AppPdfView(controller: _controller!),
+                    const ZikrContentWidget(zikrId: 'sanad-tariqa'),
+                  ],
+                ),
         ),
       ],
     );
