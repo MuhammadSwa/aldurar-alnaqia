@@ -9,7 +9,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation_method_info.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Reusable prayer-settings editor (location + madhab + method).

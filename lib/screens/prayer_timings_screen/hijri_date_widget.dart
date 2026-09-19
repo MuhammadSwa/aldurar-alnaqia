@@ -1,5 +1,5 @@
 import 'package:aldurar_alnaqia/prayer/prayer_hijri.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Hijri date label. Stateless renderer: the caller passes wall-clock time,
 /// the Maghrib boundary, and the manual day offset; rendering goes through

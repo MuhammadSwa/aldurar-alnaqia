@@ -1,7 +1,7 @@
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';

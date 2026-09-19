@@ -4,7 +4,7 @@ import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
     show normalizeArabic;
 import 'package:aldurar_alnaqia/models/azkar_models.dart' show zikrIdForTitle;
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Titles that should lead results for common names which imply related azkar.
 ///

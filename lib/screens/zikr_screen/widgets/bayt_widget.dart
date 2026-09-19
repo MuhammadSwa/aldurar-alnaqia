@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/zikr_inline_text.dart';
 
 /// One Arabic poetry bayt: [sadr] (first hemistich) and [ajz] (second).

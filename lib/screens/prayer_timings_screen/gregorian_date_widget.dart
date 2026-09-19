@@ -1,5 +1,5 @@
 import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Gregorian civil date label. Stateless renderer: the caller passes the
 /// current date in the prayer timezone. Midnight rollover arrives via the

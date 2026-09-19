@@ -1,5 +1,5 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation_method_info.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CalcMethodDropDown extends StatefulWidget {
   const CalcMethodDropDown({

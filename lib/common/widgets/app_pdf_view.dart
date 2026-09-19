@@ -3,7 +3,7 @@
 // once the project upgrades to Flutter >=3.47.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pdfx/pdfx.dart';
 
 /// Shared pinch-to-zoom PDF viewer with standard loading/error states.

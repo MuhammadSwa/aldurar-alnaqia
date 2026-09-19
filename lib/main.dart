@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
 import 'package:aldurar_alnaqia/router/app_router.dart';

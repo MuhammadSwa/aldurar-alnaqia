@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A modern outlined tile styled after variation 5 (`V5Outlined`)
 /// from `tile_separator_lab_screen.dart`.

@@ -2,7 +2,7 @@ import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/swipe_hint_dialog.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';

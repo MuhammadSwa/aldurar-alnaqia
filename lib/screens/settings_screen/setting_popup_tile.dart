@@ -1,5 +1,5 @@
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Generic title-only popup setting used by all drawer dropdowns.
 ///

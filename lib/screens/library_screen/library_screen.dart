@@ -3,7 +3,7 @@ import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';

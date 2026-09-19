@@ -1,5 +1,5 @@
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// TEMPORARY theme playground: a mock of the app whose colors the user can

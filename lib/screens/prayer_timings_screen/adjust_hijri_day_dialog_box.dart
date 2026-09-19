@@ -1,5 +1,5 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_adjust_form.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Today's Hijri date dialog (day-offset adjustment form).

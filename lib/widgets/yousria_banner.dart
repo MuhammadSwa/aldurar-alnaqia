@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart';
 
 /// Educates about the 6-day Yousria cycle and offers one-tap setup.

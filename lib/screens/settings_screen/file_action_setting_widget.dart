@@ -1,7 +1,7 @@
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/setting_popup_tile.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Drawer setting that controls what happens when the user opens a file

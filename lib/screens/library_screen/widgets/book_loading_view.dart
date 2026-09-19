@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Loading indicator for the book viewer: download progress when
 /// [isDownloading] is true, generic "opening" text otherwise.

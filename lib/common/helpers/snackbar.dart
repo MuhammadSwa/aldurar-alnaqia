@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Single app-wide snackbar helper. Hides the current one first so messages
 /// never queue

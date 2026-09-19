@@ -1,5 +1,5 @@
 // lib/screens/download_manager_screen/download_manager_screen.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/common/helpers/file_size.dart';
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
