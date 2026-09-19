@@ -145,8 +145,6 @@ class _MyAppState extends ConsumerState<MyApp> {
     final fontSize = ref.watch(fontSizeProvider);
     return MaterialApp.router(
       routerConfig: router,
-      // Arabic-first: full Material/Cupertino/Widgets localizations give
-      // Arabic strings and automatic RTL Directionality.
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

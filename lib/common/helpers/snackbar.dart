@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Single app-wide snackbar helper. Hides the current one first so messages
-/// never queue, and relies on the global RTL [Directionality] from
-/// the `ar` locale in main.dart.
+/// never queue
 void showSnackBar(
   BuildContext context,
   String msg, {
