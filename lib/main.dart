@@ -15,6 +15,7 @@ import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 
@@ -111,6 +112,7 @@ bool _isAllowedNotificationRoute(String route) {
 }
 
 class _MyAppState extends ConsumerState<MyApp> {
+  final GoRouter _router = AppRouter.createRouter();
   StreamSubscription<String>? _routeSub;
 
   @override
@@ -126,7 +128,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         logWarn('Ignoring notification route: $route');
         return;
       }
-      ref.read(appRouterProvider).go(route);
+      _router.go(route);
     });
   }
 
@@ -138,11 +140,10 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final router = ref.watch(appRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
     final fontSize = ref.watch(fontSizeProvider);
     return MaterialApp.router(
-      routerConfig: router,
+      routerConfig: _router,
       restorationScopeId: 'app',
       //
       locale: const Locale('ar'),

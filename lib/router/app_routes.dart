@@ -25,15 +25,17 @@ class RoutePaths {
   static const String timings = '/timings';
   static const String awrad = '/awradScreen';
   static const String library = '/library';
+  //
   static const String social = '/social';
   static const String downloadManager = '/downloadManager';
 
-  // Nested segments (relative, used only inside app_router.dart).
-  static const String todaysZikrSegment = 'todaysZikr';
-  static const String timingsSettingsSegment = 'settings';
+  // Nested segments
   static const String weekCollectionSegment = 'weekCollection';
+  static const String todaysZikrSegment = 'todaysZikr';
   static const String zikrCollectionSegment = 'zikrCollection/:collection';
   static const String zikrSegment = 'zikr/:zikr';
+  //
+  static const String timingsSettingsSegment = 'settings';
 }
 
 /// Named-route registry. Zikr detail pages exist once per parent route, so

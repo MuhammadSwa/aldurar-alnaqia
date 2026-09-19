@@ -16,15 +16,8 @@ import 'package:aldurar_alnaqia/widgets/collection_screens.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-
-/// Provides the app-wide [GoRouter]. The app always starts at home;
-/// notification taps navigate via `go()` after startup.
-final appRouterProvider = Provider<GoRouter>((ref) {
-  return AppRouter.createRouter();
-});
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -32,6 +25,8 @@ final GlobalKey<NavigatorState> _rootNavigatorKey =
 class AppRouter {
   AppRouter._();
 
+  /// Creates the app-wide [GoRouter]. The app always starts at home;
+  /// notification taps navigate via `go()` after startup.
   static GoRouter createRouter() {
     return GoRouter(
       initialLocation: RoutePaths.home,
