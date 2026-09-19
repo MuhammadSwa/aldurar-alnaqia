@@ -224,12 +224,11 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
   }
 
   void _openSettings(BuildContext context) {
-    unawaited(
+    
       showDialog<void>(
         context: context,
         builder: (_) => const PrayerSettingsDialog(),
-      ),
-    );
+      );
   }
 
   /// Opaque marker for the bar's fill tip: the next prayer's timetable

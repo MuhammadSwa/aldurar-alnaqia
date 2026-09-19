@@ -70,7 +70,7 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
     required VoidCallback onOpenSettings,
   }) {
     if (!mounted) return;
-    unawaited(
+    
       showDialog<void>(
         context: context,
         builder: (context) {
@@ -112,8 +112,7 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
           ],
         );
         },
-      ),
-    );
+      );
   }
 
   Future<void> getLocation() async {
@@ -150,13 +149,12 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
       // Case 3: Any other unexpected error.
       else {
         if (!mounted) return;
-        unawaited(
+        
           showDialog<void>(
             context: context,
             builder: (builder) =>
                 const AlertWidget(msg: 'حدث خطأ غير متوقع أثناء تحديد الموقع.'),
-          ),
-        );
+          );
       }
     } finally {
       if (mounted) {
@@ -187,14 +185,13 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
       ),
       onPressed: () {
         if (AppPlatform.isLinux) {
-          unawaited(
+          
             showDialog<void>(
               context: context,
               builder: (builder) => const AlertWidget(
                 msg: 'خاصية التحديد التلقائي للإحداثيات غير مدعومة في لينكس',
               ),
-            ),
-          );
+            );
           return;
         }
         if (!_isLoading) {

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
@@ -195,7 +194,7 @@ class _SearchWidgetState extends State<SearchWidget> {
   void _showSearchModal() {
     // Clear previous text before showing modal if desired, or manage state differently
     _controller.clear(); // clear text each time modal opens
-    unawaited(
+    
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -208,8 +207,7 @@ class _SearchWidgetState extends State<SearchWidget> {
           hintText: widget.hintText,
           suggestions: widget.suggestions,
         ),
-      ),
-    );
+      );
   }
 
   @override

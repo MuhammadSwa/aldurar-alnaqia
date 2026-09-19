@@ -50,12 +50,11 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
     _hasAutoShownSettings = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(
+      
         showDialog<void>(
           context: context,
           builder: (context) => const PrayerSettingsDialog(),
-        ),
-      );
+        );
     });
   }
 

@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/setting_popup_tile.dart' show SettingPopupTile;
@@ -27,12 +26,11 @@ class FontSizeSettingsWidget extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          unawaited(
+          
             showDialog<void>(
               context: context,
               builder: (_) => const _FontSizeDialog(),
-            ),
-          );
+            );
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
