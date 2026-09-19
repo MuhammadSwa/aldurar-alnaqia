@@ -59,6 +59,55 @@ class PrayerRepository {
     return schedule.nextEventAt(tz.TZDateTime.from(now, location));
   }
 
+  /// Previous event at or before [now] on the continuous timeline, or null
+  /// when unconfigured.
+  ///
+  /// Prayer time is continuous; civil-day schedules are just cache buckets.
+  /// Before today's Fajr there is no event in today's bucket, so the answer
+  /// lives in yesterday's bucket (yesterday's Isha in practice — resolved
+  /// generically as the latest event at or before [now], never assumed).
+  /// Symmetric to [nextAt], which already crosses midnight forward via
+  /// tomorrow's Fajr; this crosses midnight backward the same way.
+  PrayerEvent? prevAt(PrayerSettings settings, DateTime now) {
+    final schedule = scheduleFor(settings, now);
+    if (schedule == null) return null;
+    final location = schedule.civilDate.location;
+    final zoned = tz.TZDateTime.from(now, location);
+    for (var i = schedule.ordered.length - 1; i >= 0; i--) {
+      final event = schedule.ordered[i];
+      if (!event.time.isAfter(zoned)) return event;
+    }
+    // Before today's Fajr: look one civil day back. Duration arithmetic
+    // (not day - 1 field math) so month/year boundaries and DST are correct.
+    final yesterday =
+        scheduleFor(settings, zoned.subtract(const Duration(days: 1)));
+    if (yesterday == null) return null;
+    for (var i = yesterday.ordered.length - 1; i >= 0; i--) {
+      final event = yesterday.ordered[i];
+      if (!event.time.isAfter(zoned)) return event;
+    }
+    return null;
+  }
+
+  /// Elapsed fraction from the previous event to the next one (0–1), or null
+  /// when either end can't be determined. Single timeline query for the
+  /// countdown bar — callers never think in civil days. Ticks with wall-clock
+  /// time; pure derivation of ([prevAt], [nextAt]), so clock jumps
+  /// self-correct on the next call.
+  double? progressAt(PrayerSettings settings, DateTime now) {
+    final prev = prevAt(settings, now);
+    final next = nextAt(settings, now);
+    if (prev == null || next == null) return null;
+    final prevMs = prev.time.millisecondsSinceEpoch;
+    final nextMs = next.time.millisecondsSinceEpoch;
+    if (nextMs <= prevMs) return null;
+    final location = prev.time.location;
+    final nowMs =
+        tz.TZDateTime.from(now, location).millisecondsSinceEpoch;
+    if (nowMs < prevMs) return null;
+    return ((nowMs - prevMs) / (nextMs - prevMs)).clamp(0.0, 1.0);
+  }
+
   /// Islamic weekday for [now] (Monday=1, Sunday=7; the day flips at
   /// Maghrib). Always derived live — never cached.
   int weekdayAt(PrayerSettings settings, DateTime now) {

@@ -1,8 +1,9 @@
-// Overnight progress-interval tests for the next-prayer countdown.
+// Timeline progress tests for the next-prayer countdown.
 //
-// Proves: between midnight and Fajr the bar's interval starts at
-// yesterday's Isha (bar stays visible) instead of resolving to null,
-// and daytime behavior is unchanged.
+// The bar measures elapsed time on the continuous prayer timeline
+// (prev … now … next), not within one civil-day bucket. Between midnight
+// and Fajr the previous event lives in yesterday's bucket, so the bar must
+// stay visible there instead of resolving to null.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -10,7 +11,6 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart';
 
 const _settings = PrayerSettings(
   latitude: 30.0444,
@@ -24,88 +24,68 @@ const _settings = PrayerSettings(
 void main() {
   setUpAll(() => tzdata.initializeTimeZones());
 
-  PrayerSchedule day(PrayerRepository repo, int day) {
+  tz.TZDateTime at(int month, int day, int hour, [int minute = 0]) {
     final loc = tz.getLocation('Africa/Cairo');
-    return repo.scheduleFor(
-      _settings,
-      tz.TZDateTime(loc, 2024, 6, day, 12),
-    )!;
+    return tz.TZDateTime(loc, 2024, month, day, hour, minute);
   }
 
-  test('before Fajr the interval starts at yesterday Isha', () {
+  test('before Fajr the previous event is yesterday Isha', () {
     final repo = PrayerRepository();
-    final today = day(repo, 15);
-    final yesterday = day(repo, 14);
-    final loc = tz.getLocation('Africa/Cairo');
-    final now = tz.TZDateTime(loc, 2024, 6, 15, 0, 30);
+    final now = at(6, 15, 0, 30);
 
-    final start = progressIntervalStart(
-      schedule: today,
-      yesterdaySchedule: yesterday,
-      now: now,
-    );
-
-    expect(
-      start,
-      yesterday.events[PrayerEventId.isha]!.time,
-      reason: 'midnight→Fajr must anchor on yesterday Isha, not null',
-    );
-
-    // The full interval is well-formed: Isha < now < Fajr.
+    final prev = repo.prevAt(_settings, now)!;
     final next = repo.nextAt(_settings, now)!;
+
     expect(next.id, PrayerEventId.fajr);
-    expect(start!.isBefore(now), isTrue);
+    expect(prev.id, PrayerEventId.isha);
+    expect(prev.time.isBefore(now), isTrue);
     expect(now.isBefore(next.time), isTrue);
-    // Countdown itself is positive in the overnight window.
+    // Yesterday's bucket: Isha belongs to the previous civil day.
+    expect(prev.time.day, 14);
+    expect(next.time.day, 15);
     expect(next.time.difference(now).isNegative, isFalse);
   });
 
-  test('before Fajr without yesterday schedule stays null', () {
+  test('before Fajr the bar has a well-formed 0–1 progress', () {
     final repo = PrayerRepository();
-    final today = day(repo, 15);
-    final loc = tz.getLocation('Africa/Cairo');
-    expect(
-      progressIntervalStart(
-        schedule: today,
-        yesterdaySchedule: null,
-        now: tz.TZDateTime(loc, 2024, 6, 15, 0, 30),
-      ),
-      isNull,
-    );
+    final progress = repo.progressAt(_settings, at(6, 15, 0, 30))!;
+    expect(progress, inInclusiveRange(0.0, 1.0));
+  });
+
+  test('month boundary: June 1 overnight anchors on May 31 Isha', () {
+    final repo = PrayerRepository();
+    final now = at(6, 1, 0, 30);
+
+    final prev = repo.prevAt(_settings, now)!;
+    final next = repo.nextAt(_settings, now)!;
+
+    expect(next.id, PrayerEventId.fajr);
+    expect(prev.id, PrayerEventId.isha);
+    // Field-based day-1 math would miss this; Duration arithmetic must not.
+    expect(prev.time.month, 5);
+    expect(prev.time.day, 31);
+    expect(repo.progressAt(_settings, now), isNotNull);
   });
 
   test('daytime still uses the same-day previous event', () {
     final repo = PrayerRepository();
-    final today = day(repo, 15);
-    final loc = tz.getLocation('Africa/Cairo');
     // Mid-morning Cairo: after sunrise, before Dhuhr.
-    final now = tz.TZDateTime(loc, 2024, 6, 15, 9);
-    expect(
-      progressIntervalStart(
-        schedule: today,
-        yesterdaySchedule: day(repo, 14),
-        now: now,
-      ),
-      today.events[PrayerEventId.sunrise]!.time,
-    );
+    final now = at(6, 15, 9);
+
+    final prev = repo.prevAt(_settings, now)!;
+    expect(prev.id, PrayerEventId.sunrise);
+    expect(prev.time.day, 15);
   });
 
-  test('after Isha the interval starts at today Isha', () {
+  test('after Isha the interval runs to tomorrow Fajr', () {
     final repo = PrayerRepository();
-    final today = day(repo, 15);
-    final loc = tz.getLocation('Africa/Cairo');
-    final now = tz.TZDateTime(loc, 2024, 6, 15, 22, 30);
-    expect(
-      progressIntervalStart(
-        schedule: today,
-        yesterdaySchedule: day(repo, 14),
-        now: now,
-      ),
-      today.events[PrayerEventId.isha]!.time,
-    );
-    // Next is tomorrow's Fajr; interval stays well-formed overnight.
+    final now = at(6, 15, 22, 30);
+
+    final prev = repo.prevAt(_settings, now)!;
     final next = repo.nextAt(_settings, now)!;
+    expect(prev.id, PrayerEventId.isha);
     expect(next.id, PrayerEventId.fajr);
     expect(next.time.isAfter(now), isTrue);
+    expect(repo.progressAt(_settings, now), isNotNull);
   });
 }

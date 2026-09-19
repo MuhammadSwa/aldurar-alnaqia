@@ -4,11 +4,9 @@ import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:timezone/timezone.dart' as tz;
 
 /// Countdown to the next prayer.
 ///
@@ -112,16 +110,12 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                 final rawLeft = next.time.difference(_now);
                 final left =
                     rawLeft.isNegative ? Duration.zero : rawLeft;
-                final liveSchedule = PrayerRepository.instance.scheduleFor(
-                      view.settings,
-                      _now,
-                    ) ??
-                    view.schedule;
-                final progress = _progress(
-                  settings: view.settings,
-                  schedule: liveSchedule,
-                  now: _now,
-                  next: next,
+                // Timeline query (prev … now … next): stays visible through
+                // the midnight→Fajr window. The widget never thinks in
+                // civil days — the repository owns the cross-midnight lookup.
+                final progress = PrayerRepository.instance.progressAt(
+                  view.settings,
+                  _now,
                 );
                 return Column(
                   mainAxisSize: MainAxisSize.min,
@@ -261,49 +255,6 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
           ),
       };
 
-  /// Elapsed fraction from the previous event to [next] (0–1). Before
-  /// today's Fajr the previous event is yesterday's Isha, so the bar keeps
-  /// moving through the midnight→Fajr window instead of hiding. Null only
-  /// when no previous event can be determined. Ticks with [_now], so the
-  /// bar under the counter moves every second.
-  double? _progress({
-    required PrayerSettings settings,
-    required PrayerSchedule schedule,
-    required DateTime now,
-    required PrayerEvent next,
-  }) {
-    final location = schedule.civilDate.location;
-    final zonedNow = tz.TZDateTime.from(now, location);
-    // Overnight window (before today's Fajr): pull yesterday's schedule
-    // so "previous" resolves to yesterday's Isha. Cached after the first
-    // tick of the night — one solar calculation per night, then map hits.
-    PrayerSchedule? yesterday;
-    if (schedule.ordered.every((event) => event.time.isAfter(zonedNow))) {
-      yesterday = PrayerRepository.instance.scheduleFor(
-        settings,
-        tz.TZDateTime(
-          location,
-          zonedNow.year,
-          zonedNow.month,
-          zonedNow.day - 1,
-          12,
-        ),
-      );
-    }
-    final prev = progressIntervalStart(
-      schedule: schedule,
-      yesterdaySchedule: yesterday,
-      now: zonedNow,
-    );
-    if (prev == null) return null;
-    final prevMs = prev.millisecondsSinceEpoch;
-    final nextMs = next.time.millisecondsSinceEpoch;
-    if (nextMs <= prevMs) return null;
-    final nowMs = zonedNow.millisecondsSinceEpoch;
-    if (nowMs < prevMs) return null;
-    return ((nowMs - prevMs) / (nextMs - prevMs)).clamp(0.0, 1.0);
-  }
-
   String _formatDuration(Duration duration) {
     if (duration.isNegative) {
       return '00:00:00';
@@ -314,27 +265,6 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
     final seconds = duration.inSeconds.remainder(60);
     return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
   }
-}
-
-/// Start of the countdown interval: the latest event in [schedule] at or
-/// before [now], or — when [now] is before today's Fajr (the midnight→Fajr
-/// window) — yesterday's Isha from [yesterdaySchedule]. Null only when
-/// neither exists. Pure (no clock/cache reads) so the overnight case is
-/// unit-testable; the widget resolves [yesterdaySchedule] via the
-/// repository cache.
-@visibleForTesting
-tz.TZDateTime? progressIntervalStart({
-  required PrayerSchedule schedule,
-  required PrayerSchedule? yesterdaySchedule,
-  required tz.TZDateTime now,
-}) {
-  tz.TZDateTime? prev;
-  for (final event in schedule.ordered) {
-    if (!event.time.isAfter(now)) {
-      prev = event.time;
-    }
-  }
-  return prev ?? yesterdaySchedule?.events[PrayerEventId.isha]?.time;
 }
 
 class _UnsetContent extends StatelessWidget {
