@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:aldurar_alnaqia/common/helpers/arabic_back_material_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
 import 'package:aldurar_alnaqia/router/app_router.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart' show RoutePaths;
@@ -145,17 +145,11 @@ class _MyAppState extends ConsumerState<MyApp> {
     final fontSize = ref.watch(fontSizeProvider);
     return MaterialApp.router(
       routerConfig: router,
-      // Single-override: keep default (English) Material strings but show
-      // "رجوع" on the automatic AppBar back-button long-press.
-      // (First delegate wins for MaterialLocalizations; framework defaults
-      // are appended automatically after this.)
-      localizationsDelegates: const [
-        ArabicBackMaterialLocalizationsDelegate(),
-      ],
-      builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: child!,
-      ),
+      // Arabic-first: full Material/Cupertino/Widgets localizations give
+      // Arabic strings and automatic RTL Directionality.
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       scrollBehavior: AppScrollBehavior(),
       title: 'الدرر النقية',
       debugShowCheckedModeBanner: false,

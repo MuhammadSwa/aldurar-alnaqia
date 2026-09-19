@@ -210,7 +210,11 @@ class AlertWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      content: Text(msg, textAlign: TextAlign.center),
+      content: Text(
+        msg,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
