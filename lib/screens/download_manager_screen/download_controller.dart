@@ -5,9 +5,9 @@ import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/models/download_models.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:background_downloader/background_downloader.dart';
-import 'package:flutter/cupertino.dart' show ValueListenableBuilder;
+import 'package:cupertino_ui/cupertino_ui.dart' show ValueListenableBuilder;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show ValueListenableBuilder;
+import 'package:material_ui/material_ui.dart' show ValueListenableBuilder;
 import 'package:flutter/widgets.dart' show ValueListenableBuilder;
 import 'package:material_ui/material_ui.dart' show ValueListenableBuilder;
 
