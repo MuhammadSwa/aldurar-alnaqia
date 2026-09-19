@@ -5,9 +5,9 @@ import 'package:material_ui/material_ui.dart';
 /// current date in the prayer timezone. Midnight rollover arrives via the
 /// parent's rebuild (nudge timer), so no timer lives here.
 class GregorianDateWidget extends StatelessWidget {
-  final DateTime today;
 
-  const GregorianDateWidget({super.key, required this.today});
+  const GregorianDateWidget({required this.today, super.key});
+  final DateTime today;
 
   static const Map<int, String> _arabicMonths = {
     1: 'يناير',

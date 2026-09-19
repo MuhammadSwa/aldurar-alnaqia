@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared download-state wiring: `ensureKnown` + rebuild on
 /// `statusRevision`, exposing `isDownloading` / `isDownloaded`.
@@ -10,9 +12,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// and `PlayAudioBtnZikrPage`.
 class DownloadStatusBuilder extends ConsumerWidget {
   const DownloadStatusBuilder({
-    super.key,
     required this.item,
     required this.builder,
+    super.key,
   });
 
   final DownloadItem item;
@@ -28,7 +30,7 @@ class DownloadStatusBuilder extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final downloader = ref.watch(downloaderProvider);
     // Trigger a coalesced status check (safe to call on every build).
-    downloader.ensureKnown(item.id, item.type);
+    unawaited(downloader.ensureKnown(item.id, item.type));
     return ValueListenableBuilder<int>(
       valueListenable: downloader.statusRevision,
       builder: (context, _, __) {
@@ -47,9 +49,9 @@ class DownloadStatusBuilder extends ConsumerWidget {
 /// Shared progress indicator with cancel button for download tiles.
 class DownloadProgressIcon extends StatelessWidget {
   const DownloadProgressIcon({
-    super.key,
     required this.progressNotifier,
     required this.onCancel,
+    super.key,
     this.size = 32,
     this.iconSize = 18,
   });

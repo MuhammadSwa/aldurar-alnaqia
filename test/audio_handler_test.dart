@@ -1,6 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:aldurar_alnaqia/audio/audio_handler.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('notification stop delegates to the app stop callback', () async {

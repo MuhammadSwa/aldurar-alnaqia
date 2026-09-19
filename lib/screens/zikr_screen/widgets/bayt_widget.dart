@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/zikr_inline_text.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One Arabic poetry bayt: [sadr] (first hemistich) and [ajz] (second).
 ///
@@ -8,10 +8,7 @@ import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/zikr_inline_text.dar
 /// (sadr right-aligned, ajz left-aligned) so long verses never squeeze.
 class BaytWidget extends StatelessWidget {
   const BaytWidget({
-    super.key,
-    required this.sadr,
-    required this.ajz,
-    required this.fontSize,
+    required this.sadr, required this.ajz, required this.fontSize, super.key,
   });
 
   final String sadr;

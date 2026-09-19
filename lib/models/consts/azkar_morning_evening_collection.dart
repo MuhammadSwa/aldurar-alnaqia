@@ -1,7 +1,7 @@
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/models/consts/azkar_algomari_collection.dart';
 
-const morningEveningAzkarCollection = [
+const List<Zikr> morningEveningAzkarCollection = [
   alwazifaZarouquia,
   almusabaeat,
   alasas,

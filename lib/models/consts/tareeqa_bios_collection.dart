@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
-const tareeqaBiosCollection = [drYousryGabrBio, abdallahGomariBio];
+const List<Zikr> tareeqaBiosCollection = [drYousryGabrBio, abdallahGomariBio];
 
 const drYousryGabrBio = Zikr(
     id: 'bio-yousry-gabr',

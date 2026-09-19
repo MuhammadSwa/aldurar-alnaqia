@@ -1,6 +1,5 @@
-import 'package:material_ui/material_ui.dart';
-
 import 'package:aldurar_alnaqia/screens/library_screen/book_temp_loader.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shows the jump-to-page dialog and returns the parsed page, or null when
 /// the dialog is dismissed. Range validation is the caller's responsibility.
@@ -11,8 +10,6 @@ Future<int?> showBookJumpDialog(
 }) {
   return showDialog<int>(
     context: context,
-    // Keep the dialog above the bottom-nav shell.
-    useRootNavigator: true,
     builder: (dialogContext) => _BookJumpDialog(
       currentPage: currentPage,
       total: total,

@@ -1,15 +1,14 @@
 // This dialog is specific to this screen, so it's fine to keep it here.
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 class StreamOrDownloadDialog extends StatefulWidget {
   const StreamOrDownloadDialog({
-    super.key,
-    required this.item,
-    required this.onStream,
-    required this.onDownload,
+    required this.item, required this.onStream, required this.onDownload, super.key,
     this.showRememberOption = false,
     this.onRemember,
   });
@@ -25,7 +24,7 @@ class StreamOrDownloadDialog extends StatefulWidget {
   final bool showRememberOption;
 
   /// Called only when [showRememberOption] is true and the checkbox is
-  /// checked. [stream] is true for the direct-open action, false for download.
+  /// checked. `stream` is true for the direct-open action, false for download.
   final ValueChanged<bool>? onRemember;
 
   @override
@@ -171,8 +170,10 @@ Future<void> showStreamOrDownloadDialog({
       item: item,
       showRememberOption: true,
       onRemember: (stream) {
-        ref.read(fileOpenActionProvider.notifier).set(
-            stream ? FileOpenAction.open : FileOpenAction.download,);
+        unawaited(
+          ref.read(fileOpenActionProvider.notifier).set(
+              stream ? FileOpenAction.open : FileOpenAction.download,),
+        );
       },
       onStream: () {
         Navigator.of(dialogContext).pop();
@@ -183,7 +184,7 @@ Future<void> showStreamOrDownloadDialog({
         if (onDownload != null) {
           onDownload();
         } else {
-          ref.read(downloaderProvider).startDownload(item);
+          unawaited(ref.read(downloaderProvider).startDownload(item));
         }
       },
     ),

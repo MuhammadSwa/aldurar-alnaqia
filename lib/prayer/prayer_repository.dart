@@ -1,10 +1,9 @@
-import 'package:flutter/foundation.dart';
-import 'package:timezone/timezone.dart' as tz;
-
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
     as islamic_date;
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:flutter/foundation.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// The single owner of prayer timetable data.
 ///
@@ -26,7 +25,7 @@ class PrayerRepository {
 
   final Map<String, PrayerSchedule> _days = {};
 
-  /// Schedule for [now]'s civil day in [settings.timezone], or null when
+  /// Schedule for [now]'s civil day in `settings.timezone`, or null when
   /// unconfigured/invalid. Cheap after the first call per day: one solar
   /// calculation per (settings, civil day), then a map hit.
   PrayerSchedule? scheduleFor(PrayerSettings settings, DateTime now) {

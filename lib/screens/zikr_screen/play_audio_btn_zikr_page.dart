@@ -1,18 +1,17 @@
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
-import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
-import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PlayAudioBtnZikrPage extends ConsumerWidget {
   const PlayAudioBtnZikrPage({
-    super.key,
-    required this.title,
-    required this.url,
-    required this.id,
+    required this.title, required this.url, required this.id, super.key,
     this.queue,
   });
 
@@ -78,10 +77,12 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
   /// Single play path: the controller resolves the downloaded file first
   /// and streams automatically when it is missing locally.
   void _play(WidgetRef ref) {
-    ref.read(audioProvider.notifier).playTrack(
-          AudioTrack(id: id, title: title, remoteUrl: url!),
-          queue: queue,
-        );
+    unawaited(
+      ref.read(audioProvider.notifier).playTrack(
+            AudioTrack(id: id, title: title, remoteUrl: url!),
+            queue: queue,
+          ),
+    );
   }
 
   void _handleAudioTap(BuildContext context, WidgetRef ref) {
@@ -90,25 +91,24 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
     switch (action) {
       case FileOpenAction.open:
         _play(ref);
-        break;
       case FileOpenAction.download:
         _downloadDirectly(ref);
-        break;
       case FileOpenAction.ask:
         _showStreamDownloadDialog(context, ref);
-        break;
     }
   }
 
   void _downloadDirectly(WidgetRef ref) {
-    ref.read(downloaderProvider).startDownload(
-          DownloadItem(
-            id: id,
-            title: title,
-            url: url!,
-            type: DownloadType.narrations,
+    unawaited(
+      ref.read(downloaderProvider).startDownload(
+            DownloadItem(
+              id: id,
+              title: title,
+              url: url!,
+              type: DownloadType.narrations,
+            ),
           ),
-        );
+    );
   }
 
   void _showStreamDownloadDialog(BuildContext context, WidgetRef ref) {
@@ -119,11 +119,13 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
       type: DownloadType.narrations,
     );
 
-    showStreamOrDownloadDialog(
-      context: context,
-      ref: ref,
-      item: downloadItem,
-      onOpen: () => _play(ref),
+    unawaited(
+      showStreamOrDownloadDialog(
+        context: context,
+        ref: ref,
+        item: downloadItem,
+        onOpen: () => _play(ref),
+      ),
     );
   }
 }

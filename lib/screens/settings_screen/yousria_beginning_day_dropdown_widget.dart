@@ -1,11 +1,13 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart'; // <-- add this
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/setting_popup_tile.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Settings tile showing the current Yousria cycle day (1..6).
 ///
@@ -36,9 +38,11 @@ class YousriaBeginningDayDropDown extends ConsumerWidget {
       labelFor: (day) => yousriaDayZikr(day).title,
       cardStyle: cardStyle,
       onSelected: (day) {
-        ref
-            .read(yousriaBeginningProvider.notifier)
-            .setBeginning(impliedStartForDay(day));
+        unawaited(
+          ref
+              .read(yousriaBeginningProvider.notifier)
+              .setBeginning(impliedStartForDay(day)),
+        );
         if (!context.mounted) return;
         showSnackBar(
           context,

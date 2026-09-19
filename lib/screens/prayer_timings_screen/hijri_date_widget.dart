@@ -5,16 +5,13 @@ import 'package:material_ui/material_ui.dart';
 /// the Maghrib boundary, and the manual day offset; rendering goes through
 /// the shared [hijriLabel] helper (same source as the native payload).
 class HijriDateWidget extends StatelessWidget {
+
+  const HijriDateWidget({
+    required this.now, required this.maghrib, required this.offset, super.key,
+  });
   final DateTime now;
   final DateTime? maghrib;
   final int offset;
-
-  const HijriDateWidget({
-    super.key,
-    required this.now,
-    required this.maghrib,
-    required this.offset,
-  });
 
   @override
   Widget build(BuildContext context) {

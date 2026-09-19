@@ -5,11 +5,11 @@
 /// two divergent `replaceAll` chains.
 final RegExp _arabicDiacritics =
     RegExp(r'[\u064B-\u0652\u0670\u0640\u200C\u200D]');
-final RegExp _arabicHamzaVariants = RegExp(r'[أإآٱ]');
+final RegExp _arabicHamzaVariants = RegExp('[أإآٱ]');
 final RegExp _arabicWhitespace = RegExp(r'\s+');
 
 String normalizeArabic(String input) {
-  var out = input
+  final out = input
       .replaceAll(_arabicDiacritics, '')
       .replaceAll(_arabicHamzaVariants, 'ا')
       .replaceAll('ؤ', 'و')
@@ -17,6 +17,5 @@ String normalizeArabic(String input) {
       .replaceAll('ة', 'ه')
       .replaceAll('ى', 'ي')
       .toLowerCase();
-  out = out.replaceAll(_arabicWhitespace, ' ').trim();
-  return out;
+  return out.replaceAll(_arabicWhitespace, ' ').trim();
 }

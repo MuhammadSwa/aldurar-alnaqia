@@ -1,6 +1,6 @@
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
-    show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods, PrayerSettings;
+    show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -258,7 +258,7 @@ void main() {
         timezone: 'Asia/Riyadh',
         highLatitudeRule: PrayerHighLatitudeRules.seventhOfNight,
       );
-      final PrayerSettings loaded =
+      final loaded =
           SharedPreferencesService.loadPrayerSettings();
       expect(loaded.latitude, 21.4225);
       expect(loaded.longitude, 39.8262);
@@ -310,14 +310,14 @@ void main() {
     test('reads and writes throw before init instead of silently no-op', () {
       SharedPreferencesService.resetForTest();
       expect(SharedPreferencesService.isInitialized, isFalse);
-      expect(() => SharedPreferencesService.getFontSize(), throwsStateError);
-      expect(() => SharedPreferencesService.getBookmarks(), throwsStateError);
+      expect(SharedPreferencesService.getFontSize, throwsStateError);
+      expect(SharedPreferencesService.getBookmarks, throwsStateError);
       expect(
         () => SharedPreferencesService.setFontSize(28),
         throwsStateError,
       );
       expect(
-        () => SharedPreferencesService.loadPrayerSettings(),
+        SharedPreferencesService.loadPrayerSettings,
         throwsStateError,
       );
     });
@@ -381,7 +381,6 @@ void main() {
         method: PrayerMethods.egyptian,
         asrCalculation: PrayerMadhabs.shafi,
         timezone: 'Africa/Cairo',
-        city: null,
       );
       expect(
         SharedPreferencesService.getPrayerCityLabel(),

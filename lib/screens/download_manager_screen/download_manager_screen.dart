@@ -1,6 +1,6 @@
 // lib/screens/download_manager_screen/download_manager_screen.dart
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/common/helpers/file_size.dart';
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
@@ -9,11 +9,13 @@ import 'package:aldurar_alnaqia/screens/download_manager_screen/download_control
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_controller.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 class DownloadManagerTile extends ConsumerWidget {
   const DownloadManagerTile({
-    super.key,
     required this.item,
+    super.key,
   });
 
   final DownloadItem item;
@@ -27,16 +29,15 @@ class DownloadManagerTile extends ConsumerWidget {
         // re-runs only when the download status changes.
         final sizeFuture = isDownloaded
             ? ref.read(storageProvider).fileSizeBytes(item.type, item.id)
-            : Future<int?>.value(null);
+            : Future<int?>.value();
         return FutureBuilder<int?>(
           future: sizeFuture,
           builder: (context, snapshot) {
             // Size lives under the action button, never inside the
             // single-line ellipsized subtitle where long descriptions
             // would truncate it away.
-            final sizeLabel = snapshot.data == null
-                ? null
-                : formatBytes(snapshot.data!);
+            final sizeLabel =
+                snapshot.data == null ? null : formatBytes(snapshot.data!);
             return AppTile(
               // Full name, title-only: it wraps to two lines.
               title: item.title,
@@ -82,10 +83,7 @@ class DownloadManagerTile extends ConsumerWidget {
                     if (sizeLabel != null)
                       Text(
                         sizeLabel,
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.copyWith(
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: Theme.of(
                                 context,
                               ).colorScheme.onSurfaceVariant,
@@ -215,7 +213,7 @@ class _DownloadedStatsState extends ConsumerState<_DownloadedStats> {
     super.initState();
     _revision = ref.read(downloaderProvider).statusRevision;
     _revision!.addListener(_refresh);
-    _refresh();
+    unawaited(_refresh());
   }
 
   @override
@@ -292,9 +290,9 @@ class _TotalPill extends StatelessWidget {
 
 class DownloadSection extends StatefulWidget {
   const DownloadSection({
-    super.key,
     required this.title,
     required this.items,
+    super.key,
   });
 
   final String title;
@@ -359,7 +357,7 @@ class _DownloadSectionState extends State<DownloadSection> {
 }
 
 class DownloadManagerPage extends ConsumerStatefulWidget {
-  const DownloadManagerPage({super.key, required this.initialIndex});
+  const DownloadManagerPage({required this.initialIndex, super.key});
 
   final int initialIndex;
 
@@ -376,11 +374,12 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
     initialIndex: widget.initialIndex,
   );
 
-  late final audioSections = DownloadManagerData.loadAudioSections();
-  late final bookItems = DownloadManagerData.loadBookItems();
+  late final Map<String, List<DownloadItem>> audioSections =
+      DownloadManagerData.loadAudioSections();
+  late final List<DownloadItem> bookItems = DownloadManagerData.loadBookItems();
 
   /// Every downloadable item across both tabs.
-  late final allItems = [
+  late final List<DownloadItem> allItems = [
     ...bookItems,
     for (final items in audioSections.values) ...items,
   ];
@@ -395,8 +394,7 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
     final confirmed = await showConfirmDialog(
       context: context,
       title: 'حذف جميع التحميلات',
-      content:
-          'سيتم حذف $count من العناصر المحمّلة نهائيًا. هل أنت متأكد؟',
+      content: 'سيتم حذف $count من العناصر المحمّلة نهائيًا. هل أنت متأكد؟',
       confirmLabel: 'حذف الكل',
       icon: Icons.delete_sweep_outlined,
     );
@@ -427,8 +425,7 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
                   IconButton(
                     icon: const Icon(Icons.delete_sweep_outlined),
                     tooltip: 'حذف جميع التحميلات',
-                    onPressed:
-                        count == 0 ? null : () => _clearAll(count),
+                    onPressed: count == 0 ? null : () => _clearAll(count),
                   ),
                 ],
               ),
@@ -465,10 +462,12 @@ class _AudioTab extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         children: audioSections.entries
-            .map((entry) => DownloadSection(
-                  title: entry.key,
-                  items: entry.value,
-                ),)
+            .map(
+              (entry) => DownloadSection(
+                title: entry.key,
+                items: entry.value,
+              ),
+            )
             .toList(),
       ),
     );
@@ -485,7 +484,7 @@ class _BooksTab extends StatelessWidget {
     if (bookItems.isEmpty) {
       return const Center(
         child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(16),
           child: Text('لا توجد كتب متاحة حاليًا.'),
         ),
       );
@@ -493,7 +492,7 @@ class _BooksTab extends StatelessWidget {
 
     // Display a direct, non-expandable list for the books.
     return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         // Static header for the books list
         Padding(

@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/services/shared_prefs.dart' show SharedPreferencesService;
 import 'package:material_ui/material_ui.dart';
 
 /// Single place where the app's visual themes are defined.
@@ -35,7 +36,6 @@ abstract final class AppTheme {
 
   static final ColorScheme lightScheme = ColorScheme.fromSeed(
     seedColor: const Color(0xFF0B6B4F),
-    brightness: Brightness.light,
   ).copyWith(
     // Default tone 40 reads too dark; tone 50 of the same hue stays
     // 4.5:1 on white while feeling lighter.
@@ -161,7 +161,7 @@ abstract final class AppTheme {
               WidgetStateProperty.all<Color>(scheme.onSecondaryContainer),
           shape: WidgetStateProperty.all<OutlinedBorder>(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
         ),

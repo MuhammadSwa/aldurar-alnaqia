@@ -5,12 +5,11 @@
 // and Fajr the previous event lives in yesterday's bucket, so the bar must
 // stay visible there instead of resolving to null.
 
+import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
-
-import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
-import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 
 const _settings = PrayerSettings(
   latitude: 30.0444,
@@ -22,7 +21,7 @@ const _settings = PrayerSettings(
 );
 
 void main() {
-  setUpAll(() => tzdata.initializeTimeZones());
+  setUpAll(tzdata.initializeTimeZones);
 
   tz.TZDateTime at(int month, int day, int hour, [int minute = 0]) {
     final loc = tz.getLocation('Africa/Cairo');

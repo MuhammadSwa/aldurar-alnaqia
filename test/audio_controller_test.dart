@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/audio_engine.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
-import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 // ---------------------------------------------------------------------------
 // Fakes
@@ -19,7 +18,7 @@ class FakeEngine implements AudioEngine {
   final _controller = StreamController<EngineEvent>.broadcast();
   final List<EngineLoadRequest> loads = [];
   int failNextLoads = 0;
-  Object? loadError;
+  Exception? loadError;
 
   /// Optional hook to stall a native load (slow stream) for race tests.
   Future<void> Function(EngineLoadRequest request)? loadGate;
@@ -264,7 +263,7 @@ void main() {
     addTearDown(container.dispose);
     final notifier = container.read(audioProvider.notifier);
 
-    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    await notifier.playTrack(trackFor());
     engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
     await Future<void>.delayed(Duration.zero);
 
@@ -297,7 +296,7 @@ void main() {
     addTearDown(container.dispose);
 
     await container.read(audioProvider.notifier).playTrack(
-      trackFor(id: 'zikr-1'),
+      trackFor(),
       queue: [trackFor(id: 'zikr-2')],
     );
 
@@ -316,7 +315,7 @@ void main() {
     addTearDown(container.dispose);
     final notifier = container.read(audioProvider.notifier);
 
-    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    await notifier.playTrack(trackFor());
     engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
     await Future<void>.delayed(Duration.zero);
 
@@ -350,7 +349,7 @@ void main() {
     addTearDown(container.dispose);
     final notifier = container.read(audioProvider.notifier);
 
-    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    await notifier.playTrack(trackFor());
     engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
     await Future<void>.delayed(Duration.zero);
 
@@ -379,7 +378,7 @@ void main() {
     addTearDown(container.dispose);
     final notifier = container.read(audioProvider.notifier);
 
-    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    await notifier.playTrack(trackFor());
     engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
     await Future<void>.delayed(Duration.zero);
 
@@ -404,7 +403,7 @@ void main() {
     addTearDown(container.dispose);
     final notifier = container.read(audioProvider.notifier);
 
-    await notifier.playTrack(trackFor(id: 'zikr-1'));
+    await notifier.playTrack(trackFor());
     engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
     await Future<void>.delayed(Duration.zero);
 

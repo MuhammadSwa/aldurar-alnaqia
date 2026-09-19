@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Explainer for the persistent prayer notification (Android, always-exact).
 ///

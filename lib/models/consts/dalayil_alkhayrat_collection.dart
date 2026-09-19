@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
-const dalayilAlkhayratCollection = [
+const List<Zikr> dalayilAlkhayratCollection = [
   dalayilHizb1,
   dalayilHizb2,
   dalayilHizb3,

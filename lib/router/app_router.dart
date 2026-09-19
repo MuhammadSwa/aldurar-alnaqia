@@ -1,25 +1,24 @@
-import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import 'package:aldurar_alnaqia/router/app_routes.dart';
-import 'package:aldurar_alnaqia/widgets/collection_screens.dart';
-import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
-import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
-import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
-import 'package:aldurar_alnaqia/screens/awrad_list_screen/awrad_list_screen.dart';
-import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
-import 'package:aldurar_alnaqia/screens/library_screen/book_viewer_screen.dart';
-import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
-import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
-import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart'
     show islamicWeekdayNow;
+import 'package:aldurar_alnaqia/router/app_routes.dart';
+import 'package:aldurar_alnaqia/screens/awrad_list_screen/awrad_list_screen.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
+import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/book_viewer_screen.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
+import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
+import 'package:aldurar_alnaqia/widgets/collection_screens.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
+import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Provides the app-wide [GoRouter]. The app always starts at home;
 /// notification taps navigate via `go()` after startup.
@@ -342,7 +341,7 @@ class RouteTransitions {
   ) {
     return SlideTransition(
       position: Tween<Offset>(
-        begin: const Offset(1.0, 0.0),
+        begin: const Offset(1, 0),
         end: Offset.zero,
       ).animate(
         CurvedAnimation(

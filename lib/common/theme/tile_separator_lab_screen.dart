@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart' show ZikrListViewTile;
 import 'package:material_ui/material_ui.dart';
 
 /// TEMPORARY lab: visual separator variations for the awrad/zikr tiles.
@@ -88,10 +89,6 @@ class TileSeparatorLabScreen extends StatelessWidget {
 // -- Section shell --------------------------------------------------------
 
 class _Section extends StatelessWidget {
-  final String number;
-  final String name;
-  final String note;
-  final Widget child;
 
   const _Section({
     required this.number,
@@ -99,6 +96,10 @@ class _Section extends StatelessWidget {
     required this.note,
     required this.child,
   });
+  final String number;
+  final String name;
+  final String note;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -168,8 +169,8 @@ Widget _mockTile(String title) {
 // -- 0: baseline ------------------------------------------------------------
 
 class _V0NoSeparator extends StatelessWidget {
-  final List<String> samples;
   const _V0NoSeparator({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -183,8 +184,8 @@ class _V0NoSeparator extends StatelessWidget {
 // -- 1: full divider --------------------------------------------------------
 
 class _V1FullDivider extends StatelessWidget {
-  final List<String> samples;
   const _V1FullDivider({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -203,8 +204,8 @@ class _V1FullDivider extends StatelessWidget {
 // -- 2: inset divider --------------------------------------------------------
 
 class _V2InsetDivider extends StatelessWidget {
-  final List<String> samples;
   const _V2InsetDivider({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -224,8 +225,8 @@ class _V2InsetDivider extends StatelessWidget {
 // -- 3: separate cards -------------------------------------------------------
 
 class _V3Cards extends StatelessWidget {
-  final List<String> samples;
   const _V3Cards({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -250,8 +251,8 @@ class _V3Cards extends StatelessWidget {
 // -- 4: tonal rows -----------------------------------------------------------
 
 class _V4Tonal extends StatelessWidget {
-  final List<String> samples;
   const _V4Tonal({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -280,8 +281,8 @@ class _V4Tonal extends StatelessWidget {
 // -- 5: outlined rows --------------------------------------------------------
 
 class _V5Outlined extends StatelessWidget {
-  final List<String> samples;
   const _V5Outlined({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -313,8 +314,8 @@ class _V5Outlined extends StatelessWidget {
 }
 
 class _ModernTile extends StatefulWidget {
-  final String title;
   const _ModernTile({required this.title});
+  final String title;
 
   @override
   State<_ModernTile> createState() => _ModernTileState();
@@ -432,8 +433,8 @@ class _ModernTileState extends State<_ModernTile> {
 // -- 6: grouped container ----------------------------------------------------
 
 class _V6Grouped extends StatelessWidget {
-  final List<String> samples;
   const _V6Grouped({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -470,8 +471,8 @@ class _V6Grouped extends StatelessWidget {
 // -- 7: accent bar -----------------------------------------------------------
 
 class _V7AccentBar extends StatelessWidget {
-  final List<String> samples;
   const _V7AccentBar({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -510,8 +511,8 @@ class _V7AccentBar extends StatelessWidget {
 // -- 8: zebra ----------------------------------------------------------------
 
 class _V8Zebra extends StatelessWidget {
-  final List<String> samples;
   const _V8Zebra({required this.samples});
+  final List<String> samples;
 
   @override
   Widget build(BuildContext context) {
@@ -520,7 +521,7 @@ class _V8Zebra extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (var i = 0; i < samples.length; i++)
-          Container(
+          ColoredBox(
             color: i.isEven
                 ? scheme.secondaryContainer.withValues(alpha: 0.45)
                 : Colors.transparent,

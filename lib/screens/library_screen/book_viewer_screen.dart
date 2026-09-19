@@ -2,11 +2,6 @@ import 'dart:async';
 
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdfx/pdfx.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/book_temp_loader.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
@@ -15,13 +10,17 @@ import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_jump_dialog.
 import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_loading_view.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:pdfx/pdfx.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Simple book reader: opens the downloaded file when it exists, otherwise
 /// downloads the PDF to a temp file with progress and opens it.
 ///
 /// Remembers the last page per book in [SharedPreferencesService].
 class BookViewerScreen extends ConsumerStatefulWidget {
-  const BookViewerScreen({super.key, required this.bookId});
+  const BookViewerScreen({required this.bookId, super.key});
 
   final String bookId;
 
@@ -45,7 +44,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   @override
   void initState() {
     super.initState();
-    _open();
+    unawaited(_open());
   }
 
   @override
@@ -168,20 +167,22 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     unawaited(_document?.close());
     _controller?.dispose();
     _document = null;
-    _open(freshDownload: !_isLocal);
+    unawaited(_open(freshDownload: !_isLocal));
   }
 
   void _downloadForOffline() {
     final url = _url;
     if (url == null) return;
-    ref.read(downloaderProvider).startDownload(
-          DownloadItem(
-            id: _id,
-            title: _book?.fullTitle ?? _id,
-            url: url,
-            type: DownloadType.books,
+    unawaited(
+      ref.read(downloaderProvider).startDownload(
+            DownloadItem(
+              id: _id,
+              title: _book?.fullTitle ?? _id,
+              url: url,
+              type: DownloadType.books,
+            ),
           ),
-        );
+    );
     showSnackBar(context, 'بدأ تحميل الكتاب للقراءة دون إنترنت');
   }
 
@@ -224,7 +225,6 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       await controller.animateToPage(
         pageNumber: page,
         duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
       );
     } catch (_) {
       if (!mounted) return;
@@ -270,7 +270,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       onDocumentLoaded: (_) => setState(() {}),
       onDocumentError: (error) => setState(() => _error = error),
       documentLoaderBuilder: _buildLoading,
-      errorBuilder: (error) => _buildError(error),
+      errorBuilder: _buildError,
     );
   }
 

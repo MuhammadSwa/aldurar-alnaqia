@@ -23,7 +23,7 @@ void main() {
 
     test('preview updates state without persisting', () async {
       final container = freshContainer();
-      container.read(fontSizeProvider.notifier).preview(30);
+      container.read(fontSizeProvider.notifier).preview = 30;
       expect(container.read(fontSizeProvider), 30);
       expect(SharedPreferencesService.getFontSize(), 22);
 

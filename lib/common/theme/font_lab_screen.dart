@@ -1,5 +1,5 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// TEMPORARY typography lab: Arabic Google Fonts rendered on real heading +
 /// body samples for comparison. Fonts load from the network on first use.

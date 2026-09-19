@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
-const poemsCollection = [
+const List<Zikr> poemsCollection = [
   poemMonfarigaGazali,
   poemMonfarigaNahawi,
   poemBanatSuad,

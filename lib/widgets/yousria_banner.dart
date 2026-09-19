@@ -1,14 +1,11 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Educates about the 6-day Yousria cycle and offers one-tap setup.
 /// Shown on every day wird page until dismissed.
 class YousriaBanner extends StatelessWidget {
   const YousriaBanner({
-    super.key,
-    required this.yousria,
-    required this.onSetup,
-    required this.onHide,
+    required this.yousria, required this.onSetup, required this.onHide, super.key,
   });
 
   final YousriaDayInfo yousria;

@@ -4,16 +4,16 @@ import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class _SocialSite {
-  final String title;
-  final String url;
-  final Widget icon;
-  final Color iconColor;
 
   _SocialSite(
       {required this.title,
       required this.url,
       required this.icon,
       required this.iconColor,});
+  final String title;
+  final String url;
+  final Widget icon;
+  final Color iconColor;
 }
 
 final _sites = <_SocialSite>[
@@ -165,7 +165,7 @@ class SocialScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: put in consts
+    // TODO(MuhammadSwa): put in consts
     return Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
@@ -177,11 +177,10 @@ class SocialScreen extends StatelessWidget {
                   child: SizedBox(
                 width: MediaQuery.sizeOf(context).width * .8,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Padding(
                       padding:
-                          const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 12.0),
+                          const EdgeInsets.fromLTRB(16, 16, 16, 12),
                       child: Text(
                         'الصفحات الرسمية لفضيلة أ.د. يسري جبر',
                         textAlign: TextAlign.center,

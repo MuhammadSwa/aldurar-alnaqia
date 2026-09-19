@@ -1,3 +1,6 @@
+import 'package:aldurar_alnaqia/models/azkar_models.dart' show Zikr;
+import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart' show ZikrContentWidget;
+
 /// Block model for zikr page content.
 ///
 /// Raw [Zikr.content] strings use a tiny line-based format:
@@ -16,21 +19,21 @@ sealed class ZikrBlock {
 
 /// Plain paragraph (one or more consecutive prose lines).
 class ProseBlock extends ZikrBlock {
-  final String text;
   const ProseBlock(this.text);
+  final String text;
 }
 
 /// Section heading, stored without the leading `##`.
 class HeadingBlock extends ZikrBlock {
-  final String text;
   const HeadingBlock(this.text);
+  final String text;
 }
 
 /// One Arabic poetry bayt: first hemistich ([sadr]) and second ([ajz]).
 class BaytBlock extends ZikrBlock {
+  const BaytBlock({required this.sadr, required this.ajz});
   final String sadr;
   final String ajz;
-  const BaytBlock({required this.sadr, required this.ajz});
 }
 
 /// Separator between the two hemistichs of a bayt line.

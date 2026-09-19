@@ -9,18 +9,15 @@
 
 import 'dart:async';
 
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Read-only field that displays the chosen city and opens the search sheet.
 class CityPickerField extends StatelessWidget {
   const CityPickerField({
-    super.key,
-    required this.selected,
-    required this.onSelected,
+    required this.selected, required this.onSelected, super.key,
   });
 
   final City? selected;
@@ -101,9 +98,7 @@ class _CitySearchSheetState extends ConsumerState<CitySearchSheet> {
       // sheet off the system nav bar.
       child: Padding(
         padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
-        child: SizedBox(
-          width: double.infinity,
-          height: double.infinity,
+        child: SizedBox.expand(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

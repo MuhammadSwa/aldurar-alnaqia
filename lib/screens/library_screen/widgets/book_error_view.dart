@@ -3,10 +3,7 @@ import 'package:material_ui/material_ui.dart';
 /// Error state for the book viewer with retry / offline / browser actions.
 class BookErrorView extends StatelessWidget {
   const BookErrorView({
-    super.key,
-    required this.onRetry,
-    required this.onDownloadOffline,
-    required this.onOpenBrowser,
+    required this.onRetry, required this.onDownloadOffline, required this.onOpenBrowser, super.key,
   });
 
   final VoidCallback onRetry;

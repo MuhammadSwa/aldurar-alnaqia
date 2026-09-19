@@ -1,8 +1,8 @@
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/setting_popup_tile.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Drawer setting for appearance (المظهر) using the same title-only popup
 /// pattern as the other drawer settings.

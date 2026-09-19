@@ -21,8 +21,7 @@ import 'package:pdfx/pdfx.dart';
 /// narrow strip on the right absorbs gestures.
 class AppPdfView extends StatelessWidget {
   const AppPdfView({
-    super.key,
-    required this.controller,
+    required this.controller, super.key,
     this.padding = 0,
     this.onPageChanged,
     this.onDocumentLoaded,
@@ -45,7 +44,6 @@ class AppPdfView extends StatelessWidget {
       children: [
         PdfViewPinch(
           controller: controller,
-          scrollDirection: Axis.vertical,
           padding: padding,
           onPageChanged: onPageChanged,
           onDocumentLoaded: onDocumentLoaded,
@@ -119,7 +117,6 @@ class _PdfScrollbarState extends State<_PdfScrollbar> {
         duration: smooth
             ? const Duration(milliseconds: 200)
             : Duration.zero,
-        curve: Curves.easeInOut,
       );
     } catch (_) {
       // Viewer may be mid-layout or disposed; thumb still follows on next

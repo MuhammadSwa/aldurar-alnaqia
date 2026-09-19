@@ -1,8 +1,5 @@
 import 'dart:async';
 
-import 'package:aldurar_alnaqia/common/theme/font_lab_screen.dart';
-import 'package:aldurar_alnaqia/common/theme/theme_preview_screen.dart';
-import 'package:aldurar_alnaqia/common/theme/tile_separator_lab_screen.dart';
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
@@ -10,8 +7,8 @@ import 'package:aldurar_alnaqia/screens/settings_screen/file_action_setting_widg
 import 'package:aldurar_alnaqia/screens/settings_screen/font_settings_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/theme_mode_setting_widget.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/yousria_beginning_day_dropdown_widget.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MyDrawer extends StatelessWidget {
@@ -69,7 +66,7 @@ class MyDrawer extends StatelessWidget {
               title: 'الصفحات الرسمية',
               onTap: () {
                 Navigator.pop(context);
-                context.push(RoutePaths.social);
+                unawaited(context.push(RoutePaths.social));
               },
             ),
             _buildDrawerItem(

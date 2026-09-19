@@ -10,10 +10,8 @@ import 'package:material_ui/material_ui.dart';
 /// resolve from stable ids.
 class ZikrListViewTile extends StatelessWidget {
   const ZikrListViewTile({
-    super.key,
-    required this.zikrId,
+    required this.zikrId, required this.target, super.key,
     this.title,
-    required this.target,
     this.margin,
   });
 

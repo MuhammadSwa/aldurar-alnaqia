@@ -1,10 +1,10 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/services/storage_service.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show MainWrapper;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Initialized in main() before runApp and injected via ProviderScope
 /// overrides, because it requires an async [StorageService.init].
@@ -35,9 +35,11 @@ class FontSizeNotifier extends Notifier<double> {
   double build() => SharedPreferencesService.getFontSize();
 
   /// Live preview while dragging (no disk write).
-  void preview(double newSize) {
+  set preview(double newSize) {
     state = newSize;
   }
+
+  double get preview => state;
 
   /// Persisted change (slider release / dialog close).
   void change(double newSize) {

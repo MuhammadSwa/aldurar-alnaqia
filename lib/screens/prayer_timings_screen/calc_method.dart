@@ -3,11 +3,10 @@ import 'package:material_ui/material_ui.dart';
 
 class CalcMethodDropDown extends StatefulWidget {
   const CalcMethodDropDown({
-    super.key,
-    required this.onSelect,
+    required this.onSelect, super.key,
     this.initialMethod,
   });
-  final Function(String) onSelect;
+  final void Function(String) onSelect;
 
   /// Previously saved method key — pre-selects it instead of starting empty.
   final String? initialMethod;
@@ -58,7 +57,7 @@ class _CalcMethodDropDownState extends State<CalcMethodDropDown> {
         return DropdownMenuItem(
           value: method.key,
           child: Text(method.arabicName,
-              maxLines: 2, overflow: TextOverflow.ellipsis),
+              maxLines: 2, overflow: TextOverflow.ellipsis,),
         );
       }).toList(),
       onChanged: (value) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 void showSliderDialog({
@@ -6,36 +8,40 @@ void showSliderDialog({
   required int divisions,
   required double min,
   required double max,
-  String valueSuffix = '',
   required double value,
   required ValueChanged<double> onChanged,
+  String valueSuffix = '',
 }) {
-  showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title, textAlign: TextAlign.center),
-      content: StatefulBuilder(
-        builder: (context, setState) => SizedBox(
-          height: 100.0,
-          child: Column(
-            children: [
-              Text(
-                '$value$valueSuffix',
-                style: const TextStyle(
-                  fontFamily: 'Fixed',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24.0,
+  var currentValue = value;
+  unawaited(
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title, textAlign: TextAlign.center),
+        content: StatefulBuilder(
+          builder: (context, setState) => SizedBox(
+            height: 100,
+            child: Column(
+              children: [
+                Text(
+                  '$currentValue$valueSuffix',
+                  style: const TextStyle(
+                    fontFamily: 'Fixed',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                  ),
                 ),
-              ),
-              Slider(
-                divisions: divisions,
-                min: min,
-                max: max,
-                value: value,
-                onChanged: (newValue) => setState(() => value = newValue),
-                onChangeEnd: onChanged,
-              ),
-            ],
+                Slider(
+                  divisions: divisions,
+                  min: min,
+                  max: max,
+                  value: currentValue,
+                  onChanged: (newValue) =>
+                      setState(() => currentValue = newValue),
+                  onChangeEnd: onChanged,
+                ),
+              ],
+            ),
           ),
         ),
       ),

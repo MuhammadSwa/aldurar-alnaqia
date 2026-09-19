@@ -1,9 +1,11 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/services/yousria_cycle.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Bottom sheet asking which part is read today.
 /// Saving recalibrates the beginning so the cycle stays correct.
@@ -58,9 +60,11 @@ Future<bool?> showYousriaSetupSheet(
                         selected: selected,
                         onTap: () {
                           try {
-                            ProviderScope.containerOf(context)
-                                .read(yousriaBeginningProvider.notifier)
-                                .setBeginning(impliedStart);
+                            unawaited(
+                              ProviderScope.containerOf(context)
+                                  .read(yousriaBeginningProvider.notifier)
+                                  .setBeginning(impliedStart),
+                            );
                           } catch (e) {
                             // Outside a ProviderScope (e.g. tests); persist
                             // directly so the choice isn't lost.

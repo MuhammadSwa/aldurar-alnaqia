@@ -1,17 +1,17 @@
-import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
-import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
-import 'package:aldurar_alnaqia/router/app_routes.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:aldurar_alnaqia/widgets/search_widget.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
-import 'package:aldurar_alnaqia/router/nav_helpers.dart';
+import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart';
+import 'package:aldurar_alnaqia/router/nav_helpers.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/search_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class HomePage extends ConsumerStatefulWidget {
@@ -160,12 +160,12 @@ class _HomePageState extends ConsumerState<HomePage> {
 
 /// Friday-only home tiles visibility. Pure for tests.
 class FridayTilesVisibility {
-  final bool showHadra;
-  final bool showAsrWird;
   const FridayTilesVisibility({
     required this.showHadra,
     required this.showAsrWird,
   });
+  final bool showHadra;
+  final bool showAsrWird;
 }
 
 FridayTilesVisibility fridayTilesVisibility({
@@ -227,12 +227,12 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
     final bookmarks = ref.watch(bookmarksProvider);
 
     // see if a bookmark is collection or orphan
-    final List<String> collectionIds = [];
-    final List<String> orphanIds = [];
-    final List<int> azkarOfDays = [];
+    final collectionIds = <String>[];
+    final orphanIds = <String>[];
+    final azkarOfDays = <int>[];
     var weekAzkarBookmarked = false;
 
-    for (var bookmark in bookmarks) {
+    for (final bookmark in bookmarks) {
       final day = _dayFromBookmark(bookmark);
       if (day != null) {
         azkarOfDays.add(day);
@@ -257,7 +257,7 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
             ),
           },
           if (bookmarks.isNotEmpty) ...{
-            for (var day in azkarOfDays) ...{
+            for (final day in azkarOfDays) ...{
               ZikrListViewTile(
                 zikrId: dayWirdBookmarkId(day),
                 title: dayWirdTitles[day],
@@ -285,7 +285,7 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
               ),
             ),
           } else ...{
-            EmptyBookmarks(),
+            const EmptyBookmarks(),
           },
         ],
       ),
@@ -294,9 +294,9 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
 }
 
 class EmptyBookmarks extends StatelessWidget {
-  final VoidCallback? onExplore;
 
   const EmptyBookmarks({super.key, this.onExplore});
+  final VoidCallback? onExplore;
 
   @override
   Widget build(BuildContext context) {

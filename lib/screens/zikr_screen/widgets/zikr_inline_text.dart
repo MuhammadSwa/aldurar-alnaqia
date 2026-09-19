@@ -5,7 +5,7 @@ import 'package:material_ui/material_ui.dart';
 /// Handles inline spans only: footnote refs (`[^1]`), Quran (`﴿﴾`),
 /// hadith quotes (`«»`), bracket references and numbering.
 /// Block structure (headings, poetry bayts) is handled upstream by
-/// [parseZikrBlocks] and never reaches a regex here.
+/// `parseZikrBlocks` and never reaches a regex here.
 ///
 /// Performance notes:
 /// - [fontSize] is passed down from the page (which watches
@@ -17,9 +17,7 @@ import 'package:material_ui/material_ui.dart';
 ///   extra layout pass per marker.
 class ZikrInlineText extends StatelessWidget {
   const ZikrInlineText({
-    super.key,
-    required this.text,
-    required this.fontSize,
+    required this.text, required this.fontSize, super.key,
     this.textAlign = TextAlign.justify,
     this.sizeFactor = 1.0,
     this.bold = false,

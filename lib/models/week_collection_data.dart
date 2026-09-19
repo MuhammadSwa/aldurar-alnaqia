@@ -5,7 +5,7 @@ import 'package:aldurar_alnaqia/services/yousria_cycle.dart'
 /// Composition of the 7 day-wirds from stable zikr ids.
 ///
 /// To change a day's wird, edit the id lists below. Display titles,
-/// search and audio all resolve through [zikrById], so nothing else
+/// search and audio all resolve through `zikrById`, so nothing else
 /// needs a manual entry.
 class WeekCollectionAzkar {
   static const head = <String>[

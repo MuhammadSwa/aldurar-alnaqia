@@ -1,11 +1,11 @@
+import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:aldurar_alnaqia/widgets/search_widget.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
-import 'package:aldurar_alnaqia/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/search_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AwradListScreen extends ConsumerStatefulWidget {
   const AwradListScreen({super.key});

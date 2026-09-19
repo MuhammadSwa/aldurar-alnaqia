@@ -1,7 +1,10 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
+import 'package:aldurar_alnaqia/screens/settings_screen/setting_popup_tile.dart' show SettingPopupTile;
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Drawer font-size setting. Same [SettingsCard] row look as the
 /// [SettingPopupTile] settings; the slider lives in a dialog.
@@ -10,7 +13,7 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 /// releasing persists once via [FontSizeNotifier.change].
 class FontSizeSettingsWidget extends ConsumerWidget {
   const FontSizeSettingsWidget(
-      {super.key, this.cardStyle = SettingsCardStyle.classic});
+      {super.key, this.cardStyle = SettingsCardStyle.classic,});
 
   final SettingsCardStyle cardStyle;
 
@@ -24,9 +27,11 @@ class FontSizeSettingsWidget extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          showDialog(
-            context: context,
-            builder: (_) => const _FontSizeDialog(),
+          unawaited(
+            showDialog<void>(
+              context: context,
+              builder: (_) => const _FontSizeDialog(),
+            ),
           );
         },
         child: Padding(
@@ -97,7 +102,7 @@ class _FontSizeDialogState extends ConsumerState<_FontSizeDialog> {
             value: _local,
             onChanged: (v) {
               setState(() => _local = v);
-              ref.read(fontSizeProvider.notifier).preview(v);
+              ref.read(fontSizeProvider.notifier).preview = v;
             },
             onChangeEnd: (v) {
               ref.read(fontSizeProvider.notifier).change(v);

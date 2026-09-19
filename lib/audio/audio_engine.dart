@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:aldurar_alnaqia/audio/audio_controller.dart'
+    show AudioController;
+import 'package:aldurar_alnaqia/audio/audio_handler.dart';
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'package:aldurar_alnaqia/audio/audio_handler.dart';
-import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 /// Raw playback state reported by the engine, before the controller applies
 /// its own policy (e.g. rewind-on-complete).
@@ -82,7 +83,7 @@ abstract class AudioEngine {
   Future<void> dispose();
 }
 
-/// [just_audio] on its native backends:
+/// `just_audio` on its native backends:
 ///
 /// * Android → ExoPlayer (Media3),
 /// * iOS / macOS → AVPlayer,
@@ -96,7 +97,10 @@ class JustAudioEngine implements AudioEngine {
   /// notification support (desktop) where playback runs bare.
   JustAudioEngine({NarrationAudioHandler? notifications})
       : _notifications = notifications {
-    _notifications?.attach(_player);
+    final notifications = _notifications;
+    if (notifications != null) {
+      unawaited(notifications.attach(_player));
+    }
 
     _subscriptions.add(
       _player.playerStateStream.listen((playerState) {
@@ -137,7 +141,7 @@ class JustAudioEngine implements AudioEngine {
     _subscriptions.add(_player.durationStream.listen((_) => _emitProgress()));
   }
 
-  double _currentSpeed = 1.0;
+  double _currentSpeed = 1;
 
   final NarrationAudioHandler? _notifications;
   final AudioPlayer _player = AudioPlayer();

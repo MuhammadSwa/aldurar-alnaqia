@@ -1,10 +1,11 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:aldurar_alnaqia/audio/widgets/speed_slider_dialog.dart';
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact playback bar shown above the bottom navigation while a
 /// narration is loaded.
@@ -72,7 +73,6 @@ class _TitleBar extends ConsumerWidget {
           ),
         ),
         Align(
-          alignment: Alignment.center,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
@@ -124,7 +124,6 @@ class _ProgressBar extends ConsumerWidget {
         ),
         Expanded(
           child: Slider(
-            min: 0,
             max: sliderMax,
             value: positionMs,
             secondaryTrackValue: bufferedFraction,
@@ -232,7 +231,7 @@ class _TransportRow extends ConsumerWidget {
     if (target < Duration.zero) target = Duration.zero;
     if (target > s.duration) target = s.duration;
 
-    ref.read(audioProvider.notifier).seek(target);
+    unawaited(ref.read(audioProvider.notifier).seek(target));
   }
 
   Widget _buildPrimaryButton(
@@ -258,7 +257,7 @@ class _TransportRow extends ConsumerWidget {
             if (status == AudioStatus.error) {
               showSnackBar(context, 'جاري إعادة المحاولة...');
             }
-            controller.togglePlayPause();
+            unawaited(controller.togglePlayPause());
           },
           icon: const Icon(Icons.play_arrow),
           color: colorScheme.onSecondaryContainer,
@@ -322,7 +321,7 @@ class SpeedSliderButton extends ConsumerWidget {
         title: 'تعديل السرعة',
         divisions: 7,
         min: 0.25,
-        max: 2.0,
+        max: 2,
         value: ref.read(audioProvider).speed,
         onChanged: ref.read(audioProvider.notifier).setSpeed,
       ),

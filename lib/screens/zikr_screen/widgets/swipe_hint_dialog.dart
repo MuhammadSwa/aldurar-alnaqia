@@ -1,11 +1,11 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:lottie/lottie.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// First-run onboarding shown when entering a slidable zikr collection.
 /// Hand-slide animation + a short message telling the user they can swipe
 /// right and left to move between azkar.
 class SwipeHintDialog extends StatelessWidget {
-  const SwipeHintDialog({super.key, required this.onDismiss});
+  const SwipeHintDialog({required this.onDismiss, super.key});
 
   final VoidCallback onDismiss;
 

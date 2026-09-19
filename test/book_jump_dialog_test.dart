@@ -48,7 +48,7 @@ void main() {
   group('showBookJumpDialog', () {
     testWidgets('prefills the current page and hints the valid range',
         (tester) async {
-      final pending = await openDialog(tester, currentPage: 3, total: 100);
+      final pending = await openDialog(tester);
 
       expect(find.widgetWithText(TextField, '3'), findsOneWidget);
       expect(find.text('من 1 إلى 100'), findsOneWidget);

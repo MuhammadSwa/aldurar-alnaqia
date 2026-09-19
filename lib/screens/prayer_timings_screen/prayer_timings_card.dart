@@ -1,10 +1,11 @@
-import 'package:intl/intl.dart' as intl;
+import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart' show NextPrayerCountdown;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Timetable card. Renders the cached daily schedule; the highlighted row is
 /// derived at build time by matching the prayer's instant against the next
@@ -137,7 +138,7 @@ class PrayerTimingsCard extends ConsumerWidget {
     _PrayerTime prayer, {
     required bool isNext,
   }) {
-    final Color? rowColor = isNext
+    final rowColor = isNext
         ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
         : null;
     final (medallionBg, medallionFg) =
@@ -270,6 +271,9 @@ class PrayerTimingsCard extends ConsumerWidget {
 }
 
 class _PrayerTime {
+
+  const _PrayerTime(this.name, this.time,
+      {this.isSunnah = false, this.id, this.icon, this.assetPath, this.tint,});
   final String name;
   final DateTime? time;
   final bool isSunnah;
@@ -277,7 +281,4 @@ class _PrayerTime {
   final IconData? icon;
   final String? assetPath;
   final Color? tint;
-
-  const _PrayerTime(this.name, this.time,
-      {this.isSunnah = false, this.id, this.icon, this.assetPath, this.tint,});
 }

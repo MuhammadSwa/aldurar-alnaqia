@@ -4,13 +4,6 @@
 // build), the countdown owns its ticker locally, and the highlight follows
 // the next event by instant identity.
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
-import 'package:timezone/timezone.dart' as tz;
-
 import 'package:aldurar_alnaqia/prayer/prayer_hijri.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
@@ -18,6 +11,12 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countd
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 /// Configured prefs (Cairo) so the real providers derive a real view.
 Future<ProviderContainer> makeConfiguredContainer() async {
@@ -30,9 +29,8 @@ Future<ProviderContainer> makeConfiguredContainer() async {
     PrefsKeys.cityLabel: 'القاهرة، مصر',
   });
   await SharedPreferencesService().init();
-  final container = ProviderContainer();
   // Force provider creation against the mock prefs.
-  container.read(prayerViewProvider);
+  final container = ProviderContainer()..read(prayerViewProvider);
   return container;
 }
 
@@ -43,7 +41,7 @@ Future<ProviderContainer> makeEmptyContainer() async {
 }
 
 void main() {
-  setUpAll(() => tzdata.initializeTimeZones());
+  setUpAll(tzdata.initializeTimeZones);
 
   group('PrayerTimingsCard', () {
     testWidgets('renders derived schedule without recalculating',

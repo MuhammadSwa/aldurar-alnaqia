@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:aldurar_alnaqia/audio/audio_engine.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Orchestrates playback policy on top of [AudioEngine]:
 ///  * resolves each track's source (downloaded file first, else direct
@@ -37,14 +36,14 @@ class AudioController extends Notifier<AudioState> {
   AudioState build() {
     ref.onDispose(_dispose);
 
-    _eventSub?.cancel();
+    unawaited(_eventSub?.cancel());
     _eventSub = _engine.events.listen(_onEngineEvent);
 
     return const AudioState();
   }
 
   void _dispose() {
-    _eventSub?.cancel();
+    unawaited(_eventSub?.cancel());
     _eventSub = null;
   }
 
@@ -144,19 +143,16 @@ class AudioController extends Notifier<AudioState> {
       case AudioStatus.playing:
         state = state.copyWith(status: AudioStatus.paused);
         await _engine.pause();
-        break;
       case AudioStatus.paused:
       case AudioStatus.loading:
         state = state.copyWith(status: AudioStatus.playing);
         await _engine.play();
-        break;
       case AudioStatus.error:
         // Terminal error: start over. Queue context is preserved by
         // [_loadTrack], so continuous playback and prev/next keep working.
         if (state.track != null) {
           await _loadTrack(state.track!);
         }
-        break;
       case AudioStatus.stopped:
         break;
     }
@@ -261,14 +257,12 @@ class AudioController extends Notifier<AudioState> {
     switch (event) {
       case EnginePlaybackChanged(:final playback):
         _onPlaybackState(playback);
-        break;
       case EngineProgress(:final position, :final buffered, :final duration):
         state = state.copyWith(
           position: position,
           buffered: buffered,
           duration: duration,
         );
-        break;
       case EngineFailed(:final message):
         logWarn('Audio engine reported failure: $message');
         final request = _currentRequest;
@@ -281,7 +275,6 @@ class AudioController extends Notifier<AudioState> {
         } else if (state.track != null && state.status != AudioStatus.stopped) {
           _fail(request);
         }
-        break;
     }
   }
 
@@ -296,16 +289,13 @@ class AudioController extends Notifier<AudioState> {
         if (state.track != null && state.status != AudioStatus.error) {
           state = state.copyWith(status: AudioStatus.loading);
         }
-        break;
       case EnginePlaybackState.playing:
         state = state.copyWith(status: AudioStatus.playing, clearError: true);
-        break;
       case EnginePlaybackState.paused:
         if (state.status != AudioStatus.error &&
             state.status != AudioStatus.stopped) {
           state = state.copyWith(status: AudioStatus.paused);
         }
-        break;
       case EnginePlaybackState.completed:
         // Only the actively-playing track finishing counts. The engine can
         // emit `completed` more than once per finished track (playing flag
@@ -330,9 +320,8 @@ class AudioController extends Notifier<AudioState> {
           status: AudioStatus.paused,
           position: Duration.zero,
         );
-        _engine.seek(Duration.zero);
-        _engine.pause();
-        break;
+        unawaited(_engine.seek(Duration.zero));
+        unawaited(_engine.pause());
       case EnginePlaybackState.idle:
         // Intentionally ignored. Idle is a transient native state (source
         // teardown inside a skip, failed-source cleanup, ...), never proof

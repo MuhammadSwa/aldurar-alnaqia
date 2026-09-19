@@ -27,10 +27,9 @@
 //     "today" and schedule midnight rollover without any date math.
 
 import 'package:adhan_dart/adhan_dart.dart';
-import 'package:timezone/timezone.dart' as tz;
-
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_hijri.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// Version of the cross-platform prayer-settings contract. Persisted with the
 /// native config so a future contract change can migrate instead of silently
@@ -116,12 +115,6 @@ abstract final class PrayerHighLatitudeRules {
 /// Invalid values are rejected visibly ([validate] returns the reason) —
 /// callers must not silently swap in a different method.
 class PrayerSettings {
-  final double latitude;
-  final double longitude;
-  final String timezone;
-  final String method;
-  final String madhab;
-  final String highLatitudeRule;
 
   const PrayerSettings({
     required this.latitude,
@@ -131,6 +124,28 @@ class PrayerSettings {
     required this.madhab,
     required this.highLatitudeRule,
   });
+
+  /// Reads the native map defensively: unknown/missing method IDs fall back
+  /// to the default *visibly* (caller should log [validate]).
+  factory PrayerSettings.fromNativeMap(Map<String, Object?> map) {
+    double toDouble(dynamic v) =>
+        v is num ? v.toDouble() : double.tryParse('$v') ?? 0.0;
+    return PrayerSettings(
+      latitude: toDouble(map['lat']),
+      longitude: toDouble(map['lng']),
+      timezone: '${map['timezone'] ?? ''}',
+      method: '${map['method'] ?? PrayerMethods.egyptian}',
+      madhab: '${map['asrCalculation'] ?? PrayerMadhabs.shafi}',
+      highLatitudeRule:
+          '${map['highLatitudeRule'] ?? PrayerHighLatitudeRules.middleOfNight}',
+    );
+  }
+  final double latitude;
+  final double longitude;
+  final String timezone;
+  final String method;
+  final String madhab;
+  final String highLatitudeRule;
 
   static const PrayerSettings defaults = PrayerSettings(
     latitude: 0,
@@ -186,22 +201,6 @@ class PrayerSettings {
         'timezone': timezone,
       };
 
-  /// Reads the native map defensively: unknown/missing method IDs fall back
-  /// to the default *visibly* (caller should log [validate]).
-  factory PrayerSettings.fromNativeMap(Map<String, Object?> map) {
-    double toDouble(dynamic v) =>
-        v is num ? v.toDouble() : double.tryParse('$v') ?? 0.0;
-    return PrayerSettings(
-      latitude: toDouble(map['lat']),
-      longitude: toDouble(map['lng']),
-      timezone: '${map['timezone'] ?? ''}',
-      method: '${map['method'] ?? PrayerMethods.egyptian}',
-      madhab: '${map['asrCalculation'] ?? PrayerMadhabs.shafi}',
-      highLatitudeRule:
-          '${map['highLatitudeRule'] ?? PrayerHighLatitudeRules.middleOfNight}',
-    );
-  }
-
   PrayerSettings copyWith({
     double? latitude,
     double? longitude,
@@ -225,10 +224,10 @@ class PrayerSettings {
 
 /// One prayer event on a civil date.
 class PrayerEvent {
-  final PrayerEventId id;
-  final tz.TZDateTime time;
 
   const PrayerEvent({required this.id, required this.time});
+  final PrayerEventId id;
+  final tz.TZDateTime time;
 
   /// Sunrise advances the UI's next-event state but must never fire an
   /// arrival/adhan alert.
@@ -239,26 +238,21 @@ class PrayerEvent {
 
 /// Derived Sunnah times (Maghrib-anchored night + Duha).
 class SunnahTimes {
-  final tz.TZDateTime middleOfNight;
-  final tz.TZDateTime lastThirdOfNight;
-  final tz.TZDateTime duha;
 
   const SunnahTimes({
     required this.middleOfNight,
     required this.lastThirdOfNight,
     required this.duha,
   });
+  final tz.TZDateTime middleOfNight;
+  final tz.TZDateTime lastThirdOfNight;
+  final tz.TZDateTime duha;
 }
 
 /// All prayer data for one civil date, computed once per day.
 ///
 /// The UI must render from this and never recalculate times itself.
 class PrayerSchedule {
-  final PrayerSettings settings;
-  final tz.TZDateTime civilDate;
-  final Map<PrayerEventId, PrayerEvent> events;
-  final tz.TZDateTime tomorrowFajr;
-  final SunnahTimes? sunnah;
 
   const PrayerSchedule({
     required this.settings,
@@ -267,6 +261,11 @@ class PrayerSchedule {
     required this.tomorrowFajr,
     this.sunnah,
   });
+  final PrayerSettings settings;
+  final tz.TZDateTime civilDate;
+  final Map<PrayerEventId, PrayerEvent> events;
+  final tz.TZDateTime tomorrowFajr;
+  final SunnahTimes? sunnah;
 
   tz.TZDateTime get maghrib => events[PrayerEventId.maghrib]!.time;
 
@@ -319,9 +318,10 @@ abstract final class PrayerScheduleCalculator {
       logWarn('Unknown madhab "${settings.madhab}": refusing to guess.');
       return null;
     }
-    final params = factory();
-    params.madhab =
-        settings.madhab == PrayerMadhabs.shafi ? Madhab.shafi : Madhab.hanafi;
+    final params = factory()
+      ..madhab = settings.madhab == PrayerMadhabs.shafi
+          ? Madhab.shafi
+          : Madhab.hanafi;
     if (settings.latitude.abs() > 48.0) {
       final rule = _highLatitudeRules[settings.highLatitudeRule];
       if (rule == null) {
@@ -333,7 +333,7 @@ abstract final class PrayerScheduleCalculator {
     return params;
   }
 
-  /// Calculates [date]'s schedule in [settings.timezone]. Returns null when
+  /// Calculates [date]'s schedule in `settings.timezone`. Returns null when
   /// settings are invalid or the zone/calculation fails (logged, visible to
   /// the caller — never a silent wrong-method schedule).
   static PrayerSchedule? calculate({
@@ -416,7 +416,7 @@ abstract final class PrayerScheduleCalculator {
       tz.TZDateTime.from(time, location);
 
   /// Calculates [days] consecutive schedules starting at [startDate]'s civil
-  /// day in [settings.timezone]. Pure (no prefs/`tz.local`); skips days that
+  /// day in `settings.timezone`. Pure (no prefs/`tz.local`); skips days that
   /// fail instead of aborting the whole window.
   static List<PrayerSchedule> calculateRange({
     required PrayerSettings settings,
@@ -441,7 +441,7 @@ abstract final class PrayerScheduleCalculator {
 /// Builds the full native-service payload (contract v3): settings plus
 /// precomputed `days` (one map of 6 epoch-ms + 2 Hijri labels per civil day)
 /// and `midnights` (N+1 civil-midnight epoch-ms boundaries in
-/// [settings.timezone]).
+/// `settings.timezone`).
 ///
 /// `hb` is the Hijri label before Maghrib, `ha` from Maghrib on; Kotlin picks
 /// between them with a single comparison, so no Hijri math lives natively.
@@ -457,8 +457,8 @@ Map<String, Object?> buildNativeConfigMap(
   int hijriOffset = 0,
 }) {
   final base = settings.toNativeMap();
-  List<Map<String, Object>> days = [];
-  List<int> midnights = [];
+  var days = <Map<String, Object>>[];
+  var midnights = <int>[];
   try {
     if (settings.validate() == null) {
       final location = tz.getLocation(settings.timezone);

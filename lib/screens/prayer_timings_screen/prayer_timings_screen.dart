@@ -1,17 +1,19 @@
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
-import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_header_card.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_notification_dialog.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PrayerTimingsScreen extends ConsumerStatefulWidget {
   const PrayerTimingsScreen({super.key});
@@ -33,7 +35,6 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
     // settings dialog and city search open instantly (the 2.3 MB asset
     // parse now runs on a background isolate, but starting it early
     // still hides its latency behind this screen).
-    // ignore: unused_result
     ref.read(cityDirectoryProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -49,9 +50,11 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
     _hasAutoShownSettings = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => const PrayerSettingsDialog(),
+      unawaited(
+        showDialog<void>(
+          context: context,
+          builder: (context) => const PrayerSettingsDialog(),
+        ),
       );
     });
   }
@@ -81,7 +84,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
               // Nested go_router location (not an imperative Navigator.push)
               // so re-tapping the prayers tab pops back via
               // goBranch(initialLocation: true).
-              context.pushNamed(RouteNames.timingsSettings);
+              unawaited(context.pushNamed(RouteNames.timingsSettings));
             },
           ),
           if (AppPlatform.isAndroid)
@@ -106,7 +109,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
                             const PrayerSetupRequiredDialog(),
                       );
                       if (openSettings == true && context.mounted) {
-                        await showDialog(
+                        await showDialog<void>(
                           context: context,
                           builder: (context) =>
                               const PrayerSettingsDialog(),
@@ -135,7 +138,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
         ],
       ),
       body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16),
         child: Column(
           children: [
             PrayerHeaderCard(),

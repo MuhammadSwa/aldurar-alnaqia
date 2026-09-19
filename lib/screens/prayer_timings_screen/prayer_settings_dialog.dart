@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_form.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Prayer settings dialog: GPS or city-picker location + madhab + method.
 // Kept for the auto-setup prompt and other callers; the settings page

@@ -26,7 +26,6 @@ const noTimezone = City(
   countryCode: 'XX',
   latitude: 0,
   longitude: 0,
-  timeZone: null,
 );
 
 void main() {
@@ -148,7 +147,6 @@ void main() {
         countryCode: 'XX',
         latitude: 30.05,
         longitude: 31.24,
-        timeZone: null,
       );
       expect(
         LocationTimezone.resolve(
@@ -185,7 +183,7 @@ void main() {
       );
       expect(
         LocationTimezone.resolve(
-          latitude: -21.0,
+          latitude: -21,
           longitude: -177.4,
           cities: [cairo, nukualofa],
         ),

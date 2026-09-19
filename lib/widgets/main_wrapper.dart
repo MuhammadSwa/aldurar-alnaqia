@@ -1,10 +1,10 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:aldurar_alnaqia/audio/audio_controller.dart' show audioProvider;
 import 'package:aldurar_alnaqia/audio/widgets/audio_mini_player.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:aldurar_alnaqia/audio/audio_controller.dart' show audioProvider;
 import 'package:aldurar_alnaqia/widgets/my_drawer.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   const MainWrapper({
@@ -81,9 +81,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
                   label: 'المكتبة',
                 ),
               ],
-              onDestinationSelected: (index) {
-                _goBranch(index);
-              },
+              onDestinationSelected: _goBranch,
               selectedIndex: widget.navigationShell.currentIndex,
             ),
           ),

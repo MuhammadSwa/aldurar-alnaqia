@@ -1,5 +1,6 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart' show Zikr;
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 // ---------------------------------------------------------------------------
 // Routing contract — the single source of truth for everything navigation
@@ -87,9 +88,9 @@ enum ZikrBranch {
 
 /// Typed extras contract for zikr detail pages.
 class ZikrRouteExtra {
+  const ZikrRouteExtra({this.zikrIds, this.index});
   final List<String>? zikrIds;
   final int? index;
-  const ZikrRouteExtra({this.zikrIds, this.index});
 }
 
 /// Centralized location builders. Only ASCII-safe segments may be

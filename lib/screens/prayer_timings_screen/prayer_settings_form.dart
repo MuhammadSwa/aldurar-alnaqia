@@ -8,20 +8,21 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_button_wi
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation_method_info.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart' show PrayerSettingsDialog;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Reusable prayer-settings editor (location + madhab + method).
 ///
 /// Used inline by the settings page and wrapped in a [Dialog] by
 /// [PrayerSettingsDialog] (kept for the auto-setup prompt and other callers).
 class PrayerSettingsForm extends ConsumerStatefulWidget {
+
+  const PrayerSettingsForm({super.key, this.showCancel = true, this.onSaved});
   /// When true (dialog use) a cancel button is shown next to save.
   final bool showCancel;
   final VoidCallback? onSaved;
-
-  const PrayerSettingsForm({super.key, this.showCancel = true, this.onSaved});
 
   @override
   ConsumerState<PrayerSettingsForm> createState() => _PrayerSettingsFormState();
@@ -47,7 +48,6 @@ class _PrayerSettingsFormState extends ConsumerState<PrayerSettingsForm> {
     super.initState();
     // Warm the city directory while the user reads, so the city search
     // sheet opens instantly.
-    // ignore: unused_result
     ref.read(cityDirectoryProvider);
     _selectedAsrCalc = SharedPreferencesService.getAsrCalculation();
     if (_selectedAsrCalc != 'shafi' && _selectedAsrCalc != 'hanafi') {

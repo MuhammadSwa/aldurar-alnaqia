@@ -1,14 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/timezone.dart' as tz;
-
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// Thin Riverpod glue over [PrayerRepository]. Holds no prayer data itself:
 /// one stored config plus derived values. See `prayer_repository.dart` for
@@ -22,10 +21,10 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 /// saved alongside them ('القاهرة، مصر'). Single writer:
 /// [savePrayerSettings] publishes through [PrayerConfigNotifier.publish].
 class PrayerConfig {
-  final PrayerSettings settings;
-  final String cityLabel;
 
   const PrayerConfig({required this.settings, required this.cityLabel});
+  final PrayerSettings settings;
+  final String cityLabel;
 }
 
 class PrayerConfigNotifier extends Notifier<PrayerConfig> {
@@ -57,12 +56,6 @@ final prayerNudgeProvider =
 /// separate loading state; prefs and the tz database are ready before
 /// `runApp`, so a null view unambiguously means "no saved location").
 class PrayerView {
-  final PrayerSettings settings;
-  final PrayerSchedule schedule;
-  final PrayerEvent next;
-  final int weekday;
-  final tz.TZDateTime today;
-  final String cityLabel;
 
   const PrayerView({
     required this.settings,
@@ -72,6 +65,12 @@ class PrayerView {
     required this.today,
     required this.cityLabel,
   });
+  final PrayerSettings settings;
+  final PrayerSchedule schedule;
+  final PrayerEvent next;
+  final int weekday;
+  final tz.TZDateTime today;
+  final String cityLabel;
 }
 
 final prayerViewProvider = Provider<PrayerView?>((ref) {

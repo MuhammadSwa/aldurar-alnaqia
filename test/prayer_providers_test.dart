@@ -54,7 +54,7 @@ void main() {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
     const MethodChannel('app/prayer_notification'),
-    (MethodCall call) async => null,
+    (call) async => null,
   );
 
   setUpAll(tzdata.initializeTimeZones);

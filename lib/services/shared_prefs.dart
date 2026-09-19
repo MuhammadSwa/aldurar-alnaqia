@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods, PrayerSettings;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
+import 'package:material_ui/material_ui.dart' show ThemeMode;
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Centralized SharedPreferences keys. The native prayer-notification config
 /// reads the same values, so `prayer_notification_service.dart` must use

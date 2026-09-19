@@ -7,8 +7,7 @@ void showSnackBar(
   String msg, {
   Duration duration = const Duration(seconds: 2),
 }) {
-  final messenger = ScaffoldMessenger.of(context);
-  messenger
+  ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(

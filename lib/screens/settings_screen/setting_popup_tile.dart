@@ -8,12 +8,7 @@ import 'package:material_ui/material_ui.dart';
 /// `FileActionSettingWidget` and `YousriaBeginningDayDropDown`.
 class SettingPopupTile<T> extends StatelessWidget {
   const SettingPopupTile({
-    super.key,
-    required this.title,
-    required this.value,
-    required this.values,
-    required this.labelFor,
-    required this.onSelected,
+    required this.title, required this.value, required this.values, required this.labelFor, required this.onSelected, super.key,
     this.cardStyle = SettingsCardStyle.classic,
     this.leading,
     this.trailingStyle = 0,

@@ -1,10 +1,11 @@
 import 'dart:async';
 
+import 'package:aldurar_alnaqia/audio/audio_controller.dart'
+    show AudioController;
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
-
-import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 
 /// Custom [BaseAudioHandler] that owns the media notification.
 ///
@@ -75,7 +76,7 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
     // Unplugging headphones should pause, not blast sound from speakers.
     _becomingNoisySub = session.becomingNoisyEventStream.listen((_) {
       logInfo('Audio paused: headphones unplugged');
-      player.pause();
+      unawaited(player.pause());
     });
 
     // Pause during phone calls / other apps' audio; resume afterwards if
@@ -86,12 +87,12 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
         _resumedAfterInterruption = false;
         if (event.type != AudioInterruptionType.duck && player.playing) {
           logInfo('Audio paused: interruption began');
-          player.pause();
+          unawaited(player.pause());
         }
       } else if (!_resumedAfterInterruption &&
           event.type == AudioInterruptionType.pause) {
         _resumedAfterInterruption = true;
-        player.play();
+        unawaited(player.play());
       }
     });
   }
@@ -140,7 +141,7 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
     // The X reuses the stop action, so tapping it runs [stop]: playback
     // halts and the notification is dismissed.
     final controls = <MediaControl>[
-      playing ? MediaControl.pause : MediaControl.play,
+      if (playing) MediaControl.pause else MediaControl.play,
       closeControl,
     ];
 
@@ -224,8 +225,6 @@ class NarrationAudioHandler extends BaseAudioHandler with SeekHandler {
     playbackState.add(
       PlaybackState(
         controls: [],
-        processingState: AudioProcessingState.idle,
-        playing: false,
       ),
     );
     await super.stop();

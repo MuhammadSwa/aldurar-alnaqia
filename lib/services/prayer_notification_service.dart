@@ -2,15 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show buildNativeConfigMap;
 import 'package:aldurar_alnaqia/services/shared_prefs.dart'
     show PrefsKeys, SharedPreferencesService;
-import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
 
 // ---------------------------------------------------------------------------
 // Native prayer-notification bridge (Android only)
@@ -118,7 +118,7 @@ Future<void> _writeConfig() async {
 
 void _startNativeService() {
   try {
-    _channel.invokeMethod<void>('start');
+    unawaited(_channel.invokeMethod<void>('start'));
   } catch (e) {
     logWarn('prayer channel start failed: $e');
   }

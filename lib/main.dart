@@ -1,23 +1,23 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
-import 'package:aldurar_alnaqia/router/app_router.dart';
-import 'package:aldurar_alnaqia/router/app_routes.dart' show RoutePaths;
-import 'package:aldurar_alnaqia/services/shared_prefs.dart';
-import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
-import 'package:audio_service/audio_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/audio_engine.dart';
 import 'package:aldurar_alnaqia/audio/audio_handler.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:aldurar_alnaqia/services/storage_service.dart';
-import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
+import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
+import 'package:aldurar_alnaqia/router/app_router.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart' show RoutePaths;
+import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/services/storage_service.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
 
 Future<ProviderContainer> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,14 +28,13 @@ Future<ProviderContainer> _bootstrap() async {
   NarrationAudioHandler? audioHandler;
   if (AppPlatform.isMobile) {
     audioHandler = await AudioService.init(
-      builder: () => NarrationAudioHandler(),
+      builder: NarrationAudioHandler.new,
       config: const AudioServiceConfig(
         androidNotificationChannelId:
             'com.example.aldurar_alnaqia.channel.audio',
         androidNotificationChannelName: 'تشغيل الصوت',
         androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
         androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
       ),
     );
     await NarrationAudioHandler.configureAudioSession();

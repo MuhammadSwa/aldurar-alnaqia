@@ -4,9 +4,10 @@ import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart' show PrayerTimingsCard;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Countdown to the next prayer.
 ///
@@ -223,7 +224,12 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
   }
 
   void _openSettings(BuildContext context) {
-    showDialog(context: context, builder: (_) => const PrayerSettingsDialog());
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (_) => const PrayerSettingsDialog(),
+      ),
+    );
   }
 
   /// Opaque marker for the bar's fill tip: the next prayer's timetable
@@ -268,9 +274,9 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
 }
 
 class _UnsetContent extends StatelessWidget {
-  final VoidCallback onTap;
 
   const _UnsetContent({required this.onTap});
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -292,15 +298,15 @@ class _UnsetContent extends StatelessWidget {
 /// Tappable location line shown above the countdown.
 /// Unset state invites the user to pick a location.
 class _LocationLine extends StatelessWidget {
-  final String label;
-  final bool isUnset;
-  final VoidCallback onTap;
 
   const _LocationLine({
     required this.label,
     required this.isUnset,
     required this.onTap,
   });
+  final String label;
+  final bool isUnset;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

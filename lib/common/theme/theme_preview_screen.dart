@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// TEMPORARY theme playground: a mock of the app whose colors the user can
 /// tweak. Preview-only — nothing here touches the real app theme.
@@ -268,16 +268,16 @@ Color? _parseHex(String s) {
 
 /// Small editor: preset swatches + hex field. Returns the picked color.
 class _HexEditDialog extends StatefulWidget {
+  const _HexEditDialog({required this.initial, required this.title});
   final Color initial;
   final String title;
-  const _HexEditDialog({required this.initial, required this.title});
 
   @override
   State<_HexEditDialog> createState() => _HexEditDialogState();
 }
 
 class _HexEditDialogState extends State<_HexEditDialog> {
-  static const _presets = [
+  static const List<Color> _presets = [
     Colors.green,
     Color(0xFF0B6B4F),
     Color(0xFF4DD0C4),
@@ -411,9 +411,9 @@ class _HexEditDialogState extends State<_HexEditDialog> {
 
 /// Static mock of the app's look: app bar + today section + tiles + nav bar.
 class _MockApp extends StatelessWidget {
+  const _MockApp({required this.theme, required this.dark});
   final ThemeData theme;
   final bool dark;
-  const _MockApp({required this.theme, required this.dark});
 
   @override
   Widget build(BuildContext context) {

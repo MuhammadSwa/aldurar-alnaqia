@@ -1,3 +1,5 @@
+import 'package:aldurar_alnaqia/services/storage_service.dart' show StorageService;
+
 /// Download domain models (type + item).
 ///
 /// Lives in `models/` so low-level services (e.g. [StorageService]) don't
@@ -12,10 +14,6 @@ extension DownloadTypeExtension on DownloadType {
 }
 
 class DownloadItem {
-  final String id;
-  final String title;
-  final String url;
-  final DownloadType type;
 
   const DownloadItem({
     required this.id,
@@ -23,4 +21,8 @@ class DownloadItem {
     required this.url,
     required this.type,
   });
+  final String id;
+  final String title;
+  final String url;
+  final DownloadType type;
 }
