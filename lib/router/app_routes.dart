@@ -159,11 +159,19 @@ class ZikrDetailTarget extends ZikrTarget {
 
   @override
   void go(BuildContext context) {
+    // Swipe context travels twice: `extra` for instant in-memory swiping,
+    // and `ids`+`i` query params so it survives OS process death
+    // (`extra` is not serialized by state restoration — the URL is).
+    final zikrIds = this.zikrIds;
+    final index = this.index;
     context.goNamed(
       RouteNames.zikrPage(pagePrefix ?? branch.namePrefix),
       pathParameters: collection == null
           ? {'zikr': zikrId}
           : {'collection': collection!, 'zikr': zikrId},
+      queryParameters: zikrIds != null && index != null
+          ? {'ids': zikrIds.join(','), 'i': '$index'}
+          : const {},
       extra: ZikrRouteExtra(zikrIds: zikrIds, index: index),
     );
   }

@@ -279,7 +279,8 @@ class AppRouter {
       pageBuilder: (context, state) {
         final zikrId = state.pathParameters['zikr']!;
 
-        final (zikrIds, index) = _parseZikrExtras(state.extra);
+        final (zikrIds, index) =
+            _resolveSwipeContext(state.extra, state.uri, zikrId);
 
         // When opened from a list with swipe context (ids + index),
         // always go through the slidable screen — even for special
@@ -340,13 +341,38 @@ class AppRouter {
     );
   }
 
-  /// Typed extras for zikr detail pages. All navigation goes through
-  /// [ZikrRouteExtra]; anything else carries no swipe context.
-  static (List<String>?, int?) _parseZikrExtras(Object? extra) {
+  /// Swipe context for zikr detail pages. Fast path is the typed
+  /// [ZikrRouteExtra]; when that is gone (OS process death — `extra` is
+  /// not serialized, only the URL is), fall back to the `ids`+`i` query
+  /// params written by [ZikrDetailTarget.go]. Anything unparseable or
+  /// inconsistent carries no swipe context.
+  static (List<String>?, int?) _resolveSwipeContext(
+    Object? extra,
+    Uri uri,
+    String zikrId,
+  ) {
     if (extra is ZikrRouteExtra) {
       return (extra.zikrIds, extra.index);
     }
-    return (null, null);
+    final rawIds = uri.queryParameters['ids'];
+    final rawIndex = uri.queryParameters['i'];
+    if (rawIds == null || rawIds.isEmpty || rawIndex == null) {
+      return (null, null);
+    }
+    // Guard against hand-crafted deep links with huge payloads.
+    if (rawIds.length > 4000) return (null, null);
+    final ids = rawIds.split(',').where((s) => s.isNotEmpty).toList();
+    final index = int.tryParse(rawIndex);
+    if (ids.isEmpty ||
+        ids.length > 200 ||
+        index == null ||
+        index < 0 ||
+        index >= ids.length) {
+      return (null, null);
+    }
+    // The list must describe the page being opened, not a foreign list.
+    if (ids[index] != zikrId) return (null, null);
+    return (ids, index);
   }
 }
 
