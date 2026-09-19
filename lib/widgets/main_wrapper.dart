@@ -35,7 +35,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
         ref.watch(audioProvider.select((state) => state.isVisible));
     // Selected tab icon color contrasts with the primary indicator pill.
     final selectedIconColor = Theme.of(context).colorScheme.onPrimary;
-    // Global RTL comes from MaterialApp.builder in main.dart.
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Center(

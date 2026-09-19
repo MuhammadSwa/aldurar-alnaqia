@@ -143,12 +143,16 @@ class _MyAppState extends ConsumerState<MyApp> {
     final fontSize = ref.watch(fontSizeProvider);
     return MaterialApp.router(
       routerConfig: router,
+      restorationScopeId: 'app',
+      //
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      //
       scrollBehavior: AppScrollBehavior(),
       title: 'الدرر النقية',
       debugShowCheckedModeBanner: false,
+      //
       theme: AppTheme.light(fontSize: fontSize),
       darkTheme: AppTheme.dark(fontSize: fontSize),
       themeMode: themeMode,

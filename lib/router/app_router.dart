@@ -37,6 +37,7 @@ class AppRouter {
       initialLocation: RoutePaths.home,
       debugLogDiagnostics: kDebugMode,
       navigatorKey: _rootNavigatorKey,
+      restorationScopeId: 'router',
       routes: [
         // Standalone routes (not in bottom nav)
         _createSocialRoute(),
@@ -44,8 +45,13 @@ class AppRouter {
 
         // Bottom navigation shell with main tabs
         StatefulShellRoute.indexedStack(
-          builder: (context, state, navigationShell) {
-            return MainWrapper(navigationShell: navigationShell);
+          restorationScopeId: 'appShell',
+          pageBuilder: (context, state, navigationShell) {
+            return MaterialPage(
+              key: state.pageKey,
+              restorationId: 'appShellPage',
+              child: MainWrapper(navigationShell: navigationShell),
+            );
           },
           branches: [
             _createHomeBranch(),
@@ -71,8 +77,7 @@ class AppRouter {
     return GoRoute(
       path: '${RoutePaths.downloadManager}/:index',
       builder: (context, state) {
-        final index =
-            int.tryParse(state.pathParameters['index'] ?? '') ?? 0;
+        final index = int.tryParse(state.pathParameters['index'] ?? '') ?? 0;
         final safeIndex = index.clamp(0, 1);
         return DownloadManagerPage(initialIndex: safeIndex);
       },
@@ -83,6 +88,7 @@ class AppRouter {
 
   static StatefulShellBranch _createHomeBranch() {
     return StatefulShellBranch(
+      restorationScopeId: 'homeBranch',
       routes: [
         GoRoute(
           path: RoutePaths.home,
@@ -101,6 +107,7 @@ class AppRouter {
 
   static StatefulShellBranch _createPrayerTimingsBranch() {
     return StatefulShellBranch(
+      restorationScopeId: 'timingsBranch',
       routes: [
         GoRoute(
           path: RoutePaths.timings,
@@ -125,6 +132,8 @@ class AppRouter {
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
           const PrayerTimingsSettingsScreen(),
+          key: state.pageKey,
+          restorationId: 'timingsSettings',
         );
       },
     );
@@ -132,6 +141,7 @@ class AppRouter {
 
   static StatefulShellBranch _createAwradBranch() {
     return StatefulShellBranch(
+      restorationScopeId: 'awradBranch',
       routes: [
         GoRoute(
           path: RoutePaths.awrad,
@@ -150,6 +160,7 @@ class AppRouter {
 
   static StatefulShellBranch _createLibraryBranch() {
     return StatefulShellBranch(
+      restorationScopeId: 'libraryBranch',
       routes: [
         GoRoute(
           path: RoutePaths.library,
@@ -179,9 +190,14 @@ class AppRouter {
             branch: ZikrBranch.home,
             detailPagePrefix: RouteNames.todayZikrPagePrefix,
           ),
+          key: state.pageKey,
+          restorationId: 'todayZikr',
         );
       },
-      routes: [_createZikrPageRoute(ZikrBranch.home, pagePrefix: RouteNames.todayZikrPagePrefix)],
+      routes: [
+        _createZikrPageRoute(ZikrBranch.home,
+            pagePrefix: RouteNames.todayZikrPagePrefix)
+      ],
     );
   }
 
@@ -192,6 +208,8 @@ class AppRouter {
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
           WeekCollectionScreen(branch: branch),
+          key: state.pageKey,
+          restorationId: 'weekCollection-${branch.name}',
         );
       },
       routes: _createDayCollectionRoutes(branch),
@@ -210,6 +228,8 @@ class AppRouter {
               branch: branch,
               detailPagePrefix: pagePrefix,
             ),
+            key: state.pageKey,
+            restorationId: 'dayCollection-${branch.name}-$index',
           );
         },
         routes: [
@@ -236,6 +256,8 @@ class AppRouter {
             collectionId: collection?.id ?? collectionId,
             zikrIds: zikrIds,
           ),
+          key: state.pageKey,
+          restorationId: 'zikrCollection-${branch.name}',
         );
       },
       routes: [
@@ -270,6 +292,8 @@ class AppRouter {
             index < zikrIds.length) {
           return RouteTransitions.slideTransition(
             ZikrScreen(zikrId: zikrId, zikrIds: zikrIds, index: index),
+            key: state.pageKey,
+            restorationId: 'zikrPage-$pagePrefix',
           );
         }
 
@@ -277,14 +301,18 @@ class AppRouter {
         // e.g. opened from search or a deep link).
         final resolved = resolveZikr(zikrId);
         if (resolved?.kind == ZikrKind.hilyaNasab) {
-          return RouteTransitions.slideTransition(const HeliaNasabScreen());
+          return RouteTransitions.slideTransition(const HeliaNasabScreen(),
+              key: state.pageKey, restorationId: 'zikrPage-$pagePrefix-hilya');
         }
         if (resolved?.kind == ZikrKind.tareeqaSanad) {
-          return RouteTransitions.slideTransition(const TareeqaSanadScreen());
+          return RouteTransitions.slideTransition(const TareeqaSanadScreen(),
+              key: state.pageKey, restorationId: 'zikrPage-$pagePrefix-sanad');
         }
 
         return RouteTransitions.slideTransition(
           ZikrScreen(zikrId: zikrId, zikrIds: zikrIds, index: index),
+          key: state.pageKey,
+          restorationId: 'zikrPage-$pagePrefix',
         );
       },
     );
@@ -295,7 +323,8 @@ class AppRouter {
       path: 'heliaNasab',
       name: RouteNames.heliaNasab,
       pageBuilder: (context, state) {
-        return RouteTransitions.slideTransition(const HeliaNasabScreen());
+        return RouteTransitions.slideTransition(const HeliaNasabScreen(),
+            key: state.pageKey, restorationId: 'heliaNasab');
       },
     );
   }
@@ -326,8 +355,14 @@ class AppRouter {
 class RouteTransitions {
   RouteTransitions._();
 
-  static CustomTransitionPage<Widget> slideTransition(Widget child) {
+  static CustomTransitionPage<Widget> slideTransition(
+    Widget child, {
+    required LocalKey key,
+    String? restorationId,
+  }) {
     return CustomTransitionPage<Widget>(
+      key: key,
+      restorationId: restorationId,
       child: child,
       transitionsBuilder: _slideTransition,
     );
