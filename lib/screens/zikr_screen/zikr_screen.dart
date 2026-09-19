@@ -49,7 +49,7 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
     if (!mounted) return;
     await showDialog<void>(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (dialogContext) => SwipeHintDialog(
         onDismiss: () => Navigator.of(dialogContext).pop(),
       ),
