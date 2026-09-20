@@ -6,17 +6,11 @@ import 'package:material_ui/material_ui.dart';
 // Routing contract — the single source of truth for everything navigation
 // related in the app.
 //
-// Rules of the road:
-//  * Widgets NEVER build location strings themselves. Either use one of the
-//    typed [ZikrTarget]s / [AppRoutes] builders, or navigate by route NAME
-//    via `goNamed`/`pushNamed`.
-//  * Path parameters (`:zikr`, `:collection`) carry stable ASCII ids
-//    ([Zikr.id], [ZikrCollection.id]) only. Search suggestions display
-//    titles but map back via [zikrIdForTitle] at the search edge.
-//    Always pass values RAW to go_router; it encodes them when building
-//    the location and decodes them in `state.pathParameters`.
-//  * Non-ASCII segments must only travel through named routes or the
-//    builders below, never hand-concatenated strings.
+// Widgets never build locations: use typed [ZikrTarget]s / [AppRoutes] /
+// `goNamed`. Params are stable ASCII ids, passed RAW (go_router encodes
+// when building the location and decodes in `state.pathParameters`).
+// Search maps titles back via [zikrIdForTitle] at the search edge.
+// Swipe context travels as `extra` + restorable `?ids=&i=` query params.
 // ---------------------------------------------------------------------------
 
 /// Absolute route paths for top-level destinations.

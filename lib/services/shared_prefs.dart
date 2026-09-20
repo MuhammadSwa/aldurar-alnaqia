@@ -303,6 +303,13 @@ class AppearancePrefs {
 
   final SharedPreferences _prefs;
 
+  /// Single source of truth for the body font-size setting.
+  /// `AppTheme.defaultFontSize` aliases [defaultFontSize] so the theme
+  /// default cannot drift from the stored-prefs default.
+  static const double defaultFontSize = 22;
+  static const double minFontSize = 16;
+  static const double maxFontSize = 40;
+
   /// Raw stored value. Kept string-based so this service does not depend
   /// on Flutter material; providers map it to [ThemeMode].
   /// Absent returns system; unknown values are logged and reset to system.
@@ -327,12 +334,16 @@ class AppearancePrefs {
 
   double getFontSize() {
     final stored = _prefs.getDouble(PrefsKeys.fontSize);
-    if (stored == null) return 22;
-    if (!stored.isFinite || stored < 16 || stored > 40) {
-      logWarn('Invalid stored font size "$stored" — using default');
-      return 22;
+    if (stored != null &&
+        stored.isFinite &&
+        stored >= minFontSize &&
+        stored <= maxFontSize) {
+      return stored;
     }
-    return stored;
+    if (stored != null) {
+      logWarn('Invalid stored font size "$stored" — using default');
+    }
+    return defaultFontSize;
   }
 
   void setHijriDayOffset(int offset) {

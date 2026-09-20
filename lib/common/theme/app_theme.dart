@@ -1,20 +1,12 @@
-import 'package:aldurar_alnaqia/services/shared_prefs.dart' show SharedPreferencesService;
+import 'package:aldurar_alnaqia/services/shared_prefs.dart'
+    show AppearancePrefs;
 import 'package:material_ui/material_ui.dart';
 
 /// Single place where the app's visual themes are defined.
 ///
-/// Usage:
-/// ```dart
-/// MaterialApp(
-///   theme: AppTheme.light(fontSize: fontSize),
-///   darkTheme: AppTheme.dark(fontSize: fontSize),
-///   themeMode: themeMode, // from [themeModeProvider]
-/// )
-/// ```
-///
 /// The current [ThemeMode] (light/dark/system) is owned by
 /// `themeModeProvider` (see `lib/state/app_providers.dart`) and persisted
-/// via [SharedPreferencesService]. This file is intentionally stateless:
+/// via `SharedPreferencesService`. This file is intentionally stateless:
 /// it only maps (brightness, font size) -> [ThemeData].
 ///
 /// To extend (e.g. a high-contrast or sepia theme), add a new factory
@@ -23,12 +15,12 @@ import 'package:material_ui/material_ui.dart';
 abstract final class AppTheme {
   AppTheme._();
 
-  /// Font family used across the app (Arabic-first UI).
+  /// Font family used across the app
   static const String fontFamily = 'NotoNaskh';
 
-  /// Fallback body font size. Must match the default in
-  /// `SharedPreferencesService.getFontSize`.
-  static const double defaultFontSize = 22;
+  /// Fallback body font size. Alias of [AppearancePrefs.defaultFontSize]
+  /// so the theme default cannot drift from the stored-prefs default.
+  static const double defaultFontSize = AppearancePrefs.defaultFontSize;
 
   static const double _bodyLineHeight = 1.8;
 
@@ -46,8 +38,9 @@ abstract final class AppTheme {
     seedColor: const Color(0xFF4DD0C4),
     brightness: Brightness.dark,
   ).copyWith(
-      // Default tone 80 reads washed-out; tone 70 of the same hue.
-      primary: const Color(0xFF1A8980),);
+    // Default tone 80 reads washed-out; tone 70 of the same hue.
+    primary: const Color(0xFF1A8980),
+  );
 
   // -- Public factories -------------------------------------------------------
 
