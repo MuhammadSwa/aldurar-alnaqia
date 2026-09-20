@@ -51,15 +51,16 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return AlertDialog(
       title: Text(widget.item.title,
-          style: const TextStyle(fontSize: 18), textAlign: TextAlign.center,),
+          style: textTheme.titleSmall, textAlign: TextAlign.center,),
       contentPadding: const EdgeInsets.all(16),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('الملف غير مُحمل. الرجاء اختيار أحد الخيارات:',
-              textAlign: TextAlign.center,),
+          Text('الملف غير مُحمل. الرجاء اختيار أحد الخيارات:',
+              style: textTheme.bodySmall, textAlign: TextAlign.center,),
           const SizedBox(height: 20),
           _buildOptionButton(
             context,
@@ -89,8 +90,8 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
                     _rememberChoice = value ?? false;
                   });
                 },
-                title: const Text('تذكر الاختيار',
-                    style: TextStyle(fontSize: 14),),
+                title: Text('تذكر الاختيار',
+                    style: Theme.of(context).textTheme.bodySmall,),
                 controlAffinity: ListTileControlAffinity.leading,
                 dense: true,
                 contentPadding: EdgeInsets.zero,
@@ -110,6 +111,7 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
     required VoidCallback onPressed,
     required Color color,
   }) {
+    final textTheme = Theme.of(context).textTheme;
     return Directionality(
       textDirection: TextDirection.rtl,
       child: SizedBox(
@@ -136,11 +138,11 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(label,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14,),),
+                        style: textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.bold,),),
                     Text(subtitle,
-                        style: TextStyle(
-                            fontSize: 12, color: color.withValues(alpha: 0.9),),),
+                        style: textTheme.labelSmall?.copyWith(
+                            color: color.withValues(alpha: 0.9),),),
                   ],
                 ),
               ),
