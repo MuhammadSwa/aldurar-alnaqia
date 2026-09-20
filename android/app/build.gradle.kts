@@ -3,10 +3,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    // AGP 9 interim mode (android.builtInKotlin=false): legacy KGP, because
-    // several Flutter plugins still apply kotlin-android (Flutter 3.44+
-    // migrator approach). Revisit when all plugins use built-in Kotlin.
-    id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -19,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.dorar.yosriya"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

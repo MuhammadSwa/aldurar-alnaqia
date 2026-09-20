@@ -357,8 +357,7 @@ class _DownloadSectionState extends State<DownloadSection> {
           alignment: Alignment.topCenter,
           child: _expanded
               ? Padding(
-                  // Indent children to read as nested under the parent
-                  // header.
+                  // Indent children to read as nested under the parent header.
                   padding: const EdgeInsetsDirectional.only(start: 12),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
