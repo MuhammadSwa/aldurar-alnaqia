@@ -356,12 +356,17 @@ class _DownloadSectionState extends State<DownloadSection> {
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
           child: _expanded
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final item in widget.items)
-                      DownloadManagerTile(item: item),
-                  ],
+              ? Padding(
+                  // Indent children to read as nested under the parent
+                  // header.
+                  padding: const EdgeInsetsDirectional.only(start: 12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final item in widget.items)
+                        DownloadManagerTile(item: item),
+                    ],
+                  ),
                 )
               : const SizedBox(width: double.infinity),
         ),
