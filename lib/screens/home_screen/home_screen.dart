@@ -119,8 +119,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
 
             AppTile(
-              title: 'دلائل الخيرات',
-              subtitle: 'ورد يوم ${arabicWeekdays[dayIndex]}',
+              title:                   dalayilAlkhayratCollection[dayIndex].title,
               leading: const AppTileLeadingIcon(
                 icon: Icons.auto_stories_rounded,
               ),
