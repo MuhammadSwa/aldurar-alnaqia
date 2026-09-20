@@ -315,9 +315,23 @@ class _DownloadSectionState extends State<DownloadSection> {
         _DownloadedStats(
           items: widget.items,
           builder: (context, bytes, count) {
+            final total = widget.items.length;
+            final totalLabel = total == 1
+                ? 'عنصر واحد'
+                : total == 2
+                    ? 'عنصران'
+                    : '$total عناصر';
+            String? downloadedLabel;
+            if (count == 1) {
+              downloadedLabel = 'عنصر واحد محمّل • ${formatBytes(bytes)}';
+            } else if (count == 2) {
+              downloadedLabel = 'عنصران محمّلان • ${formatBytes(bytes)}';
+            } else if (count > 0) {
+              downloadedLabel = '$count محمّلة • ${formatBytes(bytes)}';
+            }
             final parts = [
-              '${widget.items.length} عناصر',
-              if (count > 0) '$count محمّلة • ${formatBytes(bytes)}',
+              totalLabel,
+              if (downloadedLabel != null) downloadedLabel,
             ];
             return AppTile(
               title: widget.title,
