@@ -1,5 +1,4 @@
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
-import 'package:aldurar_alnaqia/audio/audio_engine.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -11,6 +10,7 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     final t1 = trackFor();
     final t2 = trackFor(id: 'zikr-2');
@@ -20,10 +20,10 @@ void main() {
     expect(engine.loads, hasLength(1));
 
     notifier.toggleAutoAdvance();
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.completed));
+    engine.emitCompleted();
     await Future<void>.delayed(const Duration(milliseconds: 50));
 
     expect(engine.loads, hasLength(2),
@@ -31,7 +31,7 @@ void main() {
     expect(engine.loads[1].trackId, 'zikr-2');
     expect(container.read(audioProvider).track?.id, 'zikr-2');
 
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(const Duration(milliseconds: 10));
     expect(container.read(audioProvider).status, AudioStatus.playing);
   });
@@ -40,6 +40,7 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     final t1 = trackFor();
     final t2 = trackFor(id: 'zikr-2');
@@ -48,18 +49,18 @@ void main() {
 
     await notifier.playTrack(t1, queue: [t1, t2, t3]);
     notifier.toggleAutoAdvance();
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(const Duration(milliseconds: 10));
 
     // First completion advances to track 2.
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.completed));
+    engine.emitCompleted();
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(engine.loads, hasLength(2));
     expect(container.read(audioProvider).track?.id, 'zikr-2');
 
     // Stale duplicate for track 1 arrives while track 2 is still loading:
     // must be ignored (no skip to track 3, no rewind-to-paused).
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.completed));
+    engine.emitCompleted();
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(engine.loads, hasLength(2),
         reason: 'stale completion must not skip ahead',);
@@ -68,7 +69,7 @@ void main() {
         reason: 'stale completion must not rewind the loading track',);
 
     // Track 2 starts playing normally.
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(const Duration(milliseconds: 10));
     expect(container.read(audioProvider).status, AudioStatus.playing);
   });

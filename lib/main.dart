@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:aldurar_alnaqia/audio/audio_controller.dart';
-import 'package:aldurar_alnaqia/audio/audio_handler.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
@@ -12,33 +10,26 @@ import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 
 Future<ProviderContainer> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Media notification + background audio (mobile). Requires the
-  // audio_service entries in AndroidManifest.xml and the iOS audio
-  // background mode. The handler owns the single player instance and
-  // doubles as the playback engine (see audioEngineProvider override).
-  NarrationAudioHandler? audioHandler;
+  // Media notification + background audio (mobile). just_audio_background
+  // drives the native audio_service infrastructure already configured
+  // (AndroidManifest service entry, iOS background mode) — no platform
+  // changes required.
   if (AppPlatform.isMobile) {
-    audioHandler = await AudioService.init(
-      builder: NarrationAudioHandler.new,
-      config: const AudioServiceConfig(
-        androidNotificationChannelId:
-            'com.example.aldurar_alnaqia.channel.audio',
-        androidNotificationChannelName: 'تشغيل الصوت',
-        androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
-      ),
+    await JustAudioBackground.init(
+      androidNotificationChannelId:
+          'com.example.aldurar_alnaqia.channel.audio',
+      androidNotificationChannelName: 'تشغيل الصوت',
+      androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
     );
-    await NarrationAudioHandler.configureAudioSession();
   }
 
   await SharedPreferencesService().init();
@@ -50,12 +41,6 @@ Future<ProviderContainer> _bootstrap() async {
   final container = ProviderContainer(
     overrides: [
       storageProvider.overrideWithValue(await StorageService().init()),
-      // The handler IS the engine: one player, one notification mapper.
-      // The controller syncs UI state via the EngineStopped event, so no
-      // stop-callback wiring is needed (notification X and mini-player X
-      // converge on NarrationAudioHandler.stop).
-      if (audioHandler != null)
-        audioEngineProvider.overrideWithValue(audioHandler),
     ],
   );
 

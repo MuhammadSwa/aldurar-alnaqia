@@ -29,6 +29,7 @@ abstract final class PrefsKeys {
   static const String fontSize = 'font_size';
   static const String hijriDayOffset = 'hijri_day_offset';
   static const String fileOpenAction = 'file_open_action';
+  static const String playbackSpeed = 'playback_speed';
   static const String prayerForegroundEnabled = 'prayer_foreground_enabled';
   static const String prayerNativeConfig = 'prayer_native_config';
   static const String swipeHintSeen = 'swipe_hint_seen';
@@ -382,6 +383,22 @@ class AppearancePrefs {
     if (!ok) logWarn('Failed to persist file open action "$action"');
   }
 
+  /// Playback speed for the audio mini player (0.25–2.0). Out-of-range or
+  /// non-finite values are logged and reset to 1.0.
+  double getPlaybackSpeed() {
+    final stored = _prefs.getDouble(PrefsKeys.playbackSpeed);
+    if (stored == null) return 1;
+    if (!stored.isFinite || stored < 0.25 || stored > 2.0) {
+      logWarn('Invalid stored playback speed "$stored" — using 1.0');
+      return 1;
+    }
+    return stored;
+  }
+
+  void setPlaybackSpeed(double speed) {
+    _persist(_prefs.setDouble(PrefsKeys.playbackSpeed, speed), 'playback speed $speed');
+  }
+
   /// First-run swipe hint for slidable zikr collections. False until the
   /// user has seen/dismissed the hand-slide onboarding once.
   bool getSwipeHintSeen() =>
@@ -584,6 +601,12 @@ class SharedPreferencesService {
 
   static Future<void> setSwipeHintSeen(bool seen) =>
       _require().appearance.setSwipeHintSeen(seen);
+
+  static double getPlaybackSpeed() =>
+      _require().appearance.getPlaybackSpeed();
+
+  static void setPlaybackSpeed(double speed) =>
+      _require().appearance.setPlaybackSpeed(speed);
 
   // --- PDF shims ---
 

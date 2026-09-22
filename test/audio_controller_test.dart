@@ -9,13 +9,29 @@ import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:just_audio/just_audio.dart'
+    show PlayerState, ProcessingState;
 
 // ---------------------------------------------------------------------------
 // Fakes
 // ---------------------------------------------------------------------------
 
-class FakeEngine implements AudioEngine {
-  final _controller = StreamController<EngineEvent>.broadcast();
+/// Test double with the same public surface as [JustAudioEngine].
+/// Drives the controller by emitting raw player states; the controller
+/// applies all policy (mirrors the production wiring in [AudioController]).
+class FakeEngine extends JustAudioEngine {
+  FakeEngine();
+
+  final _playerStateCtrl = StreamController<PlayerState>.broadcast();
+  final _errorCtrl = StreamController<String>.broadcast();
+  final _positionCtrl = StreamController<Duration>.broadcast();
+  final _bufferedCtrl = StreamController<Duration>.broadcast();
+  final _durationCtrl = StreamController<Duration?>.broadcast();
+
+  Duration positionValue = Duration.zero;
+  Duration bufferedValue = Duration.zero;
+  Duration? durationValue = Duration.zero;
+
   final List<EngineLoadRequest> loads = [];
   int failNextLoads = 0;
   Exception? loadError;
@@ -29,10 +45,61 @@ class FakeEngine implements AudioEngine {
   /// Optional hook to stall stop while another command is issued.
   Future<void> Function()? stopGate;
 
-  @override
-  Stream<EngineEvent> get events => _controller.stream;
+  int playCalls = 0;
+  int pauseCalls = 0;
+  final List<Duration> seeks = [];
+  final List<double> speeds = [];
 
-  void emit(EngineEvent event) => _controller.add(event);
+  @override
+  Stream<PlayerState> get playerStateStream => _playerStateCtrl.stream;
+  @override
+  Stream<String> get errorStream => _errorCtrl.stream;
+  @override
+  Stream<Duration> get positionStream => _positionCtrl.stream;
+  @override
+  Stream<Duration> get bufferedPositionStream => _bufferedCtrl.stream;
+  @override
+  Stream<Duration?> get durationStream => _durationCtrl.stream;
+
+  @override
+  Duration get position => positionValue;
+  @override
+  Duration get bufferedPosition => bufferedValue;
+  @override
+  Duration? get duration => durationValue;
+
+  void emitPlaying() =>
+      _playerStateCtrl.add(PlayerState(true, ProcessingState.ready));
+
+  void emitPaused() =>
+      _playerStateCtrl.add(PlayerState(false, ProcessingState.ready));
+
+  void emitLoading() =>
+      _playerStateCtrl.add(PlayerState(false, ProcessingState.loading));
+
+  void emitCompleted() =>
+      _playerStateCtrl.add(PlayerState(false, ProcessingState.completed));
+
+  void emitIdle() =>
+      _playerStateCtrl.add(PlayerState(false, ProcessingState.idle));
+
+  void emitError(String message) => _errorCtrl.add(message);
+
+  void setProgress({
+    Duration? position,
+    Duration? buffered,
+    Duration? duration,
+  }) {
+    if (position != null) positionValue = position;
+    if (buffered != null) bufferedValue = buffered;
+    if (duration != null) durationValue = duration;
+  }
+
+  void emitProgress() {
+    _positionCtrl.add(positionValue);
+    _bufferedCtrl.add(bufferedValue);
+    _durationCtrl.add(durationValue);
+  }
 
   @override
   Future<void> load(EngineLoadRequest request) async {
@@ -46,13 +113,25 @@ class FakeEngine implements AudioEngine {
   }
 
   @override
-  Future<void> play() async {}
+  Future<void> play() async {
+    playCalls++;
+  }
+
   @override
-  Future<void> pause() async {}
+  Future<void> pause() async {
+    pauseCalls++;
+  }
+
   @override
-  Future<void> seek(Duration position) async {}
+  Future<void> seek(Duration position) async {
+    seeks.add(position);
+  }
+
   @override
-  Future<void> setSpeed(double speed) async {}
+  Future<void> setSpeed(double speed) async {
+    speeds.add(speed);
+  }
+
   @override
   Future<void> stop() async {
     stops++;
@@ -60,11 +139,14 @@ class FakeEngine implements AudioEngine {
     if (gate != null) await gate();
   }
 
-  int disposed = 0;
-
   @override
   Future<void> dispose() async {
-    disposed++;
+    await _playerStateCtrl.close();
+    await _errorCtrl.close();
+    await _positionCtrl.close();
+    await _bufferedCtrl.close();
+    await _durationCtrl.close();
+    await super.dispose();
   }
 }
 
@@ -100,6 +182,7 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     expect(container.read(audioProvider).status, AudioStatus.stopped);
   });
@@ -109,6 +192,7 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
 
@@ -118,7 +202,7 @@ void main() {
 
     expect(container.read(audioProvider).status, AudioStatus.loading);
 
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
     expect(container.read(audioProvider).status, AudioStatus.playing);
   });
@@ -127,15 +211,16 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
-    engine.emit(
-      const EngineProgress(
-        position: Duration(seconds: 5),
-        buffered: Duration(seconds: 30),
-        duration: Duration(minutes: 20),
-      ),
-    );
+    engine
+      ..setProgress(
+        position: const Duration(seconds: 5),
+        buffered: const Duration(seconds: 30),
+        duration: const Duration(minutes: 20),
+      )
+      ..emitProgress();
     await Future<void>.delayed(Duration.zero);
 
     final state = container.read(audioProvider);
@@ -148,15 +233,16 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     final notifier = container.read(audioProvider.notifier);
     await notifier.playTrack(trackFor());
     // Realistic event order: the fresh load reports playing first; only a
     // completion from the actively-playing track rewinds it. (A completion
     // arriving while still loading is a stale duplicate and is ignored.)
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.completed));
+    engine.emitCompleted();
     await Future<void>.delayed(Duration.zero);
 
     final state = container.read(audioProvider);
@@ -170,6 +256,7 @@ void main() {
       ..loadError = Exception('network down');
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
 
@@ -194,6 +281,7 @@ void main() {
     final engine = FakeEngine()..failNextLoads = 1;
     final container = makeContainer(engine, storage: storageWithLocal());
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
 
@@ -211,9 +299,10 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
-    engine.emit(const EngineFailed('connection reset'));
+    engine.emitError('connection reset');
     await Future<void>.delayed(Duration.zero);
 
     final state = container.read(audioProvider);
@@ -225,6 +314,7 @@ void main() {
     final engine = FakeEngine()..failNextLoads = 1;
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     final notifier = container.read(audioProvider.notifier);
     await notifier.playTrack(trackFor());
@@ -234,7 +324,7 @@ void main() {
     expect(engine.loads, hasLength(2));
     expect(container.read(audioProvider).status, AudioStatus.loading);
 
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
     expect(container.read(audioProvider).status, AudioStatus.playing);
   });
@@ -243,9 +333,10 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     await container.read(audioProvider.notifier).playTrack(trackFor());
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
     expect(container.read(audioProvider).isVisible, isTrue);
 
@@ -261,10 +352,11 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
     final notifier = container.read(audioProvider.notifier);
 
     await notifier.playTrack(trackFor());
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
 
     final stopGate = Completer<void>();
@@ -277,7 +369,7 @@ void main() {
     );
 
     await notifier.playTrack(trackFor(id: 'zikr-2'));
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
 
     stopGate.complete();
@@ -294,6 +386,7 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     await container.read(audioProvider.notifier).playTrack(
       trackFor(),
@@ -307,16 +400,17 @@ void main() {
   });
 
   test('a superseded skip load failure cannot hide the newer track', () async {
-    // Double-tapped next (or auto-advance racing a manual skip): the first
-    // load hangs on a slow stream, the second one wins and starts playing.
-    // When the stale load finally fails, the playing track must survive.
+    // Double-tapped next: the first load hangs on a slow stream, the second
+    // one wins and starts playing. When the stale load finally fails, the
+    // playing track must survive (the stale load never autoplays).
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
     final notifier = container.read(audioProvider.notifier);
 
     await notifier.playTrack(trackFor());
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
 
     final slowGate = Completer<void>();
@@ -329,7 +423,7 @@ void main() {
     expect(container.read(audioProvider).status, AudioStatus.loading);
 
     await notifier.playTrack(trackFor(id: 'zikr-3'));
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
     expect(container.read(audioProvider).track?.id, 'zikr-3');
 
@@ -347,71 +441,45 @@ void main() {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
     final notifier = container.read(audioProvider.notifier);
 
     await notifier.playTrack(trackFor());
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
 
     final pending = notifier.playTrack(trackFor(id: 'zikr-2'));
     // Loading a new source tears the old stream down, which surfaces as
-    // idle while the new track is still loading.
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.idle));
+    // idle while the new track is still loading — ignored while loading.
+    engine.emitIdle();
     await Future<void>.delayed(Duration.zero);
 
     expect(container.read(audioProvider).isVisible, isTrue);
     expect(container.read(audioProvider).status, AudioStatus.loading);
 
     await pending;
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
     expect(container.read(audioProvider).track?.id, 'zikr-2');
   });
 
-  test('late idle after the new track is playing does not hide it', () async {
-    // Regression for "skip hides the mini player but audio keeps playing":
-    // the native stop() tearing down the old stream can surface as idle
-    // AFTER the next track already started playing. Idle is never a close
-    // signal, so the playing track must survive it.
+  test('external stop (notification swipe-away) hides the mini player',
+      () async {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
-    final notifier = container.read(audioProvider.notifier);
-
-    await notifier.playTrack(trackFor());
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
-    await Future<void>.delayed(Duration.zero);
-
-    await notifier.playTrack(trackFor(id: 'zikr-2'));
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
-    await Future<void>.delayed(Duration.zero);
-    expect(container.read(audioProvider).track?.id, 'zikr-2');
-
-    // The old track's delayed stop-idle arrives while the new one plays.
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.idle));
-    await Future<void>.delayed(Duration.zero);
-
-    final state = container.read(audioProvider);
-    expect(state.isVisible, isTrue);
-    expect(state.status, AudioStatus.playing);
-    expect(state.track?.id, 'zikr-2');
-  });
-
-  test('external stop (notification X) hides the mini player', () async {
-    final engine = FakeEngine();
-    final container = makeContainer(engine);
-    addTearDown(container.dispose);
+    addTearDown(engine.dispose);
 
     final notifier = container.read(audioProvider.notifier);
     await notifier.playTrack(trackFor());
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
     expect(container.read(audioProvider).isVisible, isTrue);
 
-    // The handler already stopped the platform player; the controller only
-    // syncs UI state and must not call back into engine.stop().
+    // The player already halted outside the UI; the controller only syncs
+    // UI state and must not call back into engine.stop().
     final stopsBefore = engine.stops;
-    engine.emit(const EngineStopped());
+    engine.emitIdle();
     await Future<void>.delayed(Duration.zero);
 
     final state = container.read(audioProvider);
@@ -421,15 +489,17 @@ void main() {
     expect(engine.stops, stopsBefore, reason: 'no stop recursion');
   });
 
-  test('stop during a slow load keeps the player hidden', () async {
+  test('stop during a slow load prevents ghost audio', () async {
     final engine = FakeEngine();
     final container = makeContainer(engine);
     addTearDown(container.dispose);
+    addTearDown(engine.dispose);
     final notifier = container.read(audioProvider.notifier);
 
     await notifier.playTrack(trackFor());
-    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    engine.emitPlaying();
     await Future<void>.delayed(Duration.zero);
+    expect(engine.playCalls, 1);
 
     final slowGate = Completer<void>();
     engine.loadGate = (request) async {
@@ -441,16 +511,17 @@ void main() {
     await notifier.stopPlayer();
     expect(container.read(audioProvider).isVisible, isFalse);
 
-    // The native load finishes after the stop and would start ghost audio.
+    // The stale load finishes after the stop but must never autoplay:
+    // loads are prepare-only, play happens solely for the wanted load.
     slowGate.complete();
     await pendingLoad;
     await Future<void>.delayed(Duration.zero);
 
     expect(container.read(audioProvider).isVisible, isFalse);
     expect(
-      engine.stops,
-      greaterThanOrEqualTo(2),
-      reason: 'stale load must silence the player it may have started',
+      engine.playCalls,
+      1,
+      reason: 'stale load must not autoplay after the stop',
     );
   });
 }

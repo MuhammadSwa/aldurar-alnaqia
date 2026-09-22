@@ -69,6 +69,7 @@ class _TitleBar extends ConsumerWidget {
           child: IconButton(
             onPressed: () => ref.read(audioProvider.notifier).stopPlayer(),
             icon: const Icon(Icons.close),
+            tooltip: 'إغلاق',
             color: colorScheme.onSecondaryContainer,
           ),
         ),
@@ -113,39 +114,38 @@ class _ProgressBar extends ConsumerWidget {
         ? 0.0
         : (buffered.inMilliseconds / totalMs).clamp(0.0, 1.0);
 
+    final textStyle = TextStyle(
+      color: colorScheme.onSecondaryContainer,
+      fontSize: 12,
+    );
+
     return Row(
       children: [
-        Text(
-          _formatDuration(position),
-          style: TextStyle(
-            color: colorScheme.onSecondaryContainer,
-            fontSize: 12,
-          ),
-        ),
+        Text(_formatDuration(position), style: textStyle),
         Expanded(
-          child: Slider(
-            max: sliderMax,
-            value: positionMs,
-            secondaryTrackValue: bufferedFraction,
-            onChanged: totalMs <= 0
-                ? null
-                : (value) => ref
-                    .read(audioProvider.notifier)
-                    .seek(Duration(milliseconds: value.round())),
-            activeColor: colorScheme.primary,
-            inactiveColor:
-                colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
-            secondaryActiveColor: colorScheme.primary.withValues(alpha: 0.25),
-            thumbColor: colorScheme.primary,
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: colorScheme.primary,
+              inactiveTrackColor:
+                  colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+              secondaryActiveTrackColor:
+                  colorScheme.primary.withValues(alpha: 0.25),
+              thumbColor: colorScheme.primary,
+              trackHeight: 3,
+            ),
+            child: Slider(
+              max: sliderMax,
+              value: positionMs,
+              secondaryTrackValue: bufferedFraction,
+              onChanged: totalMs <= 0
+                  ? null
+                  : (value) => ref
+                      .read(audioProvider.notifier)
+                      .seek(Duration(milliseconds: value.round())),
+            ),
           ),
         ),
-        Text(
-          _formatDuration(duration),
-          style: TextStyle(
-            color: colorScheme.onSecondaryContainer,
-            fontSize: 12,
-          ),
-        ),
+        Text(_formatDuration(duration), style: textStyle),
       ],
     );
   }
@@ -194,7 +194,7 @@ class _TransportRow extends ConsumerWidget {
               ],
               _SkipButton(
                 icon: Icons.forward_10,
-                tooltip: '+10',
+                tooltip: 'رجوع ١٠ ثوانٍ',
                 onPressed: () => _skip(ref, const Duration(seconds: -10)),
               ),
               const SizedBox(width: 8),
@@ -202,7 +202,7 @@ class _TransportRow extends ConsumerWidget {
               const SizedBox(width: 8),
               _SkipButton(
                 icon: Icons.replay_10,
-                tooltip: '-10',
+                tooltip: 'تقديم ١٠ ثوانٍ',
                 onPressed: () => _skip(ref, const Duration(seconds: 10)),
               ),
               if (hasQueue) ...[

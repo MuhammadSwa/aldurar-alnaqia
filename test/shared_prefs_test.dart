@@ -60,6 +60,24 @@ void main() {
     });
   });
 
+  group('playback speed storage', () {
+    test('absent value defaults to 1.0', () {
+      expect(SharedPreferencesService.getPlaybackSpeed(), 1.0);
+    });
+
+    test('round-trips a valid speed', () {
+      SharedPreferencesService.setPlaybackSpeed(1.5);
+      expect(SharedPreferencesService.getPlaybackSpeed(), 1.5);
+    });
+
+    test('out-of-range values reset to 1.0', () {
+      SharedPreferencesService.setPlaybackSpeed(0.1);
+      expect(SharedPreferencesService.getPlaybackSpeed(), 1.0);
+      SharedPreferencesService.setPlaybackSpeed(3.0);
+      expect(SharedPreferencesService.getPlaybackSpeed(), 1.0);
+    });
+  });
+
   group('hijri offset storage', () {
     test('absent value defaults to 0', () {
       expect(SharedPreferencesService.getHijriDayOffset(), 0);
