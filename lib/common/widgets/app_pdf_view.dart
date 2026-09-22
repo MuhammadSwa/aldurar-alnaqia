@@ -164,12 +164,7 @@ class _PdfScrollbarState extends State<_PdfScrollbar> {
       final ty = (m0.row1[3] + (m1.row1[3] - m0.row1[3]) * t) * ratio;
       final target = current.clone()..setEntry(1, 3, ty);
       if (animate) {
-        unawaited(
-          _controller.goTo(
-            destination: target,
-            duration: const Duration(milliseconds: 200),
-          ),
-        );
+        unawaited(_controller.goTo(destination: target));
       } else {
         _controller.value = target;
       }
