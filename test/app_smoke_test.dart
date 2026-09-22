@@ -66,4 +66,25 @@ void main() {
       );
     });
   });
+
+  group('AudioDetachObserver', () {
+    test('stops playback when the app is detached (swiped away)', () {
+      var stops = 0;
+      AudioDetachObserver(() async => stops++)
+          .didChangeAppLifecycleState(AppLifecycleState.detached);
+
+      expect(stops, 1);
+    });
+
+    test('ignores non-detach states so background playback survives', () {
+      var stops = 0;
+      final observer = AudioDetachObserver(() async => stops++);
+
+      AppLifecycleState.values
+          .where((s) => s != AppLifecycleState.detached)
+          .forEach(observer.didChangeAppLifecycleState);
+
+      expect(stops, 0);
+    });
+  });
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
@@ -91,13 +92,40 @@ bool _isAllowedNotificationRoute(String route) {
       route.startsWith('${RoutePaths.downloadManager}/');
 }
 
+/// Stops audio when the OS removes the app (swiped from recents).
+///
+/// The old `audio_service` handler did this natively via `onTaskRemoved`;
+/// `just_audio_background` keeps playing instead (music-app behavior), so
+/// without this the narration would continue headless with no UI left.
+/// Only [AppLifecycleState.detached] triggers a stop — `paused`/`hidden`/
+/// `inactive` must not, or background playback with the screen off would
+/// break. Detached fires while method channels are still alive, so the
+/// fire-and-forget stop reliably reaches the player before teardown.
+class AudioDetachObserver with WidgetsBindingObserver {
+  AudioDetachObserver(this._stop);
+
+  final Future<void> Function() _stop;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      unawaited(_stop());
+    }
+  }
+}
+
 class _MyAppState extends ConsumerState<MyApp> {
   final GoRouter _router = AppRouter.createRouter();
   StreamSubscription<String>? _routeSub;
+  late final AudioDetachObserver _detachObserver;
 
   @override
   void initState() {
     super.initState();
+    _detachObserver = AudioDetachObserver(
+      () => ref.read(audioProvider.notifier).stopPlayer(),
+    );
+    WidgetsBinding.instance.addObserver(_detachObserver);
     // The native prayer notification asks us to navigate when the user taps
     // it (cold start included — Android buffers the tap until we're ready).
     // Only allow known in-app locations; anything else is ignored so a
@@ -114,6 +142,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(_detachObserver);
     unawaited(_routeSub?.cancel());
     super.dispose();
   }
