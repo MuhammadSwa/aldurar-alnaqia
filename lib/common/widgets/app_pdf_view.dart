@@ -28,6 +28,10 @@ class AppPdfView extends StatelessWidget {
     this.onDocumentError,
     this.documentLoaderBuilder,
     this.errorBuilder,
+    this.onTap,
+    this.onInteractionStart,
+    this.onInteractionUpdate,
+    this.onInteractionEnd,
   });
 
   final PdfControllerPinch controller;
@@ -38,16 +42,34 @@ class AppPdfView extends StatelessWidget {
   final Widget Function()? documentLoaderBuilder;
   final Widget Function(Object error)? errorBuilder;
 
+  /// Single-tap on a page (not a drag/pinch, not the scrollbar strip).
+  /// Used by readers to toggle immersive chrome (AppBar).
+  final VoidCallback? onTap;
+
+  /// Reading-intent signals, passed straight to [PdfViewPinch]: a drag or
+  /// pinch starting means the user is reading, so chrome can auto-hide.
+  final GestureScaleStartCallback? onInteractionStart;
+  final GestureScaleUpdateCallback? onInteractionUpdate;
+  final GestureScaleEndCallback? onInteractionEnd;
+
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        PdfViewPinch(
-          controller: controller,
-          padding: padding,
-          onPageChanged: onPageChanged,
-          onDocumentLoaded: onDocumentLoaded,
-          onDocumentError: onDocumentError,
+        GestureDetector(
+          // Only `onTap` here: drag/pinch keep going to the viewer, so
+          // scrolling and zooming are untouched. The scrollbar sits above
+          // in the stack, so its taps never reach this detector.
+          onTap: onTap,
+          child: PdfViewPinch(
+            controller: controller,
+            padding: padding,
+            onPageChanged: onPageChanged,
+            onDocumentLoaded: onDocumentLoaded,
+            onDocumentError: onDocumentError,
+            onInteractionStart: onInteractionStart,
+            onInteractionUpdate: onInteractionUpdate,
+            onInteractionEnd: onInteractionEnd,
           builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
             options: const DefaultBuilderOptions(),
             documentLoaderBuilder: (_) =>
@@ -58,6 +80,7 @@ class AppPdfView extends StatelessWidget {
             errorBuilder: (_, error) =>
                 errorBuilder?.call(error) ??
                 Center(child: Text('تعذّر فتح الملف: $error')),
+            ),
           ),
         ),
         _PdfScrollbar(controller: controller),

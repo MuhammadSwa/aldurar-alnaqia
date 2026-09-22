@@ -34,9 +34,11 @@ class AppRouter {
       navigatorKey: _rootNavigatorKey,
       restorationScopeId: 'router',
       routes: [
-        // Standalone routes (not in bottom nav)
+        // Standalone fullscreen routes (above the bottom-nav shell, so
+        // they take the full screen with no NavigationBar).
         _createSocialRoute(),
         _createDownloadManagerRoute(),
+        _createPdfViewerRoute(),
 
         // Bottom navigation shell with main tabs
         StatefulShellRoute.indexedStack(
@@ -161,9 +163,6 @@ class AppRouter {
           path: RoutePaths.library,
           name: RouteNames.library,
           builder: (context, state) => const LibraryScreen(),
-          routes: [
-            _createPdfViewerRoute(),
-          ],
         ),
       ],
     );
@@ -325,10 +324,15 @@ class AppRouter {
     );
   }
 
+  /// Fullscreen reader (uses AppPdfView): kept at the root level — not
+  /// nested in the bottom-nav shell — so the book takes the full screen
+  /// with no NavigationBar. The URL stays `/library/pdfViewer/:bookId` so
+  /// existing deep links and AppRoutes.pdfViewerPath keep working.
   static GoRoute _createPdfViewerRoute() {
     return GoRoute(
-      path: 'pdfViewer/:bookId',
+      path: '${RoutePaths.library}/pdfViewer/:bookId',
       name: RouteNames.pdfViewer,
+      parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
         final bookId = state.pathParameters['bookId']!;
         return BookViewerScreen(bookId: bookId);
