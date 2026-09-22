@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
-import 'package:aldurar_alnaqia/audio/audio_engine.dart';
 import 'package:aldurar_alnaqia/audio/audio_handler.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
@@ -24,7 +23,8 @@ Future<ProviderContainer> _bootstrap() async {
 
   // Media notification + background audio (mobile). Requires the
   // audio_service entries in AndroidManifest.xml and the iOS audio
-  // background mode.
+  // background mode. The handler owns the single player instance and
+  // doubles as the playback engine (see audioEngineProvider override).
   NarrationAudioHandler? audioHandler;
   if (AppPlatform.isMobile) {
     audioHandler = await AudioService.init(
@@ -35,6 +35,7 @@ Future<ProviderContainer> _bootstrap() async {
         androidNotificationChannelName: 'تشغيل الصوت',
         androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
         androidNotificationOngoing: true,
+        androidStopForegroundOnPause: true,
       ),
     );
     await NarrationAudioHandler.configureAudioSession();
@@ -49,20 +50,14 @@ Future<ProviderContainer> _bootstrap() async {
   final container = ProviderContainer(
     overrides: [
       storageProvider.overrideWithValue(await StorageService().init()),
+      // The handler IS the engine: one player, one notification mapper.
+      // The controller syncs UI state via the EngineStopped event, so no
+      // stop-callback wiring is needed (notification X and mini-player X
+      // converge on NarrationAudioHandler.stop).
       if (audioHandler != null)
-        audioEngineProvider.overrideWithValue(
-          JustAudioEngine(notifications: audioHandler),
-        ),
+        audioEngineProvider.overrideWithValue(audioHandler),
     ],
   );
-
-  // Notification X / swipe-away stops through the controller, so the mini
-  // player hides in sync (the controller never infers "closed" from raw
-  // player-idle events — those also surface mid-skip).
-  if (audioHandler != null) {
-    audioHandler.onExternalStop =
-        () => container.read(audioProvider.notifier).stopPlayer();
-  }
 
   return container;
 }

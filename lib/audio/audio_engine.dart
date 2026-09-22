@@ -1,17 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:aldurar_alnaqia/audio/audio_controller.dart'
-    show AudioController;
-import 'package:aldurar_alnaqia/audio/audio_handler.dart';
-import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 
-/// Raw playback state reported by the engine, before the controller applies
+/// Raw playback state reported by the backend, before the controller applies
 /// its own policy (e.g. rewind-on-complete).
 enum EnginePlaybackState { buffering, playing, paused, completed, idle }
 
@@ -42,6 +33,14 @@ class EngineFailed extends EngineEvent {
   final String message;
 }
 
+/// Emitted exactly once per backend stop call, including stops that
+/// originate outside the app UI (notification X, swipe-away). The controller
+/// resets to the hidden stopped state on receipt; the handler already did
+/// the platform work, so this must never call back into stop.
+class EngineStopped extends EngineEvent {
+  const EngineStopped();
+}
+
 /// What to load: a downloaded file or a remote stream.
 @immutable
 class EngineLoadRequest {
@@ -61,11 +60,18 @@ class EngineLoadRequest {
   final bool isLocal;
 }
 
-/// Framework-facing playback engine. Owns the underlying player instance and
-/// normalizes it into a simple event stream; contains no policy logic.
+/// Framework-facing playback backend. Owns the underlying player instance
+/// and normalizes it into a simple event stream; contains no policy logic.
 ///
-/// The interface exists so [AudioController] can be unit-tested against a
-/// fake implementation.
+/// The interface exists so the audio controller can be unit-tested against
+/// a fake implementation. The production implementation is the narration
+/// audio handler, which owns the single `just_audio` player
+/// (`just_audio` on its native backends: Android → ExoPlayer (Media3),
+/// iOS / macOS → AVPlayer, Web → HTML audio) and doubles as the media
+/// notification bridge.
+///
+/// Desktop Linux/Windows have no native just_audio backend; [load] will
+/// throw there and the controller surfaces it as a normal error state.
 abstract class AudioEngine {
   Stream<EngineEvent> get events;
 
@@ -77,192 +83,8 @@ abstract class AudioEngine {
   Future<void> seek(Duration position);
   Future<void> setSpeed(double speed);
 
-  /// Stops playback and releases the loaded source.
+  /// Stops playback, dismisses the notification and emits [EngineStopped].
   Future<void> stop();
 
   Future<void> dispose();
-}
-
-/// `just_audio` on its native backends:
-///
-/// * Android → ExoPlayer (Media3),
-/// * iOS / macOS → AVPlayer,
-/// * Web → HTML audio.
-///
-/// No extra backend setup is needed. Desktop Linux/Windows have no native
-/// just_audio backend; [load] will throw there and the controller surfaces
-/// it as a normal error state.
-class JustAudioEngine implements AudioEngine {
-  /// Optional media-notification bridge; null on platforms without
-  /// notification support (desktop) where playback runs bare.
-  JustAudioEngine({NarrationAudioHandler? notifications})
-      : _notifications = notifications {
-    final notifications = _notifications;
-    if (notifications != null) {
-      unawaited(notifications.attach(_player));
-    }
-
-    _subscriptions.add(
-      _player.playerStateStream.listen((playerState) {
-        final processing = playerState.processingState;
-        final playing = playerState.playing;
-
-        final EnginePlaybackState mapped;
-        if (processing == ProcessingState.loading ||
-            processing == ProcessingState.buffering) {
-          mapped = EnginePlaybackState.buffering;
-        } else if (processing == ProcessingState.completed) {
-          mapped = EnginePlaybackState.completed;
-        } else if (processing == ProcessingState.idle) {
-          // Idle means no source / stopped after error.
-          mapped = EnginePlaybackState.idle;
-        } else {
-          mapped = playing
-              ? EnginePlaybackState.playing
-              : EnginePlaybackState.paused;
-        }
-        _emit(EnginePlaybackChanged(mapped));
-      }),
-    );
-
-    _subscriptions.add(
-      _player.playbackEventStream.listen(
-        (_) {},
-        onError: (Object e, StackTrace st) {
-          logWarn('Audio engine playback error: $e');
-          _emit(EngineFailed(e.toString()));
-        },
-      ),
-    );
-
-    _subscriptions.add(_player.positionStream.listen((_) => _emitProgress()));
-    _subscriptions
-        .add(_player.bufferedPositionStream.listen((_) => _emitProgress()));
-    _subscriptions.add(_player.durationStream.listen((_) => _emitProgress()));
-  }
-
-  double _currentSpeed = 1;
-
-  final NarrationAudioHandler? _notifications;
-  final AudioPlayer _player = AudioPlayer();
-  final List<StreamSubscription<dynamic>> _subscriptions = [];
-  final StreamController<EngineEvent> _events =
-      StreamController<EngineEvent>.broadcast();
-
-  @override
-  Stream<EngineEvent> get events => _events.stream;
-
-  void _emit(EngineEvent event) {
-    if (!_events.isClosed) _events.add(event);
-  }
-
-  void _emitProgress() {
-    _emit(
-      EngineProgress(
-        position: _player.position,
-        buffered: _player.bufferedPosition,
-        duration: _player.duration ?? Duration.zero,
-      ),
-    );
-  }
-
-  /// The bundled cover image, extracted to a real file once.
-  ///
-  /// audio_service's Android artwork loader cannot decode `asset:///` URIs
-  /// (Flutter bundle assets are invisible to the native notification code —
-  /// it silently fails and the notification shows a black square), so we
-  /// materialize the asset on disk and hand the notification a `file://` URI.
-  static const String _coverAsset = 'assets/imgs/audio_cover.jpg';
-  Uri? _coverFileUri;
-  bool _coverResolved = false;
-
-  Future<Uri?> _coverArtUri() async {
-    if (_coverResolved) return _coverFileUri;
-    _coverResolved = true;
-    try {
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/audio_cover.jpg');
-      if (!await file.exists()) {
-        final data = await rootBundle.load(_coverAsset);
-        await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
-      }
-      _coverFileUri = Uri.file(file.path);
-    } catch (e) {
-      logWarn('Failed to materialize audio cover art: $e');
-    }
-    return _coverFileUri;
-  }
-
-  MediaItem _mediaItemFor(EngineLoadRequest request, Uri? artUri) {
-    return MediaItem(
-      id: request.trackId,
-      title: request.title,
-      album: 'الدرر النقية',
-      artist: 'د يسري جبر',
-      artUri: artUri,
-    );
-  }
-
-  @override
-  Future<void> load(EngineLoadRequest request) async {
-    // No explicit stop(): setAudioSource replaces the current source, so a
-    // skip never produces the transient idle state that used to be mistaken
-    // for "user closed playback" and hide the mini player mid-skip.
-    //
-    // Plain progressive streaming: direct https to the server, no localhost
-    // proxy, so it works on Android/iOS with no extra platform config.
-    final AudioSource source = request.isLocal
-        ? AudioSource.file(request.uri)
-        : AudioSource.uri(Uri.parse(request.uri));
-
-    // Publish metadata first so the notification shows the new track
-    // immediately while the source is still loading.
-    _notifications
-        ?.setTrackMetadata(_mediaItemFor(request, await _coverArtUri()));
-
-    await _player.setAudioSource(source);
-    await _player.setSpeed(_currentSpeed);
-    await _player.play();
-  }
-
-  @override
-  Future<void> play() => _player.play();
-
-  @override
-  Future<void> pause() => _player.pause();
-
-  @override
-  Future<void> seek(Duration position) => _player.seek(position);
-
-  @override
-  Future<void> setSpeed(double speed) async {
-    _currentSpeed = speed;
-    await _player.setSpeed(speed);
-  }
-
-  @override
-  Future<void> stop() async {
-    try {
-      await _player.stop();
-    } catch (_) {
-      // Already idle — still dismiss the notification below.
-    }
-    // Removes the media notification as well. No seek after stop: it
-    // would emit extra player events that could resurrect an empty
-    // (black) notification after the service is stopped.
-    // stopLocally (not stop()): stop() would delegate back to the
-    // controller, which is already awaiting us — that would recurse.
-    await _notifications?.stopLocally();
-  }
-
-  @override
-  Future<void> dispose() async {
-    for (final sub in _subscriptions) {
-      await sub.cancel();
-    }
-    _subscriptions.clear();
-    await _events.close();
-    await _notifications?.detach();
-    await _player.dispose();
-  }
 }

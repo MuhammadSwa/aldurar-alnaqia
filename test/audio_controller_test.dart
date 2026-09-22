@@ -354,7 +354,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     final pending = notifier.playTrack(trackFor(id: 'zikr-2'));
-    // JustAudioEngine.load() calls player.stop() first, which surfaces as
+    // Loading a new source tears the old stream down, which surfaces as
     // idle while the new track is still loading.
     engine.emit(const EnginePlaybackChanged(EnginePlaybackState.idle));
     await Future<void>.delayed(Duration.zero);
@@ -395,6 +395,30 @@ void main() {
     expect(state.isVisible, isTrue);
     expect(state.status, AudioStatus.playing);
     expect(state.track?.id, 'zikr-2');
+  });
+
+  test('external stop (notification X) hides the mini player', () async {
+    final engine = FakeEngine();
+    final container = makeContainer(engine);
+    addTearDown(container.dispose);
+
+    final notifier = container.read(audioProvider.notifier);
+    await notifier.playTrack(trackFor());
+    engine.emit(const EnginePlaybackChanged(EnginePlaybackState.playing));
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(audioProvider).isVisible, isTrue);
+
+    // The handler already stopped the platform player; the controller only
+    // syncs UI state and must not call back into engine.stop().
+    final stopsBefore = engine.stops;
+    engine.emit(const EngineStopped());
+    await Future<void>.delayed(Duration.zero);
+
+    final state = container.read(audioProvider);
+    expect(state.isVisible, isFalse);
+    expect(state.track, isNull);
+    expect(state.speed, 1.0, reason: 'speed preference survives stops');
+    expect(engine.stops, stopsBefore, reason: 'no stop recursion');
   });
 
   test('stop during a slow load keeps the player hidden', () async {

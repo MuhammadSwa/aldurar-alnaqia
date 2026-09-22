@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:aldurar_alnaqia/audio/audio_engine.dart';
+import 'package:aldurar_alnaqia/audio/audio_handler.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
@@ -161,13 +162,21 @@ class AudioController extends Notifier<AudioState> {
   Future<void> stopPlayer() async {
     // Invalidate any in-flight load so its late completion cannot resurrect
     // state (or leave ghost audio) after the close.
+    _resetToStopped();
+    await _engine.stop();
+  }
+
+  /// Resets UI state to hidden-stopped, preserving user preferences.
+  /// Shared by [stopPlayer] (mini-player X) and the [EngineStopped] event
+  /// (notification X / swipe-away, where the handler already stopped the
+  /// platform player — so this must never call [_engine] again).
+  void _resetToStopped() {
     _loadGeneration++;
     _currentRequest = null;
     // Hide the player before awaiting platform work. Aside from making close
     // responsive, this prevents a previously requested stop from resetting
     // state after the user has already started another track.
     state = AudioState(speed: state.speed, autoAdvance: state.autoAdvance);
-    await _engine.stop();
   }
 
   Future<void> seek(Duration position) async {
@@ -275,6 +284,13 @@ class AudioController extends Notifier<AudioState> {
         } else if (state.track != null && state.status != AudioStatus.stopped) {
           _fail(request);
         }
+      case EngineStopped():
+        // Notification X / swipe-away: the handler already stopped the
+        // player and dismissed the notification. Just sync the UI;
+        // idempotent when we stopped first via [stopPlayer].
+        if (state.track != null || state.status != AudioStatus.stopped) {
+          _resetToStopped();
+        }
     }
   }
 
@@ -328,8 +344,8 @@ class AudioController extends Notifier<AudioState> {
         // that the user closed playback: it could surface *after* the new
         // track was already playing and used to hide the mini player while
         // audio and the notification kept going. The ONLY path to stopped
-        // is [stopPlayer], reached from the mini-player X and — via
-        // NarrationAudioHandler.onExternalStop — from the notification X.
+        // is [stopPlayer] (mini-player X) and [EngineStopped] (notification
+        // X / swipe-away).
         break;
     }
   }
@@ -350,7 +366,10 @@ class AudioController extends Notifier<AudioState> {
 }
 
 final audioEngineProvider = Provider<AudioEngine>((ref) {
-  final engine = JustAudioEngine();
+  // Production override in main(): the AudioService-created
+  // NarrationAudioHandler doubles as the engine. Bare fallback for desktop
+  // (no notification service) and tests.
+  final engine = NarrationAudioHandler();
   ref.onDispose(engine.dispose);
   return engine;
 });
