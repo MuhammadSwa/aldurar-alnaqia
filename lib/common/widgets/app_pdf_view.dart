@@ -16,9 +16,9 @@ import 'package:pdfx/pdfx.dart';
 /// [TransformationController]), so there is no [ScrollController] to attach
 /// a stock [Scrollbar] to. [_PdfScrollbar] is a thin always-visible
 /// page-progress bar pinned to the physical right edge: it mirrors
-/// `PdfControllerPinch.documentProgress` and drag/tap jumps via
-/// `animateToPage`. Pinch-zoom and pan gestures are untouched — only the
-/// narrow strip on the right absorbs gestures.
+/// `PdfControllerPinch.documentProgress` and a drag drives the viewer's
+/// matrix continuously (taps glide). Pinch-zoom and pan gestures are
+/// untouched — only the narrow strip on the right absorbs gestures.
 class AppPdfView extends StatelessWidget {
   const AppPdfView({
     required this.controller, super.key,
@@ -32,6 +32,7 @@ class AppPdfView extends StatelessWidget {
     this.onInteractionStart,
     this.onInteractionUpdate,
     this.onInteractionEnd,
+    this.onScrollbarDrag,
   });
 
   final PdfControllerPinch controller;
@@ -51,6 +52,10 @@ class AppPdfView extends StatelessWidget {
   final GestureScaleStartCallback? onInteractionStart;
   final GestureScaleUpdateCallback? onInteractionUpdate;
   final GestureScaleEndCallback? onInteractionEnd;
+
+  /// Fired when the user starts dragging/tapping the scrollbar strip, so a
+  /// reader can treat it as reading intent (e.g. hide immersive chrome).
+  final VoidCallback? onScrollbarDrag;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +88,10 @@ class AppPdfView extends StatelessWidget {
             ),
           ),
         ),
-        _PdfScrollbar(controller: controller),
+        _PdfScrollbar(
+          controller: controller,
+          onUserScrolled: onScrollbarDrag,
+        ),
       ],
     );
   }
@@ -92,36 +100,27 @@ class AppPdfView extends StatelessWidget {
 /// Slim draggable progress bar on the physical right edge.
 ///
 /// Complements the AppBar page-pill jump: the thumb mirrors the actual
-/// reading progress (`PdfControllerPinch.documentProgress`) and a vertical
-/// drag / tap on the track jumps via `animateToPage`, which in turn updates
-/// the AppBar page pill. The thumb is never moved manually and no page
-/// bubble is shown. Hidden until the document loads and when there is only
-/// one page.
-///
-/// Smoothness: drag updates jump instantly (`Duration.zero`) and skip
-/// repeat targets, so rapid pointer events never restart a 200ms animation.
-/// Only taps and the final drag-end settle with a short eased animation.
+/// reading progress (`PdfControllerPinch.documentProgress`). A drag drives
+/// the viewer's transformation matrix directly (same mechanism as a finger
+/// drag inside the page), so scrolling is continuous and gradual — not
+/// page-by-page. A tap glides to the tapped spot with a short animation.
+/// Zoom and horizontal pan are preserved; only the vertical offset is
+/// driven. Hidden until the document loads and when there is only one page.
 class _PdfScrollbar extends StatefulWidget {
-  const _PdfScrollbar({required this.controller});
+  const _PdfScrollbar({required this.controller, this.onUserScrolled});
 
   final PdfControllerPinch controller;
+
+  /// Called on drag start / tap so the host can treat scrollbar use as
+  /// reading intent (e.g. hide immersive chrome).
+  final VoidCallback? onUserScrolled;
 
   @override
   State<_PdfScrollbar> createState() => _PdfScrollbarState();
 }
 
 class _PdfScrollbarState extends State<_PdfScrollbar> {
-  /// Last page we already requested; used to drop redundant jumps when a
-  /// drag produces many events mapping to the same page.
-  int? _lastTarget;
-
   PdfControllerPinch get _controller => widget.controller;
-
-  @override
-  void didUpdateWidget(covariant _PdfScrollbar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) _lastTarget = null;
-  }
 
   double _progress() {
     final p = _controller.documentProgress;
@@ -129,18 +128,51 @@ class _PdfScrollbarState extends State<_PdfScrollbar> {
     return p.clamp(0.0, 1.0);
   }
 
-  int _targetPage(double progress, int total) {
-    return (1 + progress * (total - 1)).round().clamp(1, total);
+  double _progressForDy(double dy, double trackHeight, double thumbHeight) {
+    final usable = trackHeight - thumbHeight;
+    if (usable <= 0) return 0;
+    return ((dy - thumbHeight / 2) / usable).clamp(0.0, 1.0);
   }
 
-  Future<void> _jumpToPage(int page, {required bool smooth}) async {
+  /// Scrolls the document to [progress] (0 = top, 1 = bottom) by
+  /// interpolating between the two neighbouring page-fit matrices and
+  /// writing the vertical offset straight into the viewer's matrix.
+  ///
+  /// With [animate] false the matrix is set synchronously, giving 1:1
+  /// finger tracking during a drag — exactly like sliding inside the page.
+  /// With [animate] true (taps) it glides via `goTo` with a short ease.
+  /// Current zoom and horizontal offset are left untouched.
+  void _applyProgress(double progress, {required bool animate}) {
+    final total = _controller.pagesCount;
+    if (total == null || total <= 1) return;
+    final p = progress.clamp(0.0, 1.0);
+    // Fractional 0-based page index, e.g. 3.4 = 40% from page 4 to page 5.
+    final f = p * (total - 1);
+    final i0 = f.floor();
+    final i1 = f.ceil();
+    final t = f - i0;
     try {
-      await _controller.animateToPage(
-        pageNumber: page,
-        duration: smooth
-            ? const Duration(milliseconds: 200)
-            : Duration.zero,
-      );
+      final m0 = _controller.calculatePageFitMatrix(pageNumber: i0 + 1);
+      final m1 = _controller.calculatePageFitMatrix(pageNumber: i1 + 1);
+      if (m0 == null || m1 == null) return;
+      final current = _controller.value;
+      // Page-fit matrices share one scale; rescale the interpolated offset
+      // so a zoomed-in reader scrolls the full zoomed range, not the fit
+      // range.
+      final fitScale = m0.row0[0];
+      final ratio = fitScale == 0 ? 1.0 : current.row0[0] / fitScale;
+      final ty = (m0.row1[3] + (m1.row1[3] - m0.row1[3]) * t) * ratio;
+      final target = current.clone()..setEntry(1, 3, ty);
+      if (animate) {
+        unawaited(
+          _controller.goTo(
+            destination: target,
+            duration: const Duration(milliseconds: 200),
+          ),
+        );
+      } else {
+        _controller.value = target;
+      }
     } catch (_) {
       // Viewer may be mid-layout or disposed; thumb still follows on next
       // controller tick, so swallowing keeps drags crash-free.
@@ -148,44 +180,26 @@ class _PdfScrollbarState extends State<_PdfScrollbar> {
   }
 
   void _handleDragStart(double dy, double trackHeight, double thumbHeight) {
-    // Fresh gesture: forget the previous drag so returning to the same page
-    // after panning manually still jumps.
-    _lastTarget = null;
-    _handleDrag(dy, trackHeight, thumbHeight);
+    widget.onUserScrolled?.call();
+    _applyProgress(
+      _progressForDy(dy, trackHeight, thumbHeight),
+      animate: false,
+    );
   }
 
   void _handleDrag(double dy, double trackHeight, double thumbHeight) {
-    final usable = trackHeight - thumbHeight;
-    final progress = usable <= 0
-        ? 0.0
-        : ((dy - thumbHeight / 2) / usable).clamp(0.0, 1.0);
-    final total = _controller.pagesCount;
-    if (total == null || total <= 1) return;
-    final target = _targetPage(progress, total);
-    if (target == _lastTarget) return;
-    _lastTarget = target;
-    // Instant jump: no animation to restart, AppBar pill still updates live
-    // via the controller's pageListenable.
-    unawaited(_jumpToPage(target, smooth: false));
+    _applyProgress(
+      _progressForDy(dy, trackHeight, thumbHeight),
+      animate: false,
+    );
   }
 
   void _handleTap(double dy, double trackHeight, double thumbHeight) {
-    final usable = trackHeight - thumbHeight;
-    final progress = usable <= 0
-        ? 0.0
-        : ((dy - thumbHeight / 2) / usable).clamp(0.0, 1.0);
-    final total = _controller.pagesCount;
-    if (total == null || total <= 1) return;
-    final target = _targetPage(progress, total);
-    _lastTarget = target;
-    unawaited(_jumpToPage(target, smooth: true));
-  }
-
-  void _handleDragEnd() {
-    final target = _lastTarget;
-    if (target == null) return;
-    // Settle exactly on the page-fit matrix after the instant drag jumps.
-    unawaited(_jumpToPage(target, smooth: true));
+    widget.onUserScrolled?.call();
+    _applyProgress(
+      _progressForDy(dy, trackHeight, thumbHeight),
+      animate: true,
+    );
   }
 
   @override
@@ -234,8 +248,8 @@ class _PdfScrollbarState extends State<_PdfScrollbar> {
                   trackHeight,
                   thumbHeight,
                 ),
-                onVerticalDragEnd: (_) => _handleDragEnd(),
-                onVerticalDragCancel: _handleDragEnd,
+                // No snap on release: like a finger drag, content stays
+                // exactly where the thumb left it.
                 child: Semantics(
                   label: 'شريط تمرير الكتاب',
                   slider: true,

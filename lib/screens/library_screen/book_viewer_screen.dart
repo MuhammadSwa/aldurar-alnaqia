@@ -335,6 +335,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       // Single tap toggles chrome; drag/pinch is reading → hide.
       onTap: _toggleChrome,
       onInteractionStart: (_) => _onReadingInteraction(),
+      onScrollbarDrag: _onReadingInteraction,
       documentLoaderBuilder: _buildLoading,
       errorBuilder: _buildError,
     );
