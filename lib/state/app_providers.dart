@@ -2,7 +2,6 @@ import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
-import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show MainWrapper;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -17,13 +16,6 @@ final downloaderProvider = Provider<DownloaderService>((ref) {
   final service = DownloaderService(storage: ref.watch(storageProvider));
   ref.onDispose(service.dispose);
   return service;
-});
-
-/// Key of the single [Scaffold] in [MainWrapper] that owns the app drawer
-/// and the bottom [NavigationBar]. Branch screens open it via
-/// `ref.read(rootScaffoldKeyProvider)` instead of owning per-screen keys.
-final rootScaffoldKeyProvider = Provider<GlobalKey<ScaffoldState>>((ref) {
-  return GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 });
 
 // ---------------------------------------------------------------------------

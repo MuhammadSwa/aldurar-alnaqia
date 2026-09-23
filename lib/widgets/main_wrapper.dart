@@ -1,10 +1,15 @@
 import 'package:aldurar_alnaqia/audio/audio_controller.dart' show audioProvider;
 import 'package:aldurar_alnaqia/audio/widgets/audio_mini_player.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/my_drawer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+
+/// Key of the single [Scaffold] in [MainWrapper] that owns the app drawer
+/// and the bottom [NavigationBar]. Branch screens open it via
+/// `rootScaffoldKey.currentState?.openDrawer()` instead of owning
+/// per-screen keys.
+final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 
 class MainWrapper extends ConsumerStatefulWidget {
   const MainWrapper({
@@ -21,7 +26,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     // The drawer and the NavigationBar share this Scaffold, so closing is
     // synchronous state — no animation delay is needed before switching
     // branches (replaces the old DrawerRegistry + 300ms workaround).
-    ref.read(rootScaffoldKeyProvider).currentState?.closeDrawer();
+    rootScaffoldKey.currentState?.closeDrawer();
 
     widget.navigationShell.goBranch(
       index,
@@ -42,7 +47,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000, maxHeight: 1000),
           child: Scaffold(
-            key: ref.watch(rootScaffoldKeyProvider),
+            key: rootScaffoldKey,
             drawer: const MyDrawer(),
             // Keep the bottom NavigationBar pinned: the keyboard overlays
             // it instead of lifting it above the keyboard.

@@ -9,6 +9,7 @@ import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show rootScaffoldKey;
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -49,8 +50,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         title: const Text('الدرر النقية'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () =>
-              ref.read(rootScaffoldKeyProvider).currentState?.openDrawer(),
+          onPressed: () => rootScaffoldKey.currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
         actions: [

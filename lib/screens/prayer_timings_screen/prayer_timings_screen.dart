@@ -10,7 +10,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_di
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show rootScaffoldKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -71,8 +71,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
         title: const Text('مواقيت الصلاة'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () =>
-              ref.read(rootScaffoldKeyProvider).currentState?.openDrawer(),
+          onPressed: () => rootScaffoldKey.currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
         actions: [
