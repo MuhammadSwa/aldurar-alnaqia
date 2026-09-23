@@ -23,8 +23,6 @@ class AppPdfView extends StatelessWidget {
   const AppPdfView({
     required this.controller, super.key,
     this.padding = 0,
-    this.minScale = 0.5,
-    this.maxScale = 20.0,
     this.onPageChanged,
     this.onDocumentLoaded,
     this.onDocumentError,
@@ -39,13 +37,6 @@ class AppPdfView extends StatelessWidget {
 
   final PdfControllerPinch controller;
   final double padding;
-
-  /// The minimum document zoom scale. Below 1.0 the reader can zoom out
-  /// past the page-fit size.
-  final double minScale;
-
-  /// The maximum document zoom scale.
-  final double maxScale;
   final ValueChanged<int>? onPageChanged;
   final ValueChanged<PdfDocument>? onDocumentLoaded;
   final ValueChanged<Object>? onDocumentError;
@@ -78,8 +69,6 @@ class AppPdfView extends StatelessWidget {
           child: PdfViewPinch(
             controller: controller,
             padding: padding,
-            minScale: minScale,
-            maxScale: maxScale,
             onPageChanged: onPageChanged,
             onDocumentLoaded: onDocumentLoaded,
             onDocumentError: onDocumentError,
