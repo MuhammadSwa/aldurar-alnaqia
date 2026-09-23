@@ -19,13 +19,13 @@ class PrayerDateRow extends ConsumerWidget {
   const PrayerDateRow({super.key});
 
   static const Map<int, String> _arabicDayNames = {
-    7: 'الأحد',
     1: 'الإثنين',
     2: 'الثلاثاء',
     3: 'الأربعاء',
     4: 'الخميس',
     5: 'الجمعة',
     6: 'السبت',
+    7: 'الأحد',
   };
 
   @override

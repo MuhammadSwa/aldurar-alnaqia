@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
+import 'package:aldurar_alnaqia/prayer/prayer_repository.dart'
+    show todayPrayerSchedule;
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_header_card.dart';
@@ -102,14 +104,14 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
 /// Bell icon owning its own enabled flag: loads once in initState instead
 /// of a `FutureBuilder` that re-fires on every parent rebuild, and refreshes
 /// only itself via local `setState`.
-class _NotifBell extends ConsumerStatefulWidget {
+class _NotifBell extends StatefulWidget {
   const _NotifBell();
 
   @override
-  ConsumerState<_NotifBell> createState() => _NotifBellState();
+  State<_NotifBell> createState() => _NotifBellState();
 }
 
-class _NotifBellState extends ConsumerState<_NotifBell> {
+class _NotifBellState extends State<_NotifBell> {
   bool _enabled = false;
 
   @override
@@ -135,7 +137,7 @@ class _NotifBellState extends ConsumerState<_NotifBell> {
       onPressed: () async {
         // No timings yet (settings never saved) → prompt to set
         // them up first instead of the notification explainer.
-        if (ref.read(prayerViewProvider) == null) {
+        if (todayPrayerSchedule() == null) {
           final openSettings = await showDialog<bool>(
             context: context,
             builder: (context) => const PrayerSetupRequiredDialog(),
