@@ -1,7 +1,5 @@
-import 'package:aldurar_alnaqia/audio/audio_controller.dart' show audioProvider;
 import 'package:aldurar_alnaqia/audio/widgets/audio_mini_player.dart';
 import 'package:aldurar_alnaqia/widgets/my_drawer.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -9,7 +7,7 @@ import 'package:material_ui/material_ui.dart';
 /// and the bottom [NavigationBar].
 final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 
-class MainWrapper extends ConsumerWidget {
+class MainWrapper extends StatelessWidget {
   const MainWrapper({
     required this.navigationShell,
     super.key,
@@ -17,18 +15,14 @@ class MainWrapper extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     void goBranch(int index) {
-      rootScaffoldKey.currentState?.closeDrawer();
-
       navigationShell.goBranch(
         index,
         initialLocation: index == navigationShell.currentIndex,
       );
     }
 
-    final showAudioBar =
-        ref.watch(audioProvider.select((state) => state.isVisible));
     // Selected tab icon color contrasts with the primary indicator pill.
     final selectedIconColor = Theme.of(context).colorScheme.onPrimary;
 
@@ -49,7 +43,9 @@ class MainWrapper extends ConsumerWidget {
                   Expanded(
                     child: navigationShell,
                   ),
-                  if (showAudioBar) const AudioMiniPlayer(),
+                  // The AudioMiniPlayer widget internally watches audio state and collapses to
+                  // SizedBox.shrink when nothing is loaded.
+                  const AudioMiniPlayer(),
                 ],
               ),
             ),
