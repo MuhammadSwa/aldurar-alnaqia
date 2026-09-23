@@ -58,35 +58,32 @@ class _BookJumpDialogState extends State<_BookJumpDialog> {
     // NOTE: dialogContext (from showDialog's builder) must be used for
     // pop/unfocus — the outer screen context belongs to a different
     // navigator (shell branch vs root).
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: AlertDialog(
-        title: const Text('الانتقال إلى صفحة', textAlign: TextAlign.center),
-        content: TextField(
-          controller: _textController,
-          keyboardType: TextInputType.number,
-          textAlign: TextAlign.center,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'من 1 إلى ${widget.total}',
-            border: const OutlineInputBorder(),
-          ),
-          onSubmitted: (_) => _submit(context),
+    return AlertDialog(
+      title: const Text('الانتقال إلى صفحة', textAlign: TextAlign.center),
+      content: TextField(
+        controller: _textController,
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: 'من 1 إلى ${widget.total}',
+          border: const OutlineInputBorder(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              FocusScope.of(context).unfocus();
-              Navigator.of(context).pop();
-            },
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => _submit(context),
-            child: const Text('انتقال'),
-          ),
-        ],
+        onSubmitted: (_) => _submit(context),
       ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            FocusScope.of(context).unfocus();
+            Navigator.of(context).pop();
+          },
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          onPressed: () => _submit(context),
+          child: const Text('انتقال'),
+        ),
+      ],
     );
   }
 }

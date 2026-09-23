@@ -428,42 +428,39 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('إدارة التحميلات'),
-          actions: [
-            _DownloadedStats(
-              items: allItems,
-              builder: (context, bytes, count) => Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (count > 0) _TotalPill(bytes: bytes),
-                  IconButton(
-                    icon: const Icon(Icons.delete_sweep_outlined),
-                    tooltip: 'حذف جميع التحميلات',
-                    onPressed: count == 0 ? null : () => _clearAll(count),
-                  ),
-                ],
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('إدارة التحميلات'),
+        actions: [
+          _DownloadedStats(
+            items: allItems,
+            builder: (context, bytes, count) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (count > 0) _TotalPill(bytes: bytes),
+                IconButton(
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                  tooltip: 'حذف جميع التحميلات',
+                  onPressed: count == 0 ? null : () => _clearAll(count),
+                ),
+              ],
             ),
-          ],
-          bottom: TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(icon: Icon(Icons.audiotrack), text: 'الصوتيات'),
-              Tab(icon: Icon(Icons.book), text: 'الكتب'),
-            ],
           ),
-        ),
-        body: TabBarView(
+        ],
+        bottom: TabBar(
           controller: _tabController,
-          children: [
-            _AudioTab(audioSections: audioSections),
-            _BooksTab(bookItems: bookItems),
+          tabs: const [
+            Tab(icon: Icon(Icons.audiotrack), text: 'الصوتيات'),
+            Tab(icon: Icon(Icons.book), text: 'الكتب'),
           ],
         ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _AudioTab(audioSections: audioSections),
+          _BooksTab(bookItems: bookItems),
+        ],
       ),
     );
   }

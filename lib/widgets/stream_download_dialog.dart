@@ -8,7 +8,10 @@ import 'package:material_ui/material_ui.dart';
 
 class StreamOrDownloadDialog extends StatefulWidget {
   const StreamOrDownloadDialog({
-    required this.item, required this.onStream, required this.onDownload, super.key,
+    required this.item,
+    required this.onStream,
+    required this.onDownload,
+    super.key,
     this.showRememberOption = false,
     this.onRemember,
   });
@@ -53,14 +56,20 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return AlertDialog(
-      title: Text(widget.item.title,
-          style: textTheme.titleSmall, textAlign: TextAlign.center,),
+      title: Text(
+        widget.item.title,
+        style: textTheme.titleSmall,
+        textAlign: TextAlign.center,
+      ),
       contentPadding: const EdgeInsets.all(16),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('الملف غير مُحمل. الرجاء اختيار أحد الخيارات:',
-              style: textTheme.bodySmall, textAlign: TextAlign.center,),
+          Text(
+            'الملف غير مُحمل. الرجاء اختيار أحد الخيارات:',
+            style: textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 20),
           _buildOptionButton(
             context,
@@ -81,21 +90,20 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
           ),
           if (widget.showRememberOption) ...[
             const SizedBox(height: 8),
-            Directionality(
-              textDirection: TextDirection.rtl,
-              child: CheckboxListTile(
-                value: _rememberChoice,
-                onChanged: (value) {
-                  setState(() {
-                    _rememberChoice = value ?? false;
-                  });
-                },
-                title: Text('تذكر الاختيار',
-                    style: Theme.of(context).textTheme.bodySmall,),
-                controlAffinity: ListTileControlAffinity.leading,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
+            CheckboxListTile(
+              value: _rememberChoice,
+              onChanged: (value) {
+                setState(() {
+                  _rememberChoice = value ?? false;
+                });
+              },
+              title: Text(
+                'تذكر الاختيار',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
             ),
           ],
         ],
@@ -112,42 +120,44 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
     required Color color,
   }) {
     final textTheme = Theme.of(context).textTheme;
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: SizedBox(
-        width: double.infinity,
-        // Use the default ElevatedButton constructor, not .icon
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color.withValues(alpha: 0.1),
-            foregroundColor: color,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            // We are building our own Row, so we don't need alignment here
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            elevation: 0,
-          ),
-          // Build the child manually using a Row
-          child: Row(
-            children: [
-              Icon(icon, size: 24),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.bold,),),
-                    Text(subtitle,
-                        style: textTheme.labelSmall?.copyWith(
-                            color: color.withValues(alpha: 0.9),),),
-                  ],
-                ),
+    return SizedBox(
+      width: double.infinity,
+      // Use the default ElevatedButton constructor, not .icon
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color.withValues(alpha: 0.1),
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          // We are building our own Row, so we don't need alignment here
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 0,
+        ),
+        // Build the child manually using a Row
+        child: Row(
+          children: [
+            Icon(icon, size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: color.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -174,7 +184,8 @@ Future<void> showStreamOrDownloadDialog({
       onRemember: (stream) {
         unawaited(
           ref.read(fileOpenActionProvider.notifier).set(
-              stream ? FileOpenAction.open : FileOpenAction.download,),
+                stream ? FileOpenAction.open : FileOpenAction.download,
+              ),
         );
       },
       onStream: () {

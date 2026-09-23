@@ -79,7 +79,8 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     _chromeTimer?.cancel();
     setState(() => _chromeVisible = false);
     unawaited(
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+    );
   }
 
   void _toggleChrome() {
@@ -129,7 +130,8 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       if (await storage.exists(DownloadType.books, _id)) {
         isLocal = true;
         document = await PdfDocument.openFile(
-            storage.pathFor(DownloadType.books, _id),);
+          storage.pathFor(DownloadType.books, _id),
+        );
       } else {
         // NOTE: temp previews intentionally stay on foreground HttpClient via
         // [BookTempLoader] and do NOT use `background_downloader`. The offline
@@ -285,34 +287,32 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        // Body stays fullscreen behind the AppBar, so showing/hiding it
-        // never resizes the pages — it just overlays for full immersion.
-        extendBodyBehindAppBar: true,
-        appBar: _chromeVisible
-            ? AppBar(
-                title: Text(
-                  _book?.title ?? _id,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                actions: [
-                  if (_controller != null)
-                    _PagePill(
-                        controller: _controller!, onTap: _showJumpToPage,),
-                  if (_controller != null && !_isLocal)
-                    IconButton(
-                      icon:
-                          const Icon(Icons.download_for_offline_outlined),
-                      tooltip: 'تحميل للقراءة دون إنترنت',
-                      onPressed: _downloadForOffline,
-                    ),
-                ],
-              )
-            : null,
-        body: _buildBody(),
-      ),
+    return Scaffold(
+      // Body stays fullscreen behind the AppBar, so showing/hiding it
+      // never resizes the pages — it just overlays for full immersion.
+      extendBodyBehindAppBar: true,
+      appBar: _chromeVisible
+          ? AppBar(
+              title: Text(
+                _book?.title ?? _id,
+                overflow: TextOverflow.ellipsis,
+              ),
+              actions: [
+                if (_controller != null)
+                  _PagePill(
+                    controller: _controller!,
+                    onTap: _showJumpToPage,
+                  ),
+                if (_controller != null && !_isLocal)
+                  IconButton(
+                    icon: const Icon(Icons.download_for_offline_outlined),
+                    tooltip: 'تحميل للقراءة دون إنترنت',
+                    onPressed: _downloadForOffline,
+                  ),
+              ],
+            )
+          : null,
+      body: _buildBody(),
     );
   }
 

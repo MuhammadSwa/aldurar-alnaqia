@@ -50,11 +50,11 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
     _hasAutoShownSettings = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
-        showDialog<void>(
-          context: context,
-          builder: (context) => const PrayerSettingsDialog(),
-        );
+
+      showDialog<void>(
+        context: context,
+        builder: (context) => const PrayerSettingsDialog(),
+      );
     });
   }
 
@@ -79,60 +79,10 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
             tooltip: 'الإعدادات',
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              // Nested go_router location (not an imperative Navigator.push)
-              // so re-tapping the prayers tab pops back via
-              // goBranch(initialLocation: true).
               unawaited(context.pushNamed(RouteNames.timingsSettings));
             },
           ),
-          if (AppPlatform.isAndroid)
-            FutureBuilder<bool>(
-              future: isPrayerNotificationEnabled(),
-              builder: (context, snapshot) {
-                final enabled = snapshot.data ?? false;
-                return IconButton(
-                  tooltip: 'إشعار المواقيت',
-                  icon: Icon(
-                    enabled
-                        ? Icons.notifications_active
-                        : Icons.notifications_off,
-                  ),
-                  onPressed: () async {
-                    // No timings yet (settings never saved) → prompt to set
-                    // them up first instead of the notification explainer.
-                    if (ref.read(prayerViewProvider) == null) {
-                      final openSettings = await showDialog<bool>(
-                        context: context,
-                        builder: (context) =>
-                            const PrayerSetupRequiredDialog(),
-                      );
-                      if (openSettings == true && context.mounted) {
-                        await showDialog<void>(
-                          context: context,
-                          builder: (context) =>
-                              const PrayerSettingsDialog(),
-                        );
-                      }
-                      return;
-                    }
-                    if (enabled) {
-                      // On → off straight away, no dialog.
-                      await setPrayerNotificationEnabled(false);
-                      if (mounted) setState(() {});
-                      return;
-                    }
-                    // Off → explain first, then enable from the dialog.
-                    final changed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) =>
-                          const PrayerNotificationDialog(),
-                    );
-                    // Refresh the bell icon when the dialog changed anything.
-                    if (changed == true && mounted) setState(() {});
-                  },
-                );
-              },
-            ),
+          if (AppPlatform.isAndroid) const _NotifBell(),
         ],
       ),
       body: const SingleChildScrollView(
@@ -145,6 +95,73 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Bell icon owning its own enabled flag: loads once in initState instead
+/// of a `FutureBuilder` that re-fires on every parent rebuild, and refreshes
+/// only itself via local `setState`.
+class _NotifBell extends ConsumerStatefulWidget {
+  const _NotifBell();
+
+  @override
+  ConsumerState<_NotifBell> createState() => _NotifBellState();
+}
+
+class _NotifBellState extends ConsumerState<_NotifBell> {
+  bool _enabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(isPrayerNotificationEnabled().then((value) {
+      if (mounted) setState(() => _enabled = value);
+    }));
+  }
+
+  Future<void> _refresh() async {
+    final value = await isPrayerNotificationEnabled();
+    if (mounted) setState(() => _enabled = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'إشعار المواقيت',
+      icon: Icon(
+        _enabled ? Icons.notifications_active : Icons.notifications_off,
+      ),
+      onPressed: () async {
+        // No timings yet (settings never saved) → prompt to set
+        // them up first instead of the notification explainer.
+        if (ref.read(prayerViewProvider) == null) {
+          final openSettings = await showDialog<bool>(
+            context: context,
+            builder: (context) => const PrayerSetupRequiredDialog(),
+          );
+          if (openSettings == true && context.mounted) {
+            await showDialog<void>(
+              context: context,
+              builder: (context) => const PrayerSettingsDialog(),
+            );
+          }
+          return;
+        }
+        if (_enabled) {
+          // On → off straight away, no dialog.
+          await setPrayerNotificationEnabled(false);
+          await _refresh();
+          return;
+        }
+        // Off → explain first, then enable from the dialog.
+        final changed = await showDialog<bool>(
+          context: context,
+          builder: (context) => const PrayerNotificationDialog(),
+        );
+        // Refresh the bell icon when the dialog changed anything.
+        if (changed == true) await _refresh();
+      },
     );
   }
 }

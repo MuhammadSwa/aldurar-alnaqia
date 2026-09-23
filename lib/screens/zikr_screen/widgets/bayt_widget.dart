@@ -8,7 +8,10 @@ import 'package:material_ui/material_ui.dart';
 /// (sadr right-aligned, ajz left-aligned) so long verses never squeeze.
 class BaytWidget extends StatelessWidget {
   const BaytWidget({
-    required this.sadr, required this.ajz, required this.fontSize, super.key,
+    required this.sadr,
+    required this.ajz,
+    required this.fontSize,
+    super.key,
   });
 
   final String sadr;
@@ -25,28 +28,25 @@ class BaytWidget extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= wideThreshold) {
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ZikrInlineText(
-                    text: sadr,
-                    fontSize: fontSize,
-                    textAlign: TextAlign.right,
-                  ),
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ZikrInlineText(
+                  text: sadr,
+                  fontSize: fontSize,
+                  textAlign: TextAlign.right,
                 ),
-                const SizedBox(width: 28),
-                Expanded(
-                  child: ZikrInlineText(
-                    text: ajz,
-                    fontSize: fontSize,
-                    textAlign: TextAlign.left,
-                  ),
+              ),
+              const SizedBox(width: 28),
+              Expanded(
+                child: ZikrInlineText(
+                  text: ajz,
+                  fontSize: fontSize,
+                  textAlign: TextAlign.left,
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         }
         return Column(

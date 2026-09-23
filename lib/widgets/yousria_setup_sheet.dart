@@ -17,69 +17,66 @@ Future<bool?> showYousriaSetupSheet(
     context: context,
     showDragHandle: true,
     builder: (sheetContext) {
-      return Directionality(
-        textDirection: TextDirection.rtl,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
-                  child: Text(
-                    'أي جزء تقرأ اليوم؟',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+      return SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
+                child: Text(
+                  'أي جزء تقرأ اليوم؟',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
-                  child: Text(
-                    'اختر جزء اليوم وسنحفظ بداية الدورة تلقائيًا.',
-                  ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Text(
+                  'اختر جزء اليوم وسنحفظ بداية الدورة تلقائيًا.',
                 ),
-                for (var day = 1; day <= 6; day++)
-                  Builder(
-                    builder: (context) {
-                      // Shared math: choosing part [day] today means the
-                      // cycle started (day - 1) days ago.
-                      final impliedStart = impliedStartForDay(day);
-                      final title = yousriaDayZikr(day).title;
-                      final selected = day == current.dayNumber;
-                      return ListTile(
-                        title: Text(title),
-                        trailing: selected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: Theme.of(context).colorScheme.primary,
-                              )
-                            : const Icon(Icons.circle_outlined),
-                        selected: selected,
-                        onTap: () {
-                          try {
-                            unawaited(
-                              ProviderScope.containerOf(context)
-                                  .read(yousriaBeginningProvider.notifier)
-                                  .setBeginning(impliedStart),
-                            );
-                          } catch (e) {
-                            // Outside a ProviderScope (e.g. tests); persist
-                            // directly so the choice isn't lost.
-                            SharedPreferencesService.setYousriaBeginning(
-                              impliedStart,
-                            );
-                          }
-                          Navigator.of(sheetContext).pop(true);
-                        },
-                      );
-                    },
-                  ),
-                const SizedBox(height: 12),
-              ],
-            ),
+              ),
+              for (var day = 1; day <= 6; day++)
+                Builder(
+                  builder: (context) {
+                    // Shared math: choosing part [day] today means the
+                    // cycle started (day - 1) days ago.
+                    final impliedStart = impliedStartForDay(day);
+                    final title = yousriaDayZikr(day).title;
+                    final selected = day == current.dayNumber;
+                    return ListTile(
+                      title: Text(title),
+                      trailing: selected
+                          ? Icon(
+                              Icons.check_circle,
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : const Icon(Icons.circle_outlined),
+                      selected: selected,
+                      onTap: () {
+                        try {
+                          unawaited(
+                            ProviderScope.containerOf(context)
+                                .read(yousriaBeginningProvider.notifier)
+                                .setBeginning(impliedStart),
+                          );
+                        } catch (e) {
+                          // Outside a ProviderScope (e.g. tests); persist
+                          // directly so the choice isn't lost.
+                          SharedPreferencesService.setYousriaBeginning(
+                            impliedStart,
+                          );
+                        }
+                        Navigator.of(sheetContext).pop(true);
+                      },
+                    );
+                  },
+                ),
+              const SizedBox(height: 12),
+            ],
           ),
         ),
       );

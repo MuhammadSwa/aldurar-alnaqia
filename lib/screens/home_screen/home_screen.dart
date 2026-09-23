@@ -68,8 +68,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Row(
-                textDirection: TextDirection
-                    .rtl, // Ensures icon is on the right for Arabic
                 children: [
                   Icon(Icons.today_rounded),
                   SizedBox(width: 8),
@@ -119,7 +117,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
 
             AppTile(
-              title:                   dalayilAlkhayratCollection[dayIndex].title,
+              title: dalayilAlkhayratCollection[dayIndex].title,
               leading: const AppTileLeadingIcon(
                 icon: Icons.auto_stories_rounded,
               ),
@@ -138,7 +136,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: Row(
-                textDirection: TextDirection.rtl,
                 children: [
                   Icon(Icons.favorite),
                   SizedBox(width: 8),
@@ -293,7 +290,6 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
 }
 
 class EmptyBookmarks extends StatelessWidget {
-
   const EmptyBookmarks({super.key, this.onExplore});
   final VoidCallback? onExplore;
 

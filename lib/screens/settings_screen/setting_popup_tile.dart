@@ -8,7 +8,12 @@ import 'package:material_ui/material_ui.dart';
 /// `FileActionSettingWidget` and `YousriaBeginningDayDropDown`.
 class SettingPopupTile<T> extends StatelessWidget {
   const SettingPopupTile({
-    required this.title, required this.value, required this.values, required this.labelFor, required this.onSelected, super.key,
+    required this.title,
+    required this.value,
+    required this.values,
+    required this.labelFor,
+    required this.onSelected,
+    super.key,
     this.cardStyle = SettingsCardStyle.classic,
     this.leading,
     this.trailingStyle = 0,
@@ -35,49 +40,46 @@ class SettingPopupTile<T> extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     return SettingsCard(
       style: cardStyle,
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: PopupMenuButton<T>(
-          initialValue: value,
-          position: PopupMenuPosition.under,
-          onSelected: onSelected,
-          itemBuilder: (context) => [
-            for (final v in values)
-              CheckedPopupMenuItem<T>(
-                value: v,
-                checked: v == value,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    labelFor(v),
-                    style: theme.textTheme.titleMedium,
+      child: PopupMenuButton<T>(
+        initialValue: value,
+        position: PopupMenuPosition.under,
+        onSelected: onSelected,
+        itemBuilder: (context) => [
+          for (final v in values)
+            CheckedPopupMenuItem<T>(
+              value: v,
+              checked: v == value,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  labelFor(v),
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+            ),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: cardStyle == SettingsCardStyle.tonal
+                        ? colorScheme.onSecondaryContainer
+                        : colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
-          ],
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                if (leading != null) ...[
-                  leading!,
-                  const SizedBox(width: 12),
-                ],
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: cardStyle == SettingsCardStyle.tonal
-                          ? colorScheme.onSecondaryContainer
-                          : colorScheme.onSurface,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ),
-                _buildTrailing(colorScheme),
-              ],
-            ),
+              _buildTrailing(colorScheme),
+            ],
           ),
         ),
       ),

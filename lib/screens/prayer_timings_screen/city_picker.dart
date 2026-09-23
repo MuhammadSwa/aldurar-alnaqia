@@ -17,7 +17,9 @@ import 'package:material_ui/material_ui.dart';
 /// Read-only field that displays the chosen city and opens the search sheet.
 class CityPickerField extends StatelessWidget {
   const CityPickerField({
-    required this.selected, required this.onSelected, super.key,
+    required this.selected,
+    required this.onSelected,
+    super.key,
   });
 
   final City? selected;
@@ -91,57 +93,54 @@ class _CitySearchSheetState extends ConsumerState<CitySearchSheet> {
     final theme = Theme.of(context);
     final directoryAsync = ref.watch(cityDirectoryProvider);
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      // Full-height sheet: no bottom padding, no viewInsets (keyboard
-      // overlays the lower results). useSafeArea on the modal keeps the
-      // sheet off the system nav bar.
-      child: Padding(
-        padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
-        child: SizedBox.expand(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: theme.dividerColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+    // Full-height sheet: no bottom padding, no viewInsets (keyboard
+    // overlays the lower results). useSafeArea on the modal keeps the
+    // sheet off the system nav bar.
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
+      child: SizedBox.expand(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: theme.dividerColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              TextField(
-                controller: _searchController,
-                autofocus: true,
-                onChanged: _onQueryChanged,
-                decoration: const InputDecoration(
-                  labelText: 'اسم المدينة أو الدولة',
-                  hintText: 'مثال: القاهرة أو مصر أو Cairo',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+            ),
+            TextField(
+              controller: _searchController,
+              autofocus: true,
+              onChanged: _onQueryChanged,
+              decoration: const InputDecoration(
+                labelText: 'اسم المدينة أو الدولة',
+                hintText: 'مثال: القاهرة أو مصر أو Cairo',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: directoryAsync.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                error: (error, _) => Center(
+                  child: Text('تعذر تحميل قائمة المدن: $error'),
+                ),
+                data: (directory) => _ResultsList(
+                  directory: directory,
+                  query: _query,
+                  initial: widget.initial,
                 ),
               ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: directoryAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  error: (error, _) => Center(
-                    child: Text('تعذر تحميل قائمة المدن: $error'),
-                  ),
-                  data: (directory) => _ResultsList(
-                    directory: directory,
-                    query: _query,
-                    initial: widget.initial,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,7 +1,8 @@
 import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart' show NextPrayerCountdown;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/next_prayer_countdown.dart'
+    show NextPrayerCountdown;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -32,36 +33,69 @@ class PrayerTimingsCard extends ConsumerWidget {
     // Main box: fard prayers + sunrise. Sunnah times live in their own
     // box below, mirroring the same listing style.
     final fardPrayers = [
-      _PrayerTime('المغرب', schedule.events[PrayerEventId.maghrib]!.time,
-          id: PrayerEventId.maghrib, icon: LucideIcons.sunset,),
-      _PrayerTime('العشاء', schedule.events[PrayerEventId.isha]!.time,
-          id: PrayerEventId.isha, icon: LucideIcons.moon,),
-      _PrayerTime('الفجر', schedule.events[PrayerEventId.fajr]!.time,
-          id: PrayerEventId.fajr, icon: LucideIcons.sunMoon,),
-      _PrayerTime('الشروق', schedule.events[PrayerEventId.sunrise]!.time,
-          id: PrayerEventId.sunrise, icon: LucideIcons.sunrise,),
-      _PrayerTime('الظهر', schedule.events[PrayerEventId.dhuhr]!.time,
-          id: PrayerEventId.dhuhr, icon: LucideIcons.sun,),
-      _PrayerTime('العصر', schedule.events[PrayerEventId.asr]!.time,
-          id: PrayerEventId.asr, icon: LucideIcons.cloudSun,),
+      _PrayerTime(
+        'المغرب',
+        schedule.events[PrayerEventId.maghrib]!.time,
+        id: PrayerEventId.maghrib,
+        icon: LucideIcons.sunset,
+      ),
+      _PrayerTime(
+        'العشاء',
+        schedule.events[PrayerEventId.isha]!.time,
+        id: PrayerEventId.isha,
+        icon: LucideIcons.moon,
+      ),
+      _PrayerTime(
+        'الفجر',
+        schedule.events[PrayerEventId.fajr]!.time,
+        id: PrayerEventId.fajr,
+        icon: LucideIcons.sunMoon,
+      ),
+      _PrayerTime(
+        'الشروق',
+        schedule.events[PrayerEventId.sunrise]!.time,
+        id: PrayerEventId.sunrise,
+        icon: LucideIcons.sunrise,
+      ),
+      _PrayerTime(
+        'الظهر',
+        schedule.events[PrayerEventId.dhuhr]!.time,
+        id: PrayerEventId.dhuhr,
+        icon: LucideIcons.sun,
+      ),
+      _PrayerTime(
+        'العصر',
+        schedule.events[PrayerEventId.asr]!.time,
+        id: PrayerEventId.asr,
+        icon: LucideIcons.cloudSun,
+      ),
     ];
 
     final sunnahPrayers = [
-      _PrayerTime('الضحى', sunnah?.duha,
-          isSunnah: true,
-          assetPath: 'assets/imgs/sunnah_duha.png',
-          icon: LucideIcons.sun,
-          tint: const Color(0xFFE8823A),),
-      _PrayerTime('منتصف الليل', sunnah?.middleOfNight,
-          isSunnah: true,
-          assetPath: 'assets/imgs/sunnah_midnight.png',
-          icon: LucideIcons.moonStar,
-          tint: const Color(0xFF4A5AA8),),
-      _PrayerTime('الثلث الأخير', sunnah?.lastThirdOfNight,
-          isSunnah: true,
-          assetPath: 'assets/imgs/sunnah_last_third.png',
-          icon: LucideIcons.moonStar,
-          tint: const Color(0xFF7C6AAE),),
+      _PrayerTime(
+        'الضحى',
+        sunnah?.duha,
+        isSunnah: true,
+        assetPath: 'assets/imgs/sunnah_duha.png',
+        icon: LucideIcons.sun,
+        tint: const Color(0xFFE8823A),
+      ),
+      _PrayerTime(
+        'منتصف الليل',
+        sunnah?.middleOfNight,
+        isSunnah: true,
+        assetPath: 'assets/imgs/sunnah_midnight.png',
+        icon: LucideIcons.moonStar,
+        tint: const Color(0xFF4A5AA8),
+      ),
+      _PrayerTime(
+        'الثلث الأخير',
+        sunnah?.lastThirdOfNight,
+        isSunnah: true,
+        assetPath: 'assets/imgs/sunnah_last_third.png',
+        icon: LucideIcons.moonStar,
+        tint: const Color(0xFF7C6AAE),
+      ),
     ];
 
     return Column(
@@ -77,15 +111,27 @@ class PrayerTimingsCard extends ConsumerWidget {
   /// Time-of-day tint for each prayer medallion. Fixed hues read well on
   /// both light and dark backgrounds.
   static (Color, Color) _tintFor(PrayerEventId? id) => switch (id) {
-        PrayerEventId.fajr => (const Color(0xFF7C6AAE), const Color(0xFF7C6AAE)),
-        PrayerEventId.sunrise =>
-          (const Color(0xFFE8823A), const Color(0xFFE8823A)),
-        PrayerEventId.dhuhr =>
-          (const Color(0xFFB8860B), const Color(0xFFB8860B)),
+        PrayerEventId.fajr => (
+            const Color(0xFF7C6AAE),
+            const Color(0xFF7C6AAE)
+          ),
+        PrayerEventId.sunrise => (
+            const Color(0xFFE8823A),
+            const Color(0xFFE8823A)
+          ),
+        PrayerEventId.dhuhr => (
+            const Color(0xFFB8860B),
+            const Color(0xFFB8860B)
+          ),
         PrayerEventId.asr => (const Color(0xFFD97A2B), const Color(0xFFD97A2B)),
-        PrayerEventId.maghrib =>
-          (const Color(0xFFC14A3A), const Color(0xFFC14A3A)),
-        PrayerEventId.isha => (const Color(0xFF4A5AA8), const Color(0xFF4A5AA8)),
+        PrayerEventId.maghrib => (
+            const Color(0xFFC14A3A),
+            const Color(0xFFC14A3A)
+          ),
+        PrayerEventId.isha => (
+            const Color(0xFF4A5AA8),
+            const Color(0xFF4A5AA8)
+          ),
         null => (const Color(0xFF757575), const Color(0xFF757575)),
       };
 
@@ -100,10 +146,8 @@ class PrayerTimingsCard extends ConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-              color: Theme.of(context)
-                  .colorScheme
-                  .outline
-                  .withValues(alpha: 0.2),),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -141,17 +185,15 @@ class PrayerTimingsCard extends ConsumerWidget {
     final rowColor = isNext
         ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
         : null;
-    final (medallionBg, medallionFg) =
-        prayer.tint != null ? (prayer.tint!, prayer.tint!) : _tintFor(prayer.id);
+    final (medallionBg, medallionFg) = prayer.tint != null
+        ? (prayer.tint!, prayer.tint!)
+        : _tintFor(prayer.id);
     final hasVisual = prayer.icon != null || prayer.assetPath != null;
 
     return Container(
       decoration: BoxDecoration(color: rowColor),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      // Row is explicitly RTL so the medallion — the first child — lands
-      // on the right of the name.
       child: Row(
-        textDirection: TextDirection.rtl,
         children: [
           if (hasVisual)
             Container(
@@ -218,35 +260,68 @@ class PrayerTimingsCard extends ConsumerWidget {
   // Helper method to build the placeholder table to avoid code duplication
   Widget _buildPlaceholderTable(BuildContext context) {
     const fardPrayers = [
-      _PrayerTime('المغرب', null,
-          id: PrayerEventId.maghrib, icon: LucideIcons.sunset,),
-      _PrayerTime('العشاء', null,
-          id: PrayerEventId.isha, icon: LucideIcons.moon,),
-      _PrayerTime('الفجر', null,
-          id: PrayerEventId.fajr, icon: LucideIcons.sunMoon,),
-      _PrayerTime('الشروق', null,
-          id: PrayerEventId.sunrise, icon: LucideIcons.sunrise,),
-      _PrayerTime('الظهر', null,
-          id: PrayerEventId.dhuhr, icon: LucideIcons.sun,),
-      _PrayerTime('العصر', null,
-          id: PrayerEventId.asr, icon: LucideIcons.cloudSun,),
+      _PrayerTime(
+        'المغرب',
+        null,
+        id: PrayerEventId.maghrib,
+        icon: LucideIcons.sunset,
+      ),
+      _PrayerTime(
+        'العشاء',
+        null,
+        id: PrayerEventId.isha,
+        icon: LucideIcons.moon,
+      ),
+      _PrayerTime(
+        'الفجر',
+        null,
+        id: PrayerEventId.fajr,
+        icon: LucideIcons.sunMoon,
+      ),
+      _PrayerTime(
+        'الشروق',
+        null,
+        id: PrayerEventId.sunrise,
+        icon: LucideIcons.sunrise,
+      ),
+      _PrayerTime(
+        'الظهر',
+        null,
+        id: PrayerEventId.dhuhr,
+        icon: LucideIcons.sun,
+      ),
+      _PrayerTime(
+        'العصر',
+        null,
+        id: PrayerEventId.asr,
+        icon: LucideIcons.cloudSun,
+      ),
     ];
     const sunnahPrayers = [
-      _PrayerTime('الضحى', null,
-          isSunnah: true,
-          assetPath: 'assets/imgs/sunnah_duha.png',
-          icon: LucideIcons.sun,
-          tint: Color(0xFFE8823A),),
-      _PrayerTime('منتصف الليل', null,
-          isSunnah: true,
-          assetPath: 'assets/imgs/sunnah_midnight.png',
-          icon: LucideIcons.moonStar,
-          tint: Color(0xFF4A5AA8),),
-      _PrayerTime('الثلث الأخير', null,
-          isSunnah: true,
-          assetPath: 'assets/imgs/sunnah_last_third.png',
-          icon: LucideIcons.moonStar,
-          tint: Color(0xFF7C6AAE),),
+      _PrayerTime(
+        'الضحى',
+        null,
+        isSunnah: true,
+        assetPath: 'assets/imgs/sunnah_duha.png',
+        icon: LucideIcons.sun,
+        tint: Color(0xFFE8823A),
+      ),
+      _PrayerTime(
+        'منتصف الليل',
+        null,
+        isSunnah: true,
+        assetPath: 'assets/imgs/sunnah_midnight.png',
+        icon: LucideIcons.moonStar,
+        tint: Color(0xFF4A5AA8),
+      ),
+      _PrayerTime(
+        'الثلث الأخير',
+        null,
+        isSunnah: true,
+        assetPath: 'assets/imgs/sunnah_last_third.png',
+        icon: LucideIcons.moonStar,
+        tint: Color(0xFF7C6AAE),
+      ),
     ];
 
     // No next prayer while unconfigured: -1 matches nothing.
@@ -271,9 +346,15 @@ class PrayerTimingsCard extends ConsumerWidget {
 }
 
 class _PrayerTime {
-
-  const _PrayerTime(this.name, this.time,
-      {this.isSunnah = false, this.id, this.icon, this.assetPath, this.tint,});
+  const _PrayerTime(
+    this.name,
+    this.time, {
+    this.isSunnah = false,
+    this.id,
+    this.icon,
+    this.assetPath,
+    this.tint,
+  });
   final String name;
   final DateTime? time;
   final bool isSunnah;

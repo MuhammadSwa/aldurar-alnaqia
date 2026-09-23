@@ -4,7 +4,8 @@ import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart' show PrayerTimingsCard;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart'
+    show PrayerTimingsCard;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
@@ -109,8 +110,7 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                 // positive through the midnight→Fajr window. Clamped
                 // defensively so a clock jump can never render negative.
                 final rawLeft = next.time.difference(_now);
-                final left =
-                    rawLeft.isNegative ? Duration.zero : rawLeft;
+                final left = rawLeft.isNegative ? Duration.zero : rawLeft;
                 // Timeline query (prev … now … next): stays visible through
                 // the midnight→Fajr window. The widget never thinks in
                 // civil days — the repository owns the cross-midnight lookup.
@@ -155,7 +155,6 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                               ],
                             ),
                             textAlign: TextAlign.center,
-                            textDirection: TextDirection.rtl,
                           ),
                         ),
                       ],
@@ -224,11 +223,10 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
   }
 
   void _openSettings(BuildContext context) {
-    
-      showDialog<void>(
-        context: context,
-        builder: (_) => const PrayerSettingsDialog(),
-      );
+    showDialog<void>(
+      context: context,
+      builder: (_) => const PrayerSettingsDialog(),
+    );
   }
 
   /// Opaque marker for the bar's fill tip: the next prayer's timetable
@@ -273,7 +271,6 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
 }
 
 class _UnsetContent extends StatelessWidget {
-
   const _UnsetContent({required this.onTap});
   final VoidCallback onTap;
 
@@ -297,7 +294,6 @@ class _UnsetContent extends StatelessWidget {
 /// Tappable location line shown above the countdown.
 /// Unset state invites the user to pick a location.
 class _LocationLine extends StatelessWidget {
-
   const _LocationLine({
     required this.label,
     required this.isUnset,
