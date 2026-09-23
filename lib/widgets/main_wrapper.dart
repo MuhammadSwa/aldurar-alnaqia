@@ -3,8 +3,6 @@ import 'package:aldurar_alnaqia/widgets/my_drawer.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Key of the single [Scaffold] in [MainWrapper] that owns the app drawer
-/// and the bottom [NavigationBar].
 final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 
 class MainWrapper extends StatelessWidget {

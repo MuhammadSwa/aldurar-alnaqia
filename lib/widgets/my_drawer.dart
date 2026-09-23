@@ -38,7 +38,6 @@ class MyDrawer extends StatelessWidget {
             const FontSizeSettingsWidget(
               cardStyle: SettingsCardStyle.outlined,
             ),
-
             _buildDrawerItem(
               context: context,
               icon: Icon(
@@ -107,60 +106,6 @@ class MyDrawer extends StatelessWidget {
                 );
               },
             ),
-            // // TEMPORARY: theme preview entry. Preview-only, safe to keep/remove.
-            // _buildDrawerItem(
-            //   context: context,
-            //   icon: Icon(
-            //     Icons.palette_outlined,
-            //     color: colorScheme.onSecondaryContainer,
-            //     size: 20,
-            //   ),
-            //   title: 'تجربة الألوان (مؤقت)',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     Navigator.of(context).push(
-            //       MaterialPageRoute(
-            //         builder: (_) => const ThemePreviewScreen(),
-            //       ),
-            //     );
-            //   },
-            // ),
-            // // TEMPORARY: font-lab entry. Remove after choices are made.
-            // _buildDrawerItem(
-            //   context: context,
-            //   icon: Icon(
-            //     Icons.text_fields_outlined,
-            //     color: colorScheme.onSecondaryContainer,
-            //     size: 20,
-            //   ),
-            //   title: 'معاينة الخطوط (مؤقت)',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     Navigator.of(context).push(
-            //       MaterialPageRoute(
-            //         builder: (_) => const FontLabScreen(),
-            //       ),
-            //     );
-            //   },
-            // ),
-            // // TEMPORARY: tile-separator lab. Remove after a choice is made.
-            // _buildDrawerItem(
-            //   context: context,
-            //   icon: Icon(
-            //     Icons.view_agenda_outlined,
-            //     color: colorScheme.onSecondaryContainer,
-            //     size: 20,
-            //   ),
-            //   title: 'فواصل البلاطات (مؤقت)',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     Navigator.of(context).push(
-            //       MaterialPageRoute(
-            //         builder: (_) => const TileSeparatorLabScreen(),
-            //       ),
-            //     );
-            //   },
-            // ),
           ],
         ),
       ),
