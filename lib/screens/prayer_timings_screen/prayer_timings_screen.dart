@@ -101,9 +101,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   }
 }
 
-/// Bell icon owning its own enabled flag: loads once in initState instead
-/// of a `FutureBuilder` that re-fires on every parent rebuild, and refreshes
-/// only itself via local `setState`.
+/// Bell icon owning its own enabled flag
 class _NotifBell extends StatefulWidget {
   const _NotifBell();
 
