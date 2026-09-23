@@ -147,15 +147,6 @@ class PrayerSettings {
   final String madhab;
   final String highLatitudeRule;
 
-  static const PrayerSettings defaults = PrayerSettings(
-    latitude: 0,
-    longitude: 0,
-    timezone: '',
-    method: PrayerMethods.egyptian,
-    madhab: PrayerMadhabs.shafi,
-    highLatitudeRule: PrayerHighLatitudeRules.middleOfNight,
-  );
-
   /// Null when valid, otherwise a human-readable reason. Never throws.
   String? validate() {
     if (!latitude.isFinite ||
