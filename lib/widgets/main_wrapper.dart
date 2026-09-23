@@ -6,36 +6,27 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Key of the single [Scaffold] in [MainWrapper] that owns the app drawer
-/// and the bottom [NavigationBar]. Branch screens open it via
-/// `rootScaffoldKey.currentState?.openDrawer()` instead of owning
-/// per-screen keys.
+/// and the bottom [NavigationBar].
 final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 
-class MainWrapper extends ConsumerStatefulWidget {
+class MainWrapper extends ConsumerWidget {
   const MainWrapper({
     required this.navigationShell,
     super.key,
   });
   final StatefulNavigationShell navigationShell;
-  @override
-  ConsumerState<MainWrapper> createState() => _MainWrapperState();
-}
-
-class _MainWrapperState extends ConsumerState<MainWrapper> {
-  void _goBranch(int index) {
-    // The drawer and the NavigationBar share this Scaffold, so closing is
-    // synchronous state — no animation delay is needed before switching
-    // branches (replaces the old DrawerRegistry + 300ms workaround).
-    rootScaffoldKey.currentState?.closeDrawer();
-
-    widget.navigationShell.goBranch(
-      index,
-      initialLocation: index == widget.navigationShell.currentIndex,
-    );
-  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    void goBranch(int index) {
+      rootScaffoldKey.currentState?.closeDrawer();
+
+      navigationShell.goBranch(
+        index,
+        initialLocation: index == navigationShell.currentIndex,
+      );
+    }
+
     final showAudioBar =
         ref.watch(audioProvider.select((state) => state.isVisible));
     // Selected tab icon color contrasts with the primary indicator pill.
@@ -56,7 +47,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
               child: Column(
                 children: [
                   Expanded(
-                    child: widget.navigationShell,
+                    child: navigationShell,
                   ),
                   if (showAudioBar) const AudioMiniPlayer(),
                 ],
@@ -86,8 +77,8 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
                   label: 'المكتبة',
                 ),
               ],
-              onDestinationSelected: _goBranch,
-              selectedIndex: widget.navigationShell.currentIndex,
+              onDestinationSelected: goBranch,
+              selectedIndex: navigationShell.currentIndex,
             ),
           ),
         ),
