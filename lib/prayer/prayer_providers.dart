@@ -77,30 +77,24 @@ final prayerViewProvider = Provider<PrayerView?>((ref) {
   ref.watch(prayerNudgeProvider);
   final config = ref.watch(prayerConfigProvider);
   final settings = config.settings;
-  if (settings.validate() != null) return null;
-  final repo = PrayerRepository.instance;
-  final location = _zoneOf(settings);
+  final location = settings.locationOrNull;
   if (location == null) return null;
+  final repo = PrayerRepository.instance;
   final now = tz.TZDateTime.now(location);
   final schedule = repo.scheduleFor(settings, now);
-  if (schedule == null) return null;
+  // Single derivation path: the countdown reads the same `nextAt`, so the
+  // view and the ticker can never disagree. Cache hit — no extra calculation.
+  final next = repo.nextAt(settings, now);
+  if (schedule == null || next == null) return null;
   return PrayerView(
     settings: settings,
     schedule: schedule,
-    next: schedule.nextEventAt(now),
+    next: next,
     weekday: repo.weekdayAt(settings, now),
     today: now,
     cityLabel: config.cityLabel,
   );
 });
-
-tz.Location? _zoneOf(PrayerSettings settings) {
-  try {
-    return tz.getLocation(settings.timezone);
-  } catch (_) {
-    return null;
-  }
-}
 
 /// Owns the single one-shot boundary timer. On fire it bumps the version so
 /// derived providers re-evaluate; [poke] does the same when the countdown

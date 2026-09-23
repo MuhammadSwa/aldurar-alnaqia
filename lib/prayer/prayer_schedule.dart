@@ -184,6 +184,18 @@ class PrayerSettings {
 
   bool get isValid => validate() == null;
 
+  /// Resolved zone, or null when unconfigured/invalid. Single place for the
+  /// validate + `getLocation` pairing previously duplicated across the
+  /// repository, providers, and prefs bridges. Never throws.
+  tz.Location? get locationOrNull {
+    if (validate() != null) return null;
+    try {
+      return tz.getLocation(timezone);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Stable fingerprint for change detection / debugging. Covers the solar
   /// inputs only (the Hijri day offset affects labels, never prayer times).
   String get fingerprint =>
