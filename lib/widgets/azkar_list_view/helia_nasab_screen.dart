@@ -31,18 +31,17 @@ class HeliaNasabScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final zikr = _hilya;
-    return Scaffold(
-        appBar: AppBar(
-          actions: [
-            PlayAudioBtnZikrPage(
-              id: zikr.id,
-              title: zikr.title,
-              url: zikr.url,
-            ),
-          ],
-          title: Text(zikr.title),
+    return ZikrReaderScaffold(
+      title: zikr.title,
+      actions: [
+        PlayAudioBtnZikrPage(
+          id: zikr.id,
+          title: zikr.title,
+          url: zikr.url,
         ),
-        body: const HeliaNasabContent(),);
+      ],
+      child: const HeliaNasabContent(),
+    );
   }
 }
 
@@ -75,7 +74,18 @@ class _HeliaNasabContentState extends State<HeliaNasabContent> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: AppPdfView(controller: _controller),
+      child: AppPdfView(
+        controller: _controller,
+        onTap: () => const ZikrReaderChromeNotification(
+          ZikrReaderChromeAction.toggle,
+        ).dispatch(context),
+        onInteractionStart: (_) => const ZikrReaderChromeNotification(
+          ZikrReaderChromeAction.hide,
+        ).dispatch(context),
+        onScrollbarDrag: () => const ZikrReaderChromeNotification(
+          ZikrReaderChromeAction.hide,
+        ).dispatch(context),
+      ),
     );
   }
 }

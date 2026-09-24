@@ -78,22 +78,20 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_currentZikr.title),
-        actions: [
-          // The action button updates reactively based on the current Zikr.
-          // The full slide order is passed as a queue so the mini player
-          // can auto-advance through it.
-          PlayAudioBtnZikrPage(
-            id: _currentZikr.id,
-            title: _currentZikr.title,
-            url: _currentZikr.url,
-            queue: _audioQueue(),
-          ),
-        ],
-      ),
-      body: PageView.builder(
+    return ZikrReaderScaffold(
+      title: _currentZikr.title,
+      actions: [
+        // The action button updates reactively based on the current Zikr.
+        // The full slide order is passed as a queue so the mini player
+        // can auto-advance through it.
+        PlayAudioBtnZikrPage(
+          id: _currentZikr.id,
+          title: _currentZikr.title,
+          url: _currentZikr.url,
+          queue: _audioQueue(),
+        ),
+      ],
+      child: PageView.builder(
         controller: _pageController,
         itemCount: widget.zikrIds.length,
         // This callback updates the AppBar title when you swipe to a new page
@@ -118,6 +116,97 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
               return ZikrContentWidget(zikrId: widget.zikrIds[index]);
           }
         },
+      ),
+    );
+  }
+}
+
+/// Reader chrome shared by standalone and swipeable azkar.
+///
+/// The bar gets out of the way as soon as vertical reading starts. Tapping
+/// the page toggles it, and returning the scroll position to the top shows it.
+class ZikrReaderScaffold extends StatefulWidget {
+  const ZikrReaderScaffold({
+    required this.title,
+    required this.actions,
+    required this.child,
+  });
+
+  final String title;
+  final List<Widget> actions;
+  final Widget child;
+
+  @override
+  State<ZikrReaderScaffold> createState() => _ZikrReaderScaffoldState();
+}
+
+/// Intent emitted by embedded reader content, such as a PDF view.
+enum ZikrReaderChromeAction { toggle, hide }
+
+/// Lets embedded reader content control the containing reader's AppBar.
+class ZikrReaderChromeNotification extends Notification {
+  const ZikrReaderChromeNotification(this.action);
+
+  final ZikrReaderChromeAction action;
+}
+
+class _ZikrReaderScaffoldState extends State<ZikrReaderScaffold> {
+  bool _appBarVisible = true;
+
+  void _showAppBar() {
+    if (!_appBarVisible && mounted) setState(() => _appBarVisible = true);
+  }
+
+  void _hideAppBar() {
+    if (_appBarVisible && mounted) setState(() => _appBarVisible = false);
+  }
+
+  void _toggleAppBar() {
+    if (!mounted) return;
+    setState(() => _appBarVisible = !_appBarVisible);
+  }
+
+  bool _handleChromeIntent(ZikrReaderChromeNotification notification) {
+    switch (notification.action) {
+      case ZikrReaderChromeAction.toggle:
+        _toggleAppBar();
+        return true;
+      case ZikrReaderChromeAction.hide:
+        _hideAppBar();
+        return true;
+    }
+  }
+
+  bool _handleScroll(ScrollNotification notification) {
+    // The outer PageView also emits scroll notifications. Only the vertical
+    // reader scroll should affect the reader chrome.
+    if (notification.metrics.axis != Axis.vertical) return false;
+
+    if (notification.metrics.pixels <= notification.metrics.minScrollExtent) {
+      _showAppBar();
+    } else if (notification is ScrollUpdateNotification &&
+        notification.scrollDelta != 0) {
+      _hideAppBar();
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ZikrReaderChromeNotification>(
+      onNotification: _handleChromeIntent,
+      child: Scaffold(
+        appBar: _appBarVisible
+            ? AppBar(title: Text(widget.title), actions: widget.actions)
+            : null,
+        body: NotificationListener<ScrollNotification>(
+          onNotification: _handleScroll,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: _toggleAppBar,
+            child: widget.child,
+          ),
+        ),
       ),
     );
   }
@@ -158,20 +247,16 @@ class ZikrScreen extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          PlayAudioBtnZikrPage(
-            id: zikr.id,
-            title: zikr.title,
-            url: zikr.url,
-          ),
-        ],
-        title: Text(
-          zikr.title,
+    return ZikrReaderScaffold(
+      title: zikr.title,
+      actions: [
+        PlayAudioBtnZikrPage(
+          id: zikr.id,
+          title: zikr.title,
+          url: zikr.url,
         ),
-      ),
-      body: ZikrContentWidget(
+      ],
+      child: ZikrContentWidget(
         zikrId: zikr.id,
       ),
     );

@@ -268,6 +268,10 @@ class AppRouter {
     required String pagePrefix,
   }) {
     return GoRoute(
+      // Keep the branch's URL and back stack, but render the reader above
+      // the shell just like the PDF viewer. This removes NavigationBar while
+      // preserving the shell underneath for a normal back navigation.
+      parentNavigatorKey: _rootNavigatorKey,
       path: RoutePaths.zikrSegment,
       name: RouteNames.zikrPage(pagePrefix),
       pageBuilder: (context, state) {
@@ -286,7 +290,13 @@ class AppRouter {
             index >= 0 &&
             index < zikrIds.length) {
           return RouteTransitions.slideTransition(
-            ZikrScreen(zikrId: zikrId, zikrIds: zikrIds, index: index),
+            AudioMiniPlayerOverlay(
+              child: ZikrScreen(
+                zikrId: zikrId,
+                zikrIds: zikrIds,
+                index: index,
+              ),
+            ),
             key: state.pageKey,
             restorationId: 'zikrPage-$pagePrefix',
           );
@@ -296,16 +306,28 @@ class AppRouter {
         // e.g. opened from search or a deep link).
         final resolved = resolveZikr(zikrId);
         if (resolved?.kind == ZikrKind.hilyaNasab) {
-          return RouteTransitions.slideTransition(const HeliaNasabScreen(),
-              key: state.pageKey, restorationId: 'zikrPage-$pagePrefix-hilya');
+          return RouteTransitions.slideTransition(
+            const AudioMiniPlayerOverlay(child: HeliaNasabScreen()),
+            key: state.pageKey,
+            restorationId: 'zikrPage-$pagePrefix-hilya',
+          );
         }
         if (resolved?.kind == ZikrKind.tareeqaSanad) {
-          return RouteTransitions.slideTransition(const TareeqaSanadScreen(),
-              key: state.pageKey, restorationId: 'zikrPage-$pagePrefix-sanad');
+          return RouteTransitions.slideTransition(
+            const AudioMiniPlayerOverlay(child: TareeqaSanadScreen()),
+            key: state.pageKey,
+            restorationId: 'zikrPage-$pagePrefix-sanad',
+          );
         }
 
         return RouteTransitions.slideTransition(
-          ZikrScreen(zikrId: zikrId, zikrIds: zikrIds, index: index),
+          AudioMiniPlayerOverlay(
+            child: ZikrScreen(
+              zikrId: zikrId,
+              zikrIds: zikrIds,
+              index: index,
+            ),
+          ),
           key: state.pageKey,
           restorationId: 'zikrPage-$pagePrefix',
         );
@@ -315,11 +337,15 @@ class AppRouter {
 
   static GoRoute _createHeliaNasabRoute() {
     return GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
       path: 'heliaNasab',
       name: RouteNames.heliaNasab,
       pageBuilder: (context, state) {
-        return RouteTransitions.slideTransition(const HeliaNasabScreen(),
-            key: state.pageKey, restorationId: 'heliaNasab');
+        return RouteTransitions.slideTransition(
+          const AudioMiniPlayerOverlay(child: HeliaNasabScreen()),
+          key: state.pageKey,
+          restorationId: 'heliaNasab',
+        );
       },
     );
   }
