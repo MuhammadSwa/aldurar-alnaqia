@@ -13,9 +13,24 @@ final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 /// not inherit its mini player. Use this around a fullscreen reader that
 /// should retain playback controls without restoring the bottom navigation.
 class AudioMiniPlayerOverlay extends ConsumerWidget {
-  const AudioMiniPlayerOverlay({required this.child, super.key});
+  const AudioMiniPlayerOverlay({
+    required this.child,
+    super.key,
+    this.backgroundColor,
+  });
 
   final Widget child;
+
+  /// Painted behind the content and the floating bar.
+  ///
+  /// [child] (and its Scaffold) stops painting at the clearance line, and an
+  /// opaque root route takes the route below it out of the painting tree — so
+  /// the strip under the floating bar would otherwise have zero painted
+  /// pixels and render as a black box (unpainted Flutter surface is black).
+  /// Defaults to the theme's scaffold background so the strip blends with the
+  /// page above. Pass the screen's own color if it overrides
+  /// `Scaffold.backgroundColor`.
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,28 +44,31 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final playerClearance = !isPlayerVisible
         ? 0.0
-        : (isPlayerCollapsed ? 64.0 : 166.0) + bottomInset;
+        : (isPlayerCollapsed ? 52.0 : 154.0) + bottomInset;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        AnimatedPadding(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.only(bottom: playerClearance),
-          child: child,
-        ),
-        SafeArea(
-          top: false,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1000),
-              child: const AudioMiniPlayer(),
+    return ColoredBox(
+      color: backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedPadding(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            padding: EdgeInsets.only(bottom: playerClearance),
+            child: child,
+          ),
+          SafeArea(
+            top: false,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: const AudioMiniPlayer(),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
