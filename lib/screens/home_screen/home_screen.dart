@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
@@ -10,6 +12,7 @@ import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show rootScaffoldKey;
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -224,6 +227,7 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
   ) {
     if (bookmark == weekCollectionBookmarkId) {
       return const ZikrListViewTile(
+        key: ValueKey(weekCollectionBookmarkId),
         zikrId: weekCollectionBookmarkId,
         title: 'أوراد الأسبوع',
         target: WeekCollectionTarget(ZikrBranch.home),
@@ -232,6 +236,7 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
     final day = _dayFromBookmark(bookmark);
     if (day != null) {
       return ZikrListViewTile(
+        key: ValueKey(bookmark),
         zikrId: bookmark,
         title: dayWirdTitles[day],
         target: DayWirdTarget(ZikrBranch.home, day: day),
@@ -239,6 +244,7 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
     }
     if (collectionById.containsKey(bookmark)) {
       return ZikrListViewTile(
+        key: ValueKey(bookmark),
         zikrId: bookmark,
         target: ZikrCollectionViewTarget(
           ZikrBranch.home,
@@ -247,6 +253,7 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
       );
     }
     return ZikrListViewTile(
+      key: ValueKey(bookmark),
       zikrId: bookmark,
       target: ZikrDetailTarget(
         branch: ZikrBranch.home,
@@ -283,16 +290,36 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
       orphanIndexById.putIfAbsent(orphanIds[i], () => i);
     }
 
-    return SingleChildScrollView(
+    return ReorderableListView.builder(
+      shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        children: [
-          // Strict bookmark order: collections and individual zikrs (as
-          // well as week/day wirds) interleave by bookmark time.
-          for (final bookmark in bookmarks)
-            _tileFor(bookmark, orphanIds, orphanIndexById),
-        ],
+      itemCount: bookmarks.length,
+      onReorderItem: (oldIndex, newIndex) =>
+          ref.read(bookmarksProvider.notifier).reorder(oldIndex, newIndex),
+      // Haptic tick the moment the long-press becomes a drag.
+      onReorderStart: (_) {
+        unawaited(HapticFeedback.mediumImpact());
+      },
+      proxyDecorator: (child, index, animation) => AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          final t = Curves.easeOut.transform(animation.value);
+          return Transform.scale(
+            scale: 1 + 0.02 * t,
+            child: Material(
+              elevation: 6 * t,
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: child,
+            ),
+          );
+        },
+        child: child,
       ),
+      itemBuilder: (context, index) {
+        final bookmark = bookmarks[index];
+        return _tileFor(bookmark, orphanIds, orphanIndexById);
+      },
     );
   }
 }

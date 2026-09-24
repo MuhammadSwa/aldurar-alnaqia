@@ -61,6 +61,21 @@ class BookmarksNotifier extends Notifier<List<String>> {
     }
     return wasBookmarked;
   }
+
+  /// Moves the bookmark at [oldIndex] to [newIndex], using
+  /// [ReorderableListView.onReorderItem] semantics ([newIndex] is already
+  /// adjusted for the removed item).
+  void reorder(int oldIndex, int newIndex) {
+    if (oldIndex == newIndex) return;
+    final list = [...state];
+    if (oldIndex < 0 || oldIndex >= list.length) return;
+    if (newIndex < 0 || newIndex > list.length) return;
+    final item = list.removeAt(oldIndex);
+    final insertAt = newIndex.clamp(0, list.length);
+    list.insert(insertAt, item);
+    SharedPreferencesService.setBookmarks(list);
+    state = list;
+  }
 }
 
 final bookmarksProvider =
