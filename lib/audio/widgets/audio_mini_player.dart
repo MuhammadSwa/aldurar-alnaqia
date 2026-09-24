@@ -7,6 +7,21 @@ import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// Ephemeral UI state: whether the mini player is collapsed to a slim
+/// single-row bar.
+class MiniPlayerCollapsedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void collapse() => state = true;
+  void expand() => state = false;
+}
+
+final miniPlayerCollapsedProvider =
+    NotifierProvider<MiniPlayerCollapsedNotifier, bool>(
+  MiniPlayerCollapsedNotifier.new,
+);
+
 /// Compact playback bar shown above the bottom navigation while a
 /// narration is loaded.
 class AudioMiniPlayer extends ConsumerWidget {
@@ -19,9 +34,8 @@ class AudioMiniPlayer extends ConsumerWidget {
     );
     if (track == null) return const SizedBox.shrink();
 
-    // Green-tinted container derived from the app's Material3 color scheme,
-    // so it stays distinct from the scaffold background in both light and
-    // dark mode (seed is green / greenAccent).
+    final isCollapsed = ref.watch(miniPlayerCollapsedProvider);
+
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -39,13 +53,35 @@ class AudioMiniPlayer extends ConsumerWidget {
             ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _TitleBar(title: track.title),
-              const _ProgressBar(),
-              const _TransportRow(),
-            ],
+          child: GestureDetector(
+            // Swipe down = collapse, swipe up = expand. The slider inside
+            // uses horizontal drags, so the arenas don't conflict.
+            onVerticalDragEnd: (d) {
+              final v = d.primaryVelocity ?? 0;
+              final notifier = ref.read(miniPlayerCollapsedProvider.notifier);
+              if (v > 250) {
+                notifier.collapse();
+              } else if (v < -250) {
+                notifier.expand();
+              }
+            },
+            // bottomCenter: the edge next to the NavigationBar stays put
+            // and the bar grows/shrinks upward.
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.bottomCenter,
+              child: isCollapsed
+                  ? _CollapsedBar(title: track.title)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _TitleBar(title: track.title),
+                        const _ProgressBar(),
+                        const _TransportRow(),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),
@@ -74,25 +110,152 @@ class _TitleBar extends ConsumerWidget {
           ),
         ),
         Align(
+          // Mirrors the close button on the physical right.
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            onPressed: () =>
+                ref.read(miniPlayerCollapsedProvider.notifier).collapse(),
+            icon: const Icon(Icons.keyboard_arrow_down),
+            tooltip: 'تصغير',
+            color: colorScheme.onSecondaryContainer,
+          ),
+        ),
+        Align(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              // Same call as the azkar/download tiles: track titles are
-              // stable ids, so long ones wrap. No marquee: it needs a
-              // ticker dependency, fights RTL scroll direction, and harms
-              // readability/motion-sensitive users for a glanceable bar.
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colorScheme.onSecondaryContainer,
-                fontWeight: FontWeight.w600,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () =>
+                  ref.read(miniPlayerCollapsedProvider.notifier).collapse(),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colorScheme.onSecondaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CollapsedBar extends ConsumerWidget {
+  const _CollapsedBar({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final position = ref.watch(audioProvider.select((s) => s.position));
+    final duration = ref.watch(audioProvider.select((s) => s.duration));
+
+    final totalMs = duration.inMilliseconds.toDouble();
+    final progress = totalMs <= 0
+        ? 0.0
+        : (position.inMilliseconds / totalMs).clamp(0.0, 1.0);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 40,
+          child: Row(
+            children: [
+              const _PlayPauseButton(),
+              Expanded(
+                // Tapping the title also expands — one less precise tap needed.
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () =>
+                      ref.read(miniPlayerCollapsedProvider.notifier).expand(),
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () =>
+                    ref.read(miniPlayerCollapsedProvider.notifier).expand(),
+                icon: const Icon(Icons.keyboard_arrow_up),
+                tooltip: 'توسيع',
+                color: colorScheme.onSecondaryContainer,
+              ),
+            ],
+          ),
+        ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 2,
+            color: colorScheme.primary,
+            backgroundColor:
+                colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlayPauseButton extends ConsumerWidget {
+  const _PlayPauseButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(audioProvider.select((s) => s.status));
+    final controller = ref.read(audioProvider.notifier);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final Widget child;
+    switch (status) {
+      case AudioStatus.playing:
+        child = IconButton(
+          onPressed: controller.togglePlayPause,
+          icon: const Icon(Icons.pause),
+          color: colorScheme.onSecondaryContainer,
+        );
+      case AudioStatus.paused:
+      case AudioStatus.error:
+        child = IconButton(
+          onPressed: () {
+            if (status == AudioStatus.error) {
+              showSnackBar(context, 'جاري إعادة المحاولة...');
+            }
+            unawaited(controller.togglePlayPause());
+          },
+          icon: const Icon(Icons.play_arrow),
+          color: colorScheme.onSecondaryContainer,
+        );
+      case AudioStatus.loading:
+        child = SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(color: colorScheme.primary),
+        );
+      case AudioStatus.stopped:
+        child = const SizedBox.shrink();
+    }
+
+    // Same footprint in every state → the row never re-lays out.
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Center(child: child),
     );
   }
 }
@@ -162,7 +325,6 @@ class _TransportRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final status = ref.watch(audioProvider.select((s) => s.status));
     final hasQueue = ref.watch(audioProvider.select((s) => s.hasQueue));
     final hasNext = ref.watch(audioProvider.select((s) => s.hasNext));
     final hasPrevious = ref.watch(audioProvider.select((s) => s.hasPrevious));
@@ -198,7 +360,7 @@ class _TransportRow extends ConsumerWidget {
                 onPressed: () => _skip(ref, const Duration(seconds: -10)),
               ),
               const SizedBox(width: 8),
-              _buildPrimaryButton(context, ref, status),
+              const _PlayPauseButton(),
               const SizedBox(width: 8),
               _SkipButton(
                 icon: Icons.replay_10,
@@ -232,52 +394,6 @@ class _TransportRow extends ConsumerWidget {
     if (target > s.duration) target = s.duration;
 
     unawaited(ref.read(audioProvider.notifier).seek(target));
-  }
-
-  Widget _buildPrimaryButton(
-    BuildContext context,
-    WidgetRef ref,
-    AudioStatus status,
-  ) {
-    final controller = ref.read(audioProvider.notifier);
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final Widget child;
-    switch (status) {
-      case AudioStatus.playing:
-        child = IconButton(
-          onPressed: controller.togglePlayPause,
-          icon: const Icon(Icons.pause),
-          color: colorScheme.onSecondaryContainer,
-        );
-      case AudioStatus.paused:
-      case AudioStatus.error:
-        child = IconButton(
-          onPressed: () {
-            if (status == AudioStatus.error) {
-              showSnackBar(context, 'جاري إعادة المحاولة...');
-            }
-            unawaited(controller.togglePlayPause());
-          },
-          icon: const Icon(Icons.play_arrow),
-          color: colorScheme.onSecondaryContainer,
-        );
-      case AudioStatus.loading:
-        child = SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(color: colorScheme.primary),
-        );
-      case AudioStatus.stopped:
-        child = const SizedBox.shrink();
-    }
-
-    // Same footprint in every state → the row never re-lays out.
-    return SizedBox(
-      width: 48,
-      height: 48,
-      child: Center(child: child),
-    );
   }
 }
 
