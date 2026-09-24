@@ -162,43 +162,37 @@ class FridayTilesVisibility {
     required this.showHadra,
     required this.showAsrWird,
   });
+
+  static const hidden =
+      FridayTilesVisibility(showHadra: false, showAsrWird: false);
+
   final bool showHadra;
   final bool showAsrWird;
 }
 
+/// Friday-only home tiles visibility.
 FridayTilesVisibility fridayTilesVisibility({
   required int islamicWeekday,
   required DateTime now,
   required DateTime? dhuhr,
   required DateTime? asr,
 }) {
-  if (islamicWeekday != DateTime.friday) {
-    return const FridayTilesVisibility(
-      showHadra: false,
-      showAsrWird: false,
-    );
-  }
-  if (dhuhr == null || asr == null) {
-    return const FridayTilesVisibility(
-      showHadra: false,
-      showAsrWird: false,
-    );
-  }
-  final showHadra = !now.isBefore(dhuhr);
-  final showAsrWird = !now.isBefore(asr);
+  // From Friday's Maghrib the Islamic weekday is Saturday — this also
+  // handles hiding everything afterwards.
+  if (islamicWeekday != DateTime.friday) return FridayTilesVisibility.hidden;
+  // Before civil Friday the schedule still carries Thursday's Dhuhr/Asr;
+  // there is no Friday prayer time to gate on yet.
+  if (now.weekday != DateTime.friday) return FridayTilesVisibility.hidden;
+  // Without Dhuhr/Asr times there is no correct gate, so never guess.
+  if (dhuhr == null || asr == null) return FridayTilesVisibility.hidden;
   return FridayTilesVisibility(
-    showHadra: showHadra,
-    showAsrWird: showAsrWird,
+    showHadra: !now.isBefore(dhuhr),
+    showAsrWird: !now.isBefore(asr),
   );
 }
 
 FridayTilesVisibility _fridayTilesVisibility(PrayerView? view) {
-  if (view == null) {
-    return const FridayTilesVisibility(
-      showHadra: false,
-      showAsrWird: false,
-    );
-  }
+  if (view == null) return FridayTilesVisibility.hidden;
   // Live clock (not view.today): a rebuild triggered by e.g. a bookmark
   // change must still gate on the actual instant, not a stale snapshot.
   final now = tz.TZDateTime.now(view.schedule.civilDate.location);
