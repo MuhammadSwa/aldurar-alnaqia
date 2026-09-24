@@ -122,6 +122,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               title: dalayilAlkhayratCollection[dayIndex].title,
               leading: const AppTileLeadingIcon(
                 icon: Icons.auto_stories_rounded,
+                maxTitleLines: 2,
               ),
               onTap: () {
                 AppNav.goToZikr(

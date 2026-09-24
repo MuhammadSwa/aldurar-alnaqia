@@ -8,9 +8,14 @@ import 'package:pdfx/pdfx.dart';
 
 /// Shared pinch-to-zoom PDF viewer with standard loading/error states.
 ///
-/// Replaces the triplicated `PdfViewPinchBuilders(DefaultBuilderOptions())`
-/// blocks in `HeliaNasabContent`, `TareeqaSanadContent` and
-/// `BookViewerScreen`.
+/// Used by the reader module's `PdfReaderContent` (azkar manuscripts) and
+/// by `BookViewerScreen`.
+///
+/// This widget is chrome-agnostic on purpose: it lives in `common/widgets`
+/// and must not depend on the reader module. Instead of dispatching
+/// reader notifications itself, it exposes [onTap], [onInteractionStart] and
+/// [onScrollbarDrag]; the host decides what those reading-intent signals
+/// mean (e.g. `PdfReaderContent` forwards them to a `ReaderScaffold`).
 ///
 /// `PdfViewPinch` is driven by an [InteractiveViewer] (via a
 /// [TransformationController]), so there is no [ScrollController] to attach
@@ -21,7 +26,8 @@ import 'package:pdfx/pdfx.dart';
 /// untouched — only the narrow strip on the right absorbs gestures.
 class AppPdfView extends StatelessWidget {
   const AppPdfView({
-    required this.controller, super.key,
+    required this.controller,
+    super.key,
     this.padding = 0,
     this.onPageChanged,
     this.onDocumentLoaded,
@@ -75,16 +81,16 @@ class AppPdfView extends StatelessWidget {
             onInteractionStart: onInteractionStart,
             onInteractionUpdate: onInteractionUpdate,
             onInteractionEnd: onInteractionEnd,
-          builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-            options: const DefaultBuilderOptions(),
-            documentLoaderBuilder: (_) =>
-                documentLoaderBuilder?.call() ??
-                const Center(child: CircularProgressIndicator()),
-            pageLoaderBuilder: (_) =>
-                const Center(child: CircularProgressIndicator()),
-            errorBuilder: (_, error) =>
-                errorBuilder?.call(error) ??
-                Center(child: Text('تعذّر فتح الملف: $error')),
+            builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+              options: const DefaultBuilderOptions(),
+              documentLoaderBuilder: (_) =>
+                  documentLoaderBuilder?.call() ??
+                  const Center(child: CircularProgressIndicator()),
+              pageLoaderBuilder: (_) =>
+                  const Center(child: CircularProgressIndicator()),
+              errorBuilder: (_, error) =>
+                  errorBuilder?.call(error) ??
+                  Center(child: Text('تعذّر فتح الملف: $error')),
             ),
           ),
         ),
@@ -223,8 +229,7 @@ class _PdfScrollbarState extends State<_PdfScrollbar> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final trackHeight = constraints.maxHeight;
-              final thumbHeight =
-                  (trackHeight / total).clamp(32.0, 80.0);
+              final thumbHeight = (trackHeight / total).clamp(32.0, 80.0);
               final thumbTop = progress * (trackHeight - thumbHeight);
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
