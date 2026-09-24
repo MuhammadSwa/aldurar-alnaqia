@@ -24,7 +24,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.dorar.yosriya"
+        applicationId = "com.aldurar.alnaqia"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Breaking change: minSdk 24 (Android 7.0). Drops API 21-23 so

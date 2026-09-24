@@ -1,4 +1,4 @@
-package com.dorar.yosriya
+package com.aldurar.alnaqia
 
 import android.content.Intent
 import com.ryanheise.audioservice.AudioServiceActivity
