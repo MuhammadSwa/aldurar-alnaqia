@@ -1,15 +1,17 @@
 // This dialog is specific to this screen, so it's fine to keep it here.
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 class StreamOrDownloadDialog extends StatefulWidget {
   const StreamOrDownloadDialog({
-    super.key,
     required this.item,
     required this.onStream,
     required this.onDownload,
+    super.key,
     this.showRememberOption = false,
     this.onRemember,
   });
@@ -25,7 +27,7 @@ class StreamOrDownloadDialog extends StatefulWidget {
   final bool showRememberOption;
 
   /// Called only when [showRememberOption] is true and the checkbox is
-  /// checked. [stream] is true for the direct-open action, false for download.
+  /// checked. `stream` is true for the direct-open action, false for download.
   final ValueChanged<bool>? onRemember;
 
   @override
@@ -52,15 +54,22 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return AlertDialog(
-      title: Text(widget.item.title,
-          style: const TextStyle(fontSize: 18), textAlign: TextAlign.center,),
+      title: Text(
+        widget.item.title,
+        style: textTheme.titleSmall,
+        textAlign: TextAlign.center,
+      ),
       contentPadding: const EdgeInsets.all(16),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('الملف غير مُحمل. الرجاء اختيار أحد الخيارات:',
-              textAlign: TextAlign.center,),
+          Text(
+            'الملف غير مُحمل. الرجاء اختيار أحد الخيارات:',
+            style: textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 20),
           _buildOptionButton(
             context,
@@ -81,21 +90,20 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
           ),
           if (widget.showRememberOption) ...[
             const SizedBox(height: 8),
-            Directionality(
-              textDirection: TextDirection.rtl,
-              child: CheckboxListTile(
-                value: _rememberChoice,
-                onChanged: (value) {
-                  setState(() {
-                    _rememberChoice = value ?? false;
-                  });
-                },
-                title: const Text('تذكر الاختيار',
-                    style: TextStyle(fontSize: 14),),
-                controlAffinity: ListTileControlAffinity.leading,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
+            CheckboxListTile(
+              value: _rememberChoice,
+              onChanged: (value) {
+                setState(() {
+                  _rememberChoice = value ?? false;
+                });
+              },
+              title: Text(
+                'تذكر الاختيار',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
             ),
           ],
         ],
@@ -111,42 +119,45 @@ class _StreamOrDownloadDialogState extends State<StreamOrDownloadDialog> {
     required VoidCallback onPressed,
     required Color color,
   }) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: SizedBox(
-        width: double.infinity,
-        // Use the default ElevatedButton constructor, not .icon
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color.withValues(alpha: 0.1),
-            foregroundColor: color,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            // We are building our own Row, so we don't need alignment here
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            elevation: 0,
-          ),
-          // Build the child manually using a Row
-          child: Row(
-            children: [
-              Icon(icon, size: 24),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14,),),
-                    Text(subtitle,
-                        style: TextStyle(
-                            fontSize: 12, color: color.withValues(alpha: 0.9),),),
-                  ],
-                ),
+    final textTheme = Theme.of(context).textTheme;
+    return SizedBox(
+      width: double.infinity,
+      // Use the default ElevatedButton constructor, not .icon
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color.withValues(alpha: 0.1),
+          foregroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          // We are building our own Row, so we don't need alignment here
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: 0,
+        ),
+        // Build the child manually using a Row
+        child: Row(
+          children: [
+            Icon(icon, size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: color.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -171,8 +182,11 @@ Future<void> showStreamOrDownloadDialog({
       item: item,
       showRememberOption: true,
       onRemember: (stream) {
-        ref.read(fileOpenActionProvider.notifier).set(
-            stream ? FileOpenAction.open : FileOpenAction.download,);
+        unawaited(
+          ref.read(fileOpenActionProvider.notifier).set(
+                stream ? FileOpenAction.open : FileOpenAction.download,
+              ),
+        );
       },
       onStream: () {
         Navigator.of(dialogContext).pop();
@@ -183,7 +197,7 @@ Future<void> showStreamOrDownloadDialog({
         if (onDownload != null) {
           onDownload();
         } else {
-          ref.read(downloaderProvider).startDownload(item);
+          unawaited(ref.read(downloaderProvider).startDownload(item));
         }
       },
     ),

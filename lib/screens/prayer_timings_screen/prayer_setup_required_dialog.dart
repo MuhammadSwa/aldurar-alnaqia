@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shown when the bell icon is tapped before prayer settings exist.
 ///
@@ -15,9 +15,8 @@ class PrayerSetupRequiredDialog extends StatelessWidget {
     // which follows the user zikr font-size setting and blows up dialogs.
     const titleStyle = TextStyle(fontSize: 18, fontWeight: FontWeight.w700);
     const bodyStyle = TextStyle(fontSize: 14, height: 1.7);
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: AlertDialog(
+    return 
+      AlertDialog(
         insetPadding: const EdgeInsets.symmetric(
           horizontal: 24,
           vertical: 24,
@@ -56,7 +55,6 @@ class PrayerSetupRequiredDialog extends StatelessWidget {
             child: const Text('إعدادات المواقيت'),
           ),
         ],
-      ),
     );
   }
 }

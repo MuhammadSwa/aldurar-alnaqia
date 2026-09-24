@@ -1,19 +1,17 @@
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BookmarkButton extends ConsumerStatefulWidget {
   const BookmarkButton({
-    super.key,
-    required this.bookmarkId,
+    required this.bookmarkId, super.key,
     this.onBookmarkToggled,
     this.showSnackBarBool = true,
   });
 
   final String bookmarkId;
-  final Function(bool wasBookmarked)? onBookmarkToggled;
+  final void Function(bool wasBookmarked)? onBookmarkToggled;
   final bool showSnackBarBool;
 
   @override

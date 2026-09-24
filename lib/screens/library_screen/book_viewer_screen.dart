@@ -2,11 +2,6 @@ import 'dart:async';
 
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdfx/pdfx.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/book_temp_loader.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
@@ -15,13 +10,18 @@ import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_jump_dialog.
 import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_loading_view.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:pdfx/pdfx.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Simple book reader: opens the downloaded file when it exists, otherwise
 /// downloads the PDF to a temp file with progress and opens it.
 ///
 /// Remembers the last page per book in [SharedPreferencesService].
 class BookViewerScreen extends ConsumerStatefulWidget {
-  const BookViewerScreen({super.key, required this.bookId});
+  const BookViewerScreen({required this.bookId, super.key});
 
   final String bookId;
 
@@ -38,6 +38,10 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   int _receivedBytes = 0;
   int? _totalBytes;
 
+  /// Immersive-reader chrome: visible on entry, auto-hides while reading.
+  bool _chromeVisible = true;
+  Timer? _chromeTimer;
+
   String get _id => widget.bookId;
   BookInfo? get _book => bookById(_id);
   String? get _url => _book?.url;
@@ -45,15 +49,62 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   @override
   void initState() {
     super.initState();
-    _open();
+    unawaited(_open());
   }
 
   @override
   void dispose() {
+    _chromeTimer?.cancel();
+    // Always leave immersive mode: other screens expect edge-to-edge.
+    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
     _saveCurrentPage();
     unawaited(_document?.close());
     _controller?.dispose();
     super.dispose();
+  }
+
+  /// Shows the AppBar + status bar and (re)starts the auto-hide countdown.
+  void _showChrome() {
+    if (!mounted || _chromeVisible) {
+      if (mounted) _restartHideTimer();
+      return;
+    }
+    setState(() => _chromeVisible = true);
+    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+    _restartHideTimer();
+  }
+
+  void _hideChrome() {
+    if (!mounted || !_chromeVisible) return;
+    _chromeTimer?.cancel();
+    setState(() => _chromeVisible = false);
+    unawaited(
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+    );
+  }
+
+  void _toggleChrome() {
+    if (_chromeVisible) {
+      _hideChrome();
+    } else {
+      _showChrome();
+    }
+  }
+
+  /// Hides 3s after the last explicit show. Only runs while a document is
+  /// actually readable — never over loading/error states.
+  void _restartHideTimer() {
+    _chromeTimer?.cancel();
+    if (_controller == null || _error != null) return;
+    _chromeTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && _chromeVisible) _hideChrome();
+    });
+  }
+
+  /// Reading-intent signals: a drag/pinch or a page turn means the user is
+  /// immersed, so hide immediately when visible, stay hidden otherwise.
+  void _onReadingInteraction() {
+    if (_chromeVisible) _hideChrome();
   }
 
   Future<void> _open({bool freshDownload = false}) async {
@@ -79,7 +130,8 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       if (await storage.exists(DownloadType.books, _id)) {
         isLocal = true;
         document = await PdfDocument.openFile(
-            storage.pathFor(DownloadType.books, _id),);
+          storage.pathFor(DownloadType.books, _id),
+        );
       } else {
         // NOTE: temp previews intentionally stay on foreground HttpClient via
         // [BookTempLoader] and do NOT use `background_downloader`. The offline
@@ -168,20 +220,22 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     unawaited(_document?.close());
     _controller?.dispose();
     _document = null;
-    _open(freshDownload: !_isLocal);
+    unawaited(_open(freshDownload: !_isLocal));
   }
 
   void _downloadForOffline() {
     final url = _url;
     if (url == null) return;
-    ref.read(downloaderProvider).startDownload(
-          DownloadItem(
-            id: _id,
-            title: _book?.fullTitle ?? _id,
-            url: url,
-            type: DownloadType.books,
+    unawaited(
+      ref.read(downloaderProvider).startDownload(
+            DownloadItem(
+              id: _id,
+              title: _book?.fullTitle ?? _id,
+              url: url,
+              type: DownloadType.books,
+            ),
           ),
-        );
+    );
     showSnackBar(context, 'بدأ تحميل الكتاب للقراءة دون إنترنت');
   }
 
@@ -224,7 +278,6 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       await controller.animateToPage(
         pageNumber: page,
         duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
       );
     } catch (_) {
       if (!mounted) return;
@@ -234,27 +287,32 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            _book?.title ?? _id,
-            overflow: TextOverflow.ellipsis,
-          ),
-          actions: [
-            if (_controller != null)
-              _PagePill(controller: _controller!, onTap: _showJumpToPage),
-            if (_controller != null && !_isLocal)
-              IconButton(
-                icon: const Icon(Icons.download_for_offline_outlined),
-                tooltip: 'تحميل للقراءة دون إنترنت',
-                onPressed: _downloadForOffline,
+    return Scaffold(
+      // Body stays fullscreen behind the AppBar, so showing/hiding it
+      // never resizes the pages — it just overlays for full immersion.
+      extendBodyBehindAppBar: true,
+      appBar: _chromeVisible
+          ? AppBar(
+              title: Text(
+                _book?.title ?? _id,
+                overflow: TextOverflow.ellipsis,
               ),
-          ],
-        ),
-        body: _buildBody(),
-      ),
+              actions: [
+                if (_controller != null)
+                  _PagePill(
+                    controller: _controller!,
+                    onTap: _showJumpToPage,
+                  ),
+                if (_controller != null && !_isLocal)
+                  IconButton(
+                    icon: const Icon(Icons.download_for_offline_outlined),
+                    tooltip: 'تحميل للقراءة دون إنترنت',
+                    onPressed: _downloadForOffline,
+                  ),
+              ],
+            )
+          : null,
+      body: _buildBody(),
     );
   }
 
@@ -265,12 +323,21 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     return AppPdfView(
       controller: controller,
       padding: 8,
-      onPageChanged: (page) =>
-          unawaited(SharedPreferencesService.setPdfLastPage(_id, page)),
-      onDocumentLoaded: (_) => setState(() {}),
+      onPageChanged: (page) {
+        unawaited(SharedPreferencesService.setPdfLastPage(_id, page));
+        _onReadingInteraction();
+      },
+      onDocumentLoaded: (_) {
+        setState(() {});
+        _restartHideTimer();
+      },
       onDocumentError: (error) => setState(() => _error = error),
+      // Single tap toggles chrome; drag/pinch is reading → hide.
+      onTap: _toggleChrome,
+      onInteractionStart: (_) => _onReadingInteraction(),
+      onScrollbarDrag: _onReadingInteraction,
       documentLoaderBuilder: _buildLoading,
-      errorBuilder: (error) => _buildError(error),
+      errorBuilder: _buildError,
     );
   }
 

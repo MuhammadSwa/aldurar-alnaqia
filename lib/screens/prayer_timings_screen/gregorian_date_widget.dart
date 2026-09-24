@@ -1,13 +1,12 @@
 import 'package:aldurar_alnaqia/common/widgets/inline_text.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Gregorian civil date label. Stateless renderer: the caller passes the
 /// current date in the prayer timezone. Midnight rollover arrives via the
 /// parent's rebuild (nudge timer), so no timer lives here.
 class GregorianDateWidget extends StatelessWidget {
+  const GregorianDateWidget({required this.today, super.key});
   final DateTime today;
-
-  const GregorianDateWidget({super.key, required this.today});
 
   static const Map<int, String> _arabicMonths = {
     1: 'يناير',
@@ -29,7 +28,6 @@ class GregorianDateWidget extends StatelessWidget {
     return InlineTextWidget(
       style: Theme.of(context).textTheme.titleMedium,
       '${today.day} ${_arabicMonths[today.month]} ${today.year}',
-      textDirection: TextDirection.rtl,
     );
   }
 }

@@ -1,13 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Loading indicator for the book viewer: download progress when
 /// [isDownloading] is true, generic "opening" text otherwise.
 class BookLoadingView extends StatelessWidget {
   const BookLoadingView({
-    super.key,
-    required this.received,
-    required this.total,
-    required this.isDownloading,
+    required this.received, required this.total, required this.isDownloading, super.key,
   });
 
   final int received;

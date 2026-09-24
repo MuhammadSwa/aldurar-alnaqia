@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/services/storage_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Initialized in main() before runApp and injected via ProviderScope
 /// overrides, because it requires an async [StorageService.init].
@@ -19,13 +18,6 @@ final downloaderProvider = Provider<DownloaderService>((ref) {
   return service;
 });
 
-/// Key of the single [Scaffold] in [MainWrapper] that owns the app drawer
-/// and the bottom [NavigationBar]. Branch screens open it via
-/// `ref.read(rootScaffoldKeyProvider)` instead of owning per-screen keys.
-final rootScaffoldKeyProvider = Provider<GlobalKey<ScaffoldState>>((ref) {
-  return GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
-});
-
 // ---------------------------------------------------------------------------
 // Settings (persisted via SharedPreferences)
 // ---------------------------------------------------------------------------
@@ -35,9 +27,11 @@ class FontSizeNotifier extends Notifier<double> {
   double build() => SharedPreferencesService.getFontSize();
 
   /// Live preview while dragging (no disk write).
-  void preview(double newSize) {
+  set preview(double newSize) {
     state = newSize;
   }
+
+  double get preview => state;
 
   /// Persisted change (slider release / dialog close).
   void change(double newSize) {
@@ -66,6 +60,21 @@ class BookmarksNotifier extends Notifier<List<String>> {
       state = [...state, bookmarkId];
     }
     return wasBookmarked;
+  }
+
+  /// Moves the bookmark at [oldIndex] to [newIndex], using
+  /// [ReorderableListView.onReorderItem] semantics ([newIndex] is already
+  /// adjusted for the removed item).
+  void reorder(int oldIndex, int newIndex) {
+    if (oldIndex == newIndex) return;
+    final list = [...state];
+    if (oldIndex < 0 || oldIndex >= list.length) return;
+    if (newIndex < 0 || newIndex > list.length) return;
+    final item = list.removeAt(oldIndex);
+    final insertAt = newIndex.clamp(0, list.length);
+    list.insert(insertAt, item);
+    SharedPreferencesService.setBookmarks(list);
+    state = list;
   }
 }
 

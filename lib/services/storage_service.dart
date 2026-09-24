@@ -1,9 +1,8 @@
 import 'dart:io';
 
+import 'package:aldurar_alnaqia/models/download_models.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'package:aldurar_alnaqia/models/download_models.dart';
 
 /// StorageService centralizes where we keep persistent files
 /// (e.g., downloaded books and narrations) under the app's
@@ -63,7 +62,7 @@ class StorageService {
     try {
       final file = File(pathFor(type, id));
       if (!await file.exists()) return null;
-      return file.length();
+      return await file.length();
     } catch (_) {
       return null;
     }

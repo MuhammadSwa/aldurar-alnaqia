@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:aldurar_alnaqia/models/download_models.dart';
+import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show ValueListenableBuilder;
+import 'package:material_ui/material_ui.dart' show ValueListenableBuilder;
 
-import 'package:aldurar_alnaqia/services/storage_service.dart';
-import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-
-import 'package:aldurar_alnaqia/models/download_models.dart';
 export 'package:aldurar_alnaqia/models/download_models.dart'
     show DownloadItem, DownloadType, DownloadTypeExtension;
 
@@ -20,7 +21,7 @@ export 'package:aldurar_alnaqia/models/download_models.dart'
 class DownloaderService {
   DownloaderService({required StorageService storage}) : _storage = storage {
     _initializeDownloader();
-    _initializeFileStatusCache();
+    unawaited(_initializeFileStatusCache());
   }
 
   final StorageService _storage;
@@ -41,8 +42,7 @@ class DownloaderService {
   // In-flight status checks (same keying as [_fileStatusCache]).
   final Map<String, Future<bool>> _statusFutures = {};
 
-  static String _statusKey(String id, DownloadType type) =>
-      '${type.name}/$id';
+  static String _statusKey(String id, DownloadType type) => '${type.name}/$id';
 
   static DownloadType? _typeFromDirectoryName(String? directory) {
     for (final type in DownloadType.values) {
@@ -60,7 +60,7 @@ class DownloaderService {
 
   void _initializeDownloader() {
     try {
-      FileDownloader().trackTasks();
+      unawaited(FileDownloader().trackTasks());
       _updatesSub = FileDownloader().updates.listen(_handleDownloadUpdate);
     } catch (e, st) {
       logError('Failed to initialize background downloader', e, st);
@@ -71,10 +71,8 @@ class DownloaderService {
     switch (update) {
       case TaskStatusUpdate():
         _handleStatusUpdate(update);
-        break;
       case TaskProgressUpdate():
         _handleProgressUpdate(update);
-        break;
     }
   }
 
@@ -88,7 +86,6 @@ class DownloaderService {
         _retireProgressNotifier(taskId);
         if (type != null) _fileStatusCache[_statusKey(taskId, type)] = true;
         changed = true;
-        break;
       case TaskStatus.canceled:
       case TaskStatus.failed:
       case TaskStatus.notFound:
@@ -102,7 +99,6 @@ class DownloaderService {
           }
         }
         changed = true;
-        break;
       case TaskStatus.enqueued:
       case TaskStatus.running:
       case TaskStatus.paused:
@@ -112,8 +108,8 @@ class DownloaderService {
           _downloadProgress[taskId] = ValueNotifier<double>(0);
           changed = true;
         }
-        break;
-      default:
+      case TaskStatus.waitingToRetry:
+        // Retry is scheduled natively; no local state to update.
         break;
     }
 
@@ -146,7 +142,8 @@ class DownloaderService {
     await _storage.ensureTypeDir(DownloadType.narrations);
   }
 
-  String _getFilePath(String id, DownloadType type) => _storage.pathFor(type, id);
+  String _getFilePath(String id, DownloadType type) =>
+      _storage.pathFor(type, id);
 
   bool isDownloading(String id) => _downloadProgress.containsKey(id);
 
@@ -244,12 +241,12 @@ class DownloaderService {
     final cached = _fileStatusCache[key];
     if (cached != null) return Future.value(cached);
     return _statusFutures[key] ??= isFileDownloaded(id, type).whenComplete(() {
-      _statusFutures.remove(key);
+      _statusFutures.remove(key)?.ignore();
     });
   }
 
   void dispose() {
-    _updatesSub?.cancel();
+    unawaited(_updatesSub?.cancel());
     for (final notifier in _downloadProgress.values) {
       notifier.dispose();
     }

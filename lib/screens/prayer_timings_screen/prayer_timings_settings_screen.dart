@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_adjust_form.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_form.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Settings page for the prayer timings screen.
 ///

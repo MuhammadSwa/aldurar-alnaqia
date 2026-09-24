@@ -109,6 +109,7 @@ void main() {
           );
         }
 
+        // Test summary for local debugging; not user-facing output.
         // ignore: avoid_print
         print('cities: ${directory.cities.length}, parse: ${parseMs}ms');
       },

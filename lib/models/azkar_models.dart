@@ -4,12 +4,12 @@ import 'package:aldurar_alnaqia/models/consts/azkar_algomari_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/azkar_morning_evening_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
 import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
+import 'package:aldurar_alnaqia/models/consts/ibn_ata_allah.dart';
+import 'package:aldurar_alnaqia/models/consts/khitam_alsalah_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/orphans.dart';
 import 'package:aldurar_alnaqia/models/consts/poems_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/models/consts/tareeqa_bios_collection.dart';
-import 'package:aldurar_alnaqia/models/consts/ibn_ata_allah.dart';
-import 'package:aldurar_alnaqia/models/consts/khitam_alsalah_collection.dart';
 
 /// How a zikr's body is rendered.
 ///
@@ -22,15 +22,6 @@ enum ZikrKind {
 }
 
 class Zikr {
-  /// Stable ASCII identifier. Never shown to users; used for routes,
-  /// bookmarks, downloads and filenames. Never rename.
-  final String id;
-  final String title;
-  final String content;
-  final String notes;
-  final String footer;
-  final String? url;
-  final ZikrKind kind;
 
   const Zikr({
     required this.id,
@@ -41,22 +32,31 @@ class Zikr {
     this.footer = '',
     this.kind = ZikrKind.text,
   });
+  /// Stable ASCII identifier. Never shown to users; used for routes,
+  /// bookmarks, downloads and filenames. Never rename.
+  final String id;
+  final String title;
+  final String content;
+  final String notes;
+  final String footer;
+  final String? url;
+  final ZikrKind kind;
 
   bool get hasAudio => url != null && url!.isNotEmpty;
 }
 
 /// A named grouping shown as one tile in the awrad list.
 class ZikrCollection {
-  /// Stable ASCII identifier for routes/bookmarks. Never rename.
-  final String id;
-  final String title;
-  final List<Zikr> items;
 
   const ZikrCollection({
     required this.id,
     required this.title,
     required this.items,
   });
+  /// Stable ASCII identifier for routes/bookmarks. Never rename.
+  final String id;
+  final String title;
+  final List<Zikr> items;
 
   List<String> get zikrIds => [for (final z in items) z.id];
 }
@@ -155,7 +155,7 @@ Map<String, Zikr> _buildZikrById() {
   return map;
 }
 
-final zikrById = _buildZikrById();
+final Map<String, Zikr> zikrById = _buildZikrById();
 
 final collectionById = <String, ZikrCollection>{
   for (final c in allCollections) c.id: c,
@@ -193,15 +193,15 @@ List<String> allZikrTitles() =>
 // ---------------------------------------------------------------------------
 
 class AudioSection {
-  final String id;
-  final String title;
-  final List<Zikr> items;
 
   const AudioSection({
     required this.id,
     required this.title,
     required this.items,
   });
+  final String id;
+  final String title;
+  final List<Zikr> items;
 
   List<Zikr> get withAudio => items.where((z) => z.hasAudio).toList();
 }

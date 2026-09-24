@@ -10,8 +10,7 @@ class BookInfo {
     required this.id,
     required this.fullTitle,
     required this.title,
-    this.subtitle,
-    required this.url,
+    required this.url, this.subtitle,
   });
 
   final String id;

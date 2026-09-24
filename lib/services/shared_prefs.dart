@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show PrayerHighLatitudeRules, PrayerMadhabs, PrayerMethods, PrayerSettings;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:material_ui/material_ui.dart' show ThemeMode;
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Centralized SharedPreferences keys. The native prayer-notification config
 /// reads the same values, so `prayer_notification_service.dart` must use
@@ -28,6 +29,7 @@ abstract final class PrefsKeys {
   static const String fontSize = 'font_size';
   static const String hijriDayOffset = 'hijri_day_offset';
   static const String fileOpenAction = 'file_open_action';
+  static const String playbackSpeed = 'playback_speed';
   static const String prayerForegroundEnabled = 'prayer_foreground_enabled';
   static const String prayerNativeConfig = 'prayer_native_config';
   static const String swipeHintSeen = 'swipe_hint_seen';
@@ -302,6 +304,13 @@ class AppearancePrefs {
 
   final SharedPreferences _prefs;
 
+  /// Single source of truth for the body font-size setting.
+  /// `AppTheme.defaultFontSize` aliases [defaultFontSize] so the theme
+  /// default cannot drift from the stored-prefs default.
+  static const double defaultFontSize = 22;
+  static const double minFontSize = 16;
+  static const double maxFontSize = 40;
+
   /// Raw stored value. Kept string-based so this service does not depend
   /// on Flutter material; providers map it to [ThemeMode].
   /// Absent returns system; unknown values are logged and reset to system.
@@ -326,12 +335,16 @@ class AppearancePrefs {
 
   double getFontSize() {
     final stored = _prefs.getDouble(PrefsKeys.fontSize);
-    if (stored == null) return 22;
-    if (!stored.isFinite || stored < 16 || stored > 40) {
-      logWarn('Invalid stored font size "$stored" — using default');
-      return 22;
+    if (stored != null &&
+        stored.isFinite &&
+        stored >= minFontSize &&
+        stored <= maxFontSize) {
+      return stored;
     }
-    return stored;
+    if (stored != null) {
+      logWarn('Invalid stored font size "$stored" — using default');
+    }
+    return defaultFontSize;
   }
 
   void setHijriDayOffset(int offset) {
@@ -368,6 +381,22 @@ class AppearancePrefs {
   Future<void> setFileOpenAction(String action) async {
     final ok = await _prefs.setString(PrefsKeys.fileOpenAction, action);
     if (!ok) logWarn('Failed to persist file open action "$action"');
+  }
+
+  /// Playback speed for the audio mini player (0.25–2.0). Out-of-range or
+  /// non-finite values are logged and reset to 1.0.
+  double getPlaybackSpeed() {
+    final stored = _prefs.getDouble(PrefsKeys.playbackSpeed);
+    if (stored == null) return 1;
+    if (!stored.isFinite || stored < 0.25 || stored > 2.0) {
+      logWarn('Invalid stored playback speed "$stored" — using 1.0');
+      return 1;
+    }
+    return stored;
+  }
+
+  void setPlaybackSpeed(double speed) {
+    _persist(_prefs.setDouble(PrefsKeys.playbackSpeed, speed), 'playback speed $speed');
   }
 
   /// First-run swipe hint for slidable zikr collections. False until the
@@ -572,6 +601,12 @@ class SharedPreferencesService {
 
   static Future<void> setSwipeHintSeen(bool seen) =>
       _require().appearance.setSwipeHintSeen(seen);
+
+  static double getPlaybackSpeed() =>
+      _require().appearance.getPlaybackSpeed();
+
+  static void setPlaybackSpeed(double speed) =>
+      _require().appearance.setPlaybackSpeed(speed);
 
   // --- PDF shims ---
 

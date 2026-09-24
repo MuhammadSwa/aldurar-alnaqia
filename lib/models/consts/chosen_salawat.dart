@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
-const chosenSalawatCollection = [
+const List<Zikr> chosenSalawatCollection = [
   salahAlshafia,
   salahIbnBashish,
   salahNoorania,
@@ -116,7 +116,8 @@ const salahAlshafia = Zikr(
     id: 'salat-shafiiyya',
     title: 'الصلاة الشافعية',
     notes:
-        '''«الصَّلَاةُ الشَّافِعَيَّةُ» لِلْإِمَامِ الشَّافِعِيِّ رضي الله عنه
+        '''
+«الصَّلَاةُ الشَّافِعَيَّةُ» لِلْإِمَامِ الشَّافِعِيِّ رضي الله عنه
 ( تقرأ في أي وقت حسب نشاط المريد وعلى الأقل يوم الجمعة وليلتها في كل أسبوع)
 ''',
     url:

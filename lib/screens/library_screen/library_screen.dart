@@ -1,12 +1,15 @@
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
+import 'package:aldurar_alnaqia/router/nav_helpers.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_status_widgets.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show rootScaffoldKey;
 import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:aldurar_alnaqia/router/nav_helpers.dart';
-import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
+import 'package:material_ui/material_ui.dart';
 
 // Book catalogue lives in books.dart; the viewer looks the url up itself,
 // so this screen only deals with titles and download state.
@@ -26,8 +29,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         title: const Text('المكتبة'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () =>
-              ref.read(rootScaffoldKeyProvider).currentState?.openDrawer(),
+          onPressed: () => rootScaffoldKey.currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
       ),
@@ -103,34 +105,35 @@ class _BookListTile extends ConsumerWidget {
     switch (action) {
       case FileOpenAction.open:
         AppNav.goToPdfViewer(context, book.id);
-        break;
       case FileOpenAction.download:
-        ref.read(downloaderProvider).startDownload(
-              DownloadItem(
-                id: book.id,
-                title: book.fullTitle,
-                url: book.url,
-                type: DownloadType.books,
+        unawaited(
+          ref.read(downloaderProvider).startDownload(
+                DownloadItem(
+                  id: book.id,
+                  title: book.fullTitle,
+                  url: book.url,
+                  type: DownloadType.books,
+                ),
               ),
-            );
-        break;
+        );
       case FileOpenAction.ask:
         _showDownloadOptionsDialog(context, ref);
-        break;
     }
   }
 
   void _showDownloadOptionsDialog(BuildContext context, WidgetRef ref) {
-    showStreamOrDownloadDialog(
-      context: context,
-      ref: ref,
-      item: DownloadItem(
-        id: book.id,
-        title: book.fullTitle,
-        url: book.url,
-        type: DownloadType.books,
+    unawaited(
+      showStreamOrDownloadDialog(
+        context: context,
+        ref: ref,
+        item: DownloadItem(
+          id: book.id,
+          title: book.fullTitle,
+          url: book.url,
+          type: DownloadType.books,
+        ),
+        onOpen: () => AppNav.goToPdfViewer(context, book.id),
       ),
-      onOpen: () => AppNav.goToPdfViewer(context, book.id),
     );
   }
 }

@@ -10,13 +10,12 @@
 // boundary selection, after-Isha→tomorrow-Fajr, Maghrib Islamic-day flip,
 // invalid-config rejection, sunrise-never-alertable, native payload shape.
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
-import 'package:timezone/timezone.dart' as tz;
-
 import 'package:aldurar_alnaqia/common/helpers/islamic_date.dart'
     as islamic_date;
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 const _cairo = PrayerSettings(
   latitude: 30.0444,
@@ -50,7 +49,7 @@ void _expectGolden(
 }
 
 void main() {
-  setUpAll(() => tzdata.initializeTimeZones());
+  setUpAll(tzdata.initializeTimeZones);
 
   group('golden fixtures (contract v$prayerConfigVersion)', () {
     test('Cairo 2024-06-15 egyptian/shafi', () {
@@ -310,8 +309,8 @@ void main() {
         now: DateTime.utc(2024, 6, 15, 12),
       );
       expect(payload['version'], prayerConfigVersion);
-      final days = payload['days'] as List;
-      final midnights = payload['midnights'] as List;
+      final days = payload['days']! as List;
+      final midnights = payload['midnights']! as List;
       expect(days.length, nativePrecomputeDays);
       expect(midnights.length, nativePrecomputeDays + 1);
       // Day 1 matches the golden fixture.
@@ -369,8 +368,8 @@ void main() {
         _cairo.copyWith(timezone: ''),
         now: DateTime.utc(2024, 6, 15, 12),
       );
-      expect((payload['days'] as List), isEmpty);
-      expect((payload['midnights'] as List), isEmpty);
+      expect(payload['days']! as List, isEmpty);
+      expect(payload['midnights']! as List, isEmpty);
     });
   });
 }

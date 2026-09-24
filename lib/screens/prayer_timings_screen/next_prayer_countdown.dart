@@ -4,10 +4,11 @@ import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart'
+    show PrayerTimingsCard;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:timezone/timezone.dart' as tz;
+import 'package:material_ui/material_ui.dart';
 
 /// Countdown to the next prayer.
 ///
@@ -77,45 +78,16 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: view == null
           ? _UnsetContent(onTap: () => _openSettings(context))
-            : Builder(
-                builder: (context) {
-                  // Live derivation, deliberately `read` (not `watch`): this
-                  // rebuild already runs every tick and on every nudge, so
-                  // subscribing would add nothing but rebuild loops.
-                  final next = PrayerRepository.instance.nextAt(
-                    view.settings,
-                    _now,
-                  );
-                  if (next == null) {
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _LocationLine(
-                          label: view.cityLabel,
-                          isUnset: view.cityLabel.isEmpty,
-                          onTap: () => _openSettings(context),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'خطأ في حساب أوقات الصلاة',
-                          style: TextStyle(fontSize: 14),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    );
-                  }
-                  final left = next.time.difference(_now);
-                  final liveSchedule =
-                      PrayerRepository.instance.scheduleFor(
-                        view.settings,
-                        _now,
-                      ) ??
-                      view.schedule;
-                  final progress = _progress(
-                    schedule: liveSchedule,
-                    now: _now,
-                    next: next,
-                  );
+          : Builder(
+              builder: (context) {
+                // Live derivation, deliberately `read` (not `watch`): this
+                // rebuild already runs every tick and on every nudge, so
+                // subscribing would add nothing but rebuild loops.
+                final next = PrayerRepository.instance.nextAt(
+                  view.settings,
+                  _now,
+                );
+                if (next == null) {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -124,114 +96,142 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
                         isUnset: view.cityLabel.isEmpty,
                         onTap: () => _openSettings(context),
                       ),
-                      const SizedBox(height: 6),
-                      // Next-prayer hero: name + countdown in one line.
-                      // No clock icon: the countdown digits already say that.
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        children: [
-                          Text(
-                            '${next.arabicName} بعد',
-                            style: theme.textTheme.titleMedium?.copyWith(
+                      const SizedBox(height: 4),
+                      const Text(
+                        'خطأ في حساب أوقات الصلاة',
+                        style: TextStyle(fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  );
+                }
+                // `next` is strictly after `_now` by construction
+                // (`nextAt` returns the first event after now), so this stays
+                // positive through the midnight→Fajr window. Clamped
+                // defensively so a clock jump can never render negative.
+                final rawLeft = next.time.difference(_now);
+                final left = rawLeft.isNegative ? Duration.zero : rawLeft;
+                // Timeline query (prev … now … next): stays visible through
+                // the midnight→Fajr window. The widget never thinks in
+                // civil days — the repository owns the cross-midnight lookup.
+                final progress = PrayerRepository.instance.progressAt(
+                  view.settings,
+                  _now,
+                );
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _LocationLine(
+                      label: view.cityLabel,
+                      isUnset: view.cityLabel.isEmpty,
+                      onTap: () => _openSettings(context),
+                    ),
+                    const SizedBox(height: 6),
+                    // Next-prayer hero: name + countdown in one line.
+                    // No clock icon: the countdown digits already say that.
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      children: [
+                        Text(
+                          '${next.arabicName} بعد',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            _formatDuration(left),
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 2,
-                            ),
-                            child: Text(
-                              _formatDuration(left),
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.primary,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                              textAlign: TextAlign.center,
-                              textDirection: TextDirection.rtl,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (progress != null) ...[
-                        const SizedBox(height: 8),
-                        Center(
-                          child: ConstrainedBox(
-                            constraints:
-                                const BoxConstraints(maxWidth: 260),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final marker = _markerFor(next.id);
-                                final dx =
-                                    constraints.maxWidth * progress;
-                                return Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 6,
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(99),
-                                        child: LinearProgressIndicator(
-                                          value: progress,
-                                          minHeight: 4,
-                                          backgroundColor: colorScheme.primary
-                                              .withValues(alpha: 0.15),
-                                        ),
-                                      ),
-                                    ),
-                                    // Opaque next-prayer icon riding the
-                                    // fill tip. RTL: measure from the right.
-                                    Positioned(
-                                      right: (dx - 9).clamp(
-                                        0.0,
-                                        constraints.maxWidth - 18,
-                                      ),
-                                      top: -2,
-                                      child: Container(
-                                        width: 18,
-                                        height: 18,
-                                        decoration: BoxDecoration(
-                                          color: marker.color,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          marker.icon,
-                                          size: 10,
-                                          color: Colors.white,
-                                          semanticLabel: next.arabicName,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
                         ),
                       ],
+                    ),
+                    if (progress != null) ...[
+                      const SizedBox(height: 8),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 260),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final marker = _markerFor(next.id);
+                              final dx = constraints.maxWidth * progress;
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 6,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(99),
+                                      child: LinearProgressIndicator(
+                                        value: progress,
+                                        minHeight: 4,
+                                        backgroundColor: colorScheme.primary
+                                            .withValues(alpha: 0.15),
+                                      ),
+                                    ),
+                                  ),
+                                  // Opaque next-prayer icon riding the
+                                  // fill tip. RTL: measure from the right.
+                                  Positioned(
+                                    right: (dx - 9).clamp(
+                                      0.0,
+                                      constraints.maxWidth - 18,
+                                    ),
+                                    top: -2,
+                                    child: Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: marker.color,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        marker.icon,
+                                        size: 10,
+                                        color: Colors.white,
+                                        semanticLabel: next.arabicName,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     ],
-                  );
-                },
-              ),
+                  ],
+                );
+              },
+            ),
     );
   }
 
   void _openSettings(BuildContext context) {
-    showDialog(context: context, builder: (_) => const PrayerSettingsDialog());
+    showDialog<void>(
+      context: context,
+      builder: (_) => const PrayerSettingsDialog(),
+    );
   }
 
   /// Opaque marker for the bar's fill tip: the next prayer's timetable
   /// icon in its timetable tint, mirroring [PrayerTimingsCard].
-  ({IconData icon, Color color}) _markerFor(PrayerEventId id) =>
-      switch (id) {
+  ({IconData icon, Color color}) _markerFor(PrayerEventId id) => switch (id) {
         PrayerEventId.fajr => (
             icon: LucideIcons.sunMoon,
             color: const Color(0xFF7C6AAE),
@@ -258,32 +258,6 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
           ),
       };
 
-  /// Elapsed fraction from the previous event to [next] (0–1). Null when it
-  /// can't be determined (e.g. before Fajr, where "previous" was yesterday's
-  /// Isha). Ticks with [_now], so the bar under the counter moves every
-  /// second.
-  double? _progress({
-    required PrayerSchedule schedule,
-    required DateTime now,
-    required PrayerEvent next,
-  }) {
-    final location = schedule.civilDate.location;
-    final zonedNow = tz.TZDateTime.from(now, location);
-    tz.TZDateTime? prev;
-    for (final event in schedule.ordered) {
-      if (!event.time.isAfter(zonedNow)) {
-        prev = event.time;
-      }
-    }
-    if (prev == null) return null;
-    final prevMs = prev.millisecondsSinceEpoch;
-    final nextMs = next.time.millisecondsSinceEpoch;
-    if (nextMs <= prevMs) return null;
-    final nowMs = zonedNow.millisecondsSinceEpoch;
-    if (nowMs < prevMs) return null;
-    return ((nowMs - prevMs) / (nextMs - prevMs)).clamp(0.0, 1.0);
-  }
-
   String _formatDuration(Duration duration) {
     if (duration.isNegative) {
       return '00:00:00';
@@ -297,9 +271,8 @@ class _NextPrayerCountdownState extends ConsumerState<NextPrayerCountdown> {
 }
 
 class _UnsetContent extends StatelessWidget {
-  final VoidCallback onTap;
-
   const _UnsetContent({required this.onTap});
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -321,15 +294,14 @@ class _UnsetContent extends StatelessWidget {
 /// Tappable location line shown above the countdown.
 /// Unset state invites the user to pick a location.
 class _LocationLine extends StatelessWidget {
-  final String label;
-  final bool isUnset;
-  final VoidCallback onTap;
-
   const _LocationLine({
     required this.label,
     required this.isUnset,
     required this.onTap,
   });
+  final String label;
+  final bool isUnset;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

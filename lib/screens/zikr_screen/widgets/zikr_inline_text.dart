@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Inline-styled text for zikr content.
 ///
 /// Handles inline spans only: footnote refs (`[^1]`), Quran (`﴿﴾`),
 /// hadith quotes (`«»`), bracket references and numbering.
 /// Block structure (headings, poetry bayts) is handled upstream by
-/// [parseZikrBlocks] and never reaches a regex here.
+/// `parseZikrBlocks` and never reaches a regex here.
 ///
 /// Performance notes:
 /// - [fontSize] is passed down from the page (which watches
@@ -13,13 +13,12 @@ import 'package:flutter/material.dart';
 ///   paragraph.
 /// - Regexes are `static final` (compiled once). Previously 5 regexes were
 ///   recompiled per block per build.
-/// - Footnotes render as small [TextSpan]s, not `WidgetSpan`s, to avoid an
-///   extra layout pass per marker.
+/// - Footnotes render as superscript [WidgetSpan]
 class ZikrInlineText extends StatelessWidget {
   const ZikrInlineText({
-    super.key,
     required this.text,
     required this.fontSize,
+    super.key,
     this.textAlign = TextAlign.justify,
     this.sizeFactor = 1.0,
     this.bold = false,
@@ -106,7 +105,7 @@ class ZikrInlineText extends StatelessWidget {
       return a.rule.compareTo(b.rule);
     });
 
-    final footnoteStyle = base.copyWith(fontSize: effectiveSize * .6);
+    final footnoteStyle = base.copyWith(fontSize: effectiveSize * .5);
 
     final spans = <InlineSpan>[];
     var pos = 0;
@@ -116,12 +115,17 @@ class ZikrInlineText extends StatelessWidget {
         spans.add(TextSpan(text: text.substring(pos, m.start)));
       }
       if (m.rule == 0) {
-        // Strip the caret: [^12] -> [12]. Small inline span instead of a
-        // WidgetSpan + Transform so footnotes don't force extra layout.
+        // Strip the caret: [^12] -> [12]. Superscript via WidgetSpan + Transform:
+        // the translate only affects paint offset, so line height stays stable.
+        final label = text.substring(m.start, m.end).replaceAll('^', '');
         spans.add(
-          TextSpan(
-            text: text.substring(m.start, m.end).replaceAll('^', ''),
-            style: footnoteStyle,
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: Transform.translate(
+              offset: Offset(0, -effectiveSize * 0.35),
+              child: Text(label, style: footnoteStyle),
+            ),
           ),
         );
       } else {

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared outer card for drawer settings and drawer list items.
 ///
@@ -16,7 +16,7 @@ enum SettingsCardStyle {
 
 class SettingsCard extends StatelessWidget {
   const SettingsCard(
-      {super.key, required this.child, this.style = SettingsCardStyle.classic});
+      {required this.child, super.key, this.style = SettingsCardStyle.classic,});
 
   final Widget child;
   final SettingsCardStyle style;
@@ -44,7 +44,6 @@ class SettingsCard extends StatelessWidget {
             color: colorScheme.secondaryContainer.withValues(alpha: 0.18),
             border: Border.all(
               color: colorScheme.outline.withValues(alpha: 0.5),
-              width: 1,
             ),
           ),
           child: child,
@@ -69,7 +68,7 @@ class SettingsCard extends StatelessWidget {
       case SettingsCardStyle.flat:
         // 5. No card at all — transparent minimal row.
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+          margin: const EdgeInsets.symmetric(horizontal: 8),
           color: Colors.transparent,
           child: child,
         );
@@ -107,7 +106,6 @@ class SettingsCard extends StatelessWidget {
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
             border: Border.all(
               color: colorScheme.primary.withValues(alpha: 0.4),
-              width: 1,
             ),
           ),
           child: child,

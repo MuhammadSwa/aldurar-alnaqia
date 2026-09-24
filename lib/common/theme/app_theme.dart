@@ -1,19 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart'
+    show AppearancePrefs;
+import 'package:material_ui/material_ui.dart';
+
+// flutter to hex: https://jonas-rodehorst.dev/tools/flutter-color-from-hex
 
 /// Single place where the app's visual themes are defined.
 ///
-/// Usage:
-/// ```dart
-/// MaterialApp(
-///   theme: AppTheme.light(fontSize: fontSize),
-///   darkTheme: AppTheme.dark(fontSize: fontSize),
-///   themeMode: themeMode, // from [themeModeProvider]
-/// )
-/// ```
-///
 /// The current [ThemeMode] (light/dark/system) is owned by
 /// `themeModeProvider` (see `lib/state/app_providers.dart`) and persisted
-/// via [SharedPreferencesService]. This file is intentionally stateless:
+/// via `SharedPreferencesService`. This file is intentionally stateless:
 /// it only maps (brightness, font size) -> [ThemeData].
 ///
 /// To extend (e.g. a high-contrast or sepia theme), add a new factory
@@ -22,32 +17,115 @@ import 'package:flutter/material.dart';
 abstract final class AppTheme {
   AppTheme._();
 
-  /// Font family used across the app (Arabic-first UI).
+  /// Font family used across the app
   static const String fontFamily = 'NotoNaskh';
 
-  /// Fallback body font size. Must match the default in
-  /// `SharedPreferencesService.getFontSize`.
-  static const double defaultFontSize = 22;
+  /// Fallback body font size. Alias of [AppearancePrefs.defaultFontSize]
+  /// so the theme default cannot drift from the stored-prefs default.
+  static const double defaultFontSize = AppearancePrefs.defaultFontSize;
 
   static const double _bodyLineHeight = 1.8;
 
-  // -- Color schemes (built once; deriving them is not cheap) ---------------
-
-  static final ColorScheme lightScheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF0B6B4F),
+  // -- Color schemes (explicit consts)
+  static const ColorScheme lightScheme = ColorScheme(
     brightness: Brightness.light,
-  ).copyWith(
-    // Default tone 40 reads too dark; tone 50 of the same hue stays
-    // 4.5:1 on white while feeling lighter.
-    primary: const Color(0xFF318567),
+    primary: Color(0xFF318567),
+    onPrimary: Color(0xFFC1E3D5),
+    primaryContainer: Color(0xFFA7F2D1),
+    onPrimaryContainer: Color(0xFF00513B),
+    primaryFixed: Color(0xFFA7F2D1),
+    primaryFixedDim: Color(0xFF8BD6B5),
+    onPrimaryFixed: Color(0xFF002116),
+    onPrimaryFixedVariant: Color(0xFF00513B),
+    secondary: Color(0xFF4C6358),
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: Color(0xFFCFE9DA),
+    onSecondaryContainer: Color(0xFF354B41),
+    secondaryFixed: Color(0xFFCFE9DA),
+    secondaryFixedDim: Color(0xFFB3CCBF),
+    onSecondaryFixed: Color(0xFF092017),
+    onSecondaryFixedVariant: Color(0xFF354B41),
+    tertiary: Color(0xFF3E6374),
+    onTertiary: Color(0xFFFFFFFF),
+    tertiaryContainer: Color(0xFFC2E8FC),
+    onTertiaryContainer: Color(0xFF254B5C),
+    tertiaryFixed: Color(0xFFC2E8FC),
+    tertiaryFixedDim: Color(0xFFA6CCE0),
+    onTertiaryFixed: Color(0xFF001F2A),
+    onTertiaryFixedVariant: Color(0xFF254B5C),
+    error: Color(0xFFBA1A1A),
+    onError: Color(0xFFFFFFFF),
+    errorContainer: Color(0xFFFFDAD6),
+    onErrorContainer: Color(0xFF93000A),
+    surface: Color(0xFFF5FBF5),
+    onSurface: Color(0xFF171D1A),
+    surfaceDim: Color(0xFFD6DBD6),
+    surfaceBright: Color(0xFFF5FBF5),
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFEFF5F0),
+    surfaceContainer: Color(0xFFEAEFEA),
+    surfaceContainerHigh: Color(0xFFE4EAE4),
+    surfaceContainerHighest: Color(0xFFDEE4DF),
+    onSurfaceVariant: Color(0xFF404944),
+    outline: Color(0xFF707974),
+    outlineVariant: Color(0xFFBFC9C2),
+    shadow: Color(0xFF000000),
+    scrim: Color(0xFF000000),
+    inverseSurface: Color(0xFF2C322E),
+    onInverseSurface: Color(0xFFECF2ED),
+    inversePrimary: Color(0xFF8BD6B5),
+    surfaceTint: Color(0xFF1C6B50),
   );
 
-  static final ColorScheme darkScheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF4DD0C4),
+  static const ColorScheme darkScheme = ColorScheme(
     brightness: Brightness.dark,
-  ).copyWith(
-      // Default tone 80 reads washed-out; tone 70 of the same hue.
-      primary: const Color(0xFF1A8980),);
+    primary: Color(0xFF1B7770),
+    onPrimary: Color(0xFF003733),
+    primaryContainer: Color(0xFF00504A),
+    onPrimaryContainer: Color(0xFF9DF2E8),
+    primaryFixed: Color(0xFF9DF2E8),
+    primaryFixedDim: Color(0xFF81D5CC),
+    onPrimaryFixed: Color(0xFF00201D),
+    onPrimaryFixedVariant: Color(0xFF00504A),
+    secondary: Color(0xFFB1CCC8),
+    onSecondary: Color(0xFF1C3532),
+    secondaryContainer: Color(0xFF324B48),
+    onSecondaryContainer: Color(0xFFCCE8E4),
+    secondaryFixed: Color(0xFFCCE8E4),
+    secondaryFixedDim: Color(0xFFB1CCC8),
+    onSecondaryFixed: Color(0xFF051F1D),
+    onSecondaryFixedVariant: Color(0xFF324B48),
+    tertiary: Color(0xFFAFC9E7),
+    onTertiary: Color(0xFF17324A),
+    tertiaryContainer: Color(0xFF2F4961),
+    onTertiaryContainer: Color(0xFFCEE5FF),
+    tertiaryFixed: Color(0xFFCEE5FF),
+    tertiaryFixedDim: Color(0xFFAFC9E7),
+    onTertiaryFixed: Color(0xFF001D33),
+    onTertiaryFixedVariant: Color(0xFF2F4961),
+    error: Color(0xFFFFB4AB),
+    onError: Color(0xFF690005),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFFDAD6),
+    surface: Color(0xFF0E1514),
+    onSurface: Color(0xFFDDE4E2),
+    surfaceDim: Color(0xFF0E1514),
+    surfaceBright: Color(0xFF343A39),
+    surfaceContainerLowest: Color(0xFF090F0F),
+    surfaceContainerLow: Color(0xFF161D1C),
+    surfaceContainer: Color(0xFF1A2120),
+    surfaceContainerHigh: Color(0xFF252B2A),
+    surfaceContainerHighest: Color(0xFF303635),
+    onSurfaceVariant: Color(0xFFBEC9C6),
+    outline: Color(0xFF899391),
+    outlineVariant: Color(0xFF3F4947),
+    shadow: Color(0xFF000000),
+    scrim: Color(0xFF000000),
+    inverseSurface: Color(0xFFDDE4E2),
+    onInverseSurface: Color(0xFF2B3231),
+    inversePrimary: Color(0xFF006A63),
+    surfaceTint: Color(0xFF81D5CC),
+  );
 
   // -- Public factories -------------------------------------------------------
 
@@ -74,20 +152,6 @@ abstract final class AppTheme {
       bodyMediumColor: null,
       bodySmallColor: Colors.grey.shade400,
       labelSmallColor: null,
-    );
-  }
-
-  /// Custom scheme factory (used by the temporary theme lab and any future
-  /// theme picker). Text colors follow the same rules as [light]/[dark].
-  static ThemeData fromScheme(ColorScheme scheme) {
-    final isLight = scheme.brightness == Brightness.light;
-    return _build(
-      scheme: scheme,
-      brightness: scheme.brightness,
-      fontSize: defaultFontSize,
-      bodyMediumColor: isLight ? Colors.black : null,
-      bodySmallColor: isLight ? Colors.grey.shade600 : Colors.grey.shade400,
-      labelSmallColor: isLight ? Colors.grey.shade600 : null,
     );
   }
 
@@ -161,7 +225,7 @@ abstract final class AppTheme {
               WidgetStateProperty.all<Color>(scheme.onSecondaryContainer),
           shape: WidgetStateProperty.all<OutlinedBorder>(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
         ),

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Tests for the 6-day Yousria cycle. Location prefs stay empty, so
-/// [todayPrayerSchedule] returns null and the Islamic effective day is the
+/// `todayPrayerSchedule` returns null and the Islamic effective day is the
 /// civil day — making the cycle fully deterministic from the stored
 /// beginning day.
 void main() {

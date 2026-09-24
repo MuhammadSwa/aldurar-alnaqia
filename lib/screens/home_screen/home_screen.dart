@@ -1,17 +1,20 @@
-import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
-import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
-import 'package:aldurar_alnaqia/router/app_routes.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:aldurar_alnaqia/widgets/search_widget.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async' show unawaited;
+
 import 'package:aldurar_alnaqia/common/helpers/helpers.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
-import 'package:aldurar_alnaqia/router/nav_helpers.dart';
+import 'package:aldurar_alnaqia/models/consts/dalayil_alkhayrat_collection.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
+import 'package:aldurar_alnaqia/router/app_routes.dart';
+import 'package:aldurar_alnaqia/router/nav_helpers.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show rootScaffoldKey;
+import 'package:aldurar_alnaqia/widgets/search_widget.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class HomePage extends ConsumerStatefulWidget {
@@ -49,8 +52,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         title: const Text('الدرر النقية'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () =>
-              ref.read(rootScaffoldKeyProvider).currentState?.openDrawer(),
+          onPressed: () => rootScaffoldKey.currentState?.openDrawer(),
           tooltip: 'فتح القائمة',
         ),
         actions: [
@@ -68,8 +70,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
               child: Row(
-                textDirection: TextDirection
-                    .rtl, // Ensures icon is on the right for Arabic
                 children: [
                   Icon(Icons.today_rounded),
                   SizedBox(width: 8),
@@ -119,8 +119,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
 
             AppTile(
-              title: 'دلائل الخيرات',
-              subtitle: 'ورد يوم ${arabicWeekdays[dayIndex]}',
+              title: dalayilAlkhayratCollection[dayIndex].title,
               leading: const AppTileLeadingIcon(
                 icon: Icons.auto_stories_rounded,
               ),
@@ -139,7 +138,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: Row(
-                textDirection: TextDirection.rtl,
                 children: [
                   Icon(Icons.favorite),
                   SizedBox(width: 8),
@@ -160,47 +158,41 @@ class _HomePageState extends ConsumerState<HomePage> {
 
 /// Friday-only home tiles visibility. Pure for tests.
 class FridayTilesVisibility {
-  final bool showHadra;
-  final bool showAsrWird;
   const FridayTilesVisibility({
     required this.showHadra,
     required this.showAsrWird,
   });
+
+  static const hidden =
+      FridayTilesVisibility(showHadra: false, showAsrWird: false);
+
+  final bool showHadra;
+  final bool showAsrWird;
 }
 
+/// Friday-only home tiles visibility.
 FridayTilesVisibility fridayTilesVisibility({
   required int islamicWeekday,
   required DateTime now,
   required DateTime? dhuhr,
   required DateTime? asr,
 }) {
-  if (islamicWeekday != DateTime.friday) {
-    return const FridayTilesVisibility(
-      showHadra: false,
-      showAsrWird: false,
-    );
-  }
-  if (dhuhr == null || asr == null) {
-    return const FridayTilesVisibility(
-      showHadra: false,
-      showAsrWird: false,
-    );
-  }
-  final showHadra = !now.isBefore(dhuhr);
-  final showAsrWird = !now.isBefore(asr);
+  // From Friday's Maghrib the Islamic weekday is Saturday — this also
+  // handles hiding everything afterwards.
+  if (islamicWeekday != DateTime.friday) return FridayTilesVisibility.hidden;
+  // Before civil Friday the schedule still carries Thursday's Dhuhr/Asr;
+  // there is no Friday prayer time to gate on yet.
+  if (now.weekday != DateTime.friday) return FridayTilesVisibility.hidden;
+  // Without Dhuhr/Asr times there is no correct gate, so never guess.
+  if (dhuhr == null || asr == null) return FridayTilesVisibility.hidden;
   return FridayTilesVisibility(
-    showHadra: showHadra,
-    showAsrWird: showAsrWird,
+    showHadra: !now.isBefore(dhuhr),
+    showAsrWird: !now.isBefore(asr),
   );
 }
 
 FridayTilesVisibility _fridayTilesVisibility(PrayerView? view) {
-  if (view == null) {
-    return const FridayTilesVisibility(
-      showHadra: false,
-      showAsrWird: false,
-    );
-  }
+  if (view == null) return FridayTilesVisibility.hidden;
   // Live clock (not view.today): a rebuild triggered by e.g. a bookmark
   // change must still gate on the actual instant, not a stale snapshot.
   final now = tz.TZDateTime.now(view.schedule.civilDate.location);
@@ -222,81 +214,113 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
     return null;
   }
 
+  static ZikrListViewTile _tileFor(
+    String bookmark,
+    List<String> orphanIds,
+    Map<String, int> orphanIndexById,
+  ) {
+    if (bookmark == weekCollectionBookmarkId) {
+      return const ZikrListViewTile(
+        key: ValueKey(weekCollectionBookmarkId),
+        zikrId: weekCollectionBookmarkId,
+        title: 'أوراد الأسبوع',
+        target: WeekCollectionTarget(ZikrBranch.home),
+      );
+    }
+    final day = _dayFromBookmark(bookmark);
+    if (day != null) {
+      return ZikrListViewTile(
+        key: ValueKey(bookmark),
+        zikrId: bookmark,
+        title: dayWirdTitles[day],
+        target: DayWirdTarget(ZikrBranch.home, day: day),
+      );
+    }
+    if (collectionById.containsKey(bookmark)) {
+      return ZikrListViewTile(
+        key: ValueKey(bookmark),
+        zikrId: bookmark,
+        target: ZikrCollectionViewTarget(
+          ZikrBranch.home,
+          collection: bookmark,
+        ),
+      );
+    }
+    return ZikrListViewTile(
+      key: ValueKey(bookmark),
+      zikrId: bookmark,
+      target: ZikrDetailTarget(
+        branch: ZikrBranch.home,
+        zikrId: bookmark,
+        zikrIds: orphanIds,
+        index: orphanIndexById[bookmark] ?? 0,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookmarks = ref.watch(bookmarksProvider);
 
-    // see if a bookmark is collection or orphan
-    final List<String> collectionIds = [];
-    final List<String> orphanIds = [];
-    final List<int> azkarOfDays = [];
-    var weekAzkarBookmarked = false;
-
-    for (var bookmark in bookmarks) {
-      final day = _dayFromBookmark(bookmark);
-      if (day != null) {
-        azkarOfDays.add(day);
-      } else if (bookmark == weekCollectionBookmarkId) {
-        weekAzkarBookmarked = true;
-      } else if (collectionById.containsKey(bookmark)) {
-        collectionIds.add(bookmark);
-      } else {
-        orphanIds.add(bookmark);
-      }
+    if (bookmarks.isEmpty) {
+      return const SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Column(children: [EmptyBookmarks()]),
+      );
     }
 
-    return SingleChildScrollView(
+    // Swipe context for individual zikrs: bookmark order, filtered to
+    // non-collection ids so detail pages still swipe across bookmarked
+    // zikrs only.
+    final orphanIds = <String>[];
+    for (final bookmark in bookmarks) {
+      if (_dayFromBookmark(bookmark) != null) continue;
+      if (bookmark == weekCollectionBookmarkId) continue;
+      if (collectionById.containsKey(bookmark)) continue;
+      orphanIds.add(bookmark);
+    }
+    final orphanIndexById = <String, int>{};
+    for (var i = 0; i < orphanIds.length; i++) {
+      orphanIndexById.putIfAbsent(orphanIds[i], () => i);
+    }
+
+    return ReorderableListView.builder(
+      shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        children: [
-          if (weekAzkarBookmarked) ...{
-            const ZikrListViewTile(
-              zikrId: weekCollectionBookmarkId,
-              title: 'أوراد الأسبوع',
-              target: WeekCollectionTarget(ZikrBranch.home),
+      itemCount: bookmarks.length,
+      onReorderItem: (oldIndex, newIndex) =>
+          ref.read(bookmarksProvider.notifier).reorder(oldIndex, newIndex),
+      // Haptic tick the moment the long-press becomes a drag.
+      onReorderStart: (_) {
+        unawaited(HapticFeedback.mediumImpact());
+      },
+      proxyDecorator: (child, index, animation) => AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          final t = Curves.easeOut.transform(animation.value);
+          return Transform.scale(
+            scale: 1 + 0.02 * t,
+            child: Material(
+              elevation: 6 * t,
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: child,
             ),
-          },
-          if (bookmarks.isNotEmpty) ...{
-            for (var day in azkarOfDays) ...{
-              ZikrListViewTile(
-                zikrId: dayWirdBookmarkId(day),
-                title: dayWirdTitles[day],
-                target: DayWirdTarget(ZikrBranch.home, day: day),
-              ),
-            },
-            AzkarListViewWidget(
-              zikrIds: collectionIds,
-              barTitle: 'الأذكار',
-              scrollable: false,
-              targetBuilder: (collectionId, index) => ZikrCollectionViewTarget(
-                ZikrBranch.home,
-                collection: collectionId,
-              ),
-            ),
-            AzkarListViewWidget(
-              zikrIds: orphanIds,
-              barTitle: 'الأذكار',
-              scrollable: false,
-              targetBuilder: (zikrId, index) => ZikrDetailTarget(
-                branch: ZikrBranch.home,
-                zikrId: zikrId,
-                zikrIds: orphanIds,
-                index: index,
-              ),
-            ),
-          } else ...{
-            EmptyBookmarks(),
-          },
-        ],
+          );
+        },
+        child: child,
       ),
+      itemBuilder: (context, index) {
+        final bookmark = bookmarks[index];
+        return _tileFor(bookmark, orphanIds, orphanIndexById);
+      },
     );
   }
 }
 
 class EmptyBookmarks extends StatelessWidget {
-  final VoidCallback? onExplore;
-
   const EmptyBookmarks({super.key, this.onExplore});
+  final VoidCallback? onExplore;
 
   @override
   Widget build(BuildContext context) {

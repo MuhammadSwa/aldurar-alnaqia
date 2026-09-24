@@ -1,10 +1,10 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/models/consts/chosen_salawat.dart';
 import 'package:aldurar_alnaqia/models/consts/salawat_yousria_collection.dart';
 import 'package:aldurar_alnaqia/models/week_collection_data.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() async {

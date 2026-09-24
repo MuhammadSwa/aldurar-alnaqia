@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Single-line shrink-to-fit text.
 ///
@@ -16,7 +16,6 @@ class InlineTextWidget extends StatelessWidget {
     this.style,
     this.strutStyle,
     this.textAlign,
-    this.textDirection,
     this.locale,
     this.softWrap,
     this.overflow,
@@ -29,7 +28,6 @@ class InlineTextWidget extends StatelessWidget {
   final TextStyle? style;
   final StrutStyle? strutStyle;
   final TextAlign? textAlign;
-  final TextDirection? textDirection;
   final Locale? locale;
   final bool? softWrap;
   final TextOverflow? overflow;
@@ -63,7 +61,6 @@ class InlineTextWidget extends StatelessWidget {
         style: style,
         strutStyle: strutStyle,
         textAlign: textAlign,
-        textDirection: textDirection,
         locale: locale,
         softWrap: softWrap ?? false,
         overflow: overflow,

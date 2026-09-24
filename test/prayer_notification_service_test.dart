@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  final List<String> channelCalls = [];
+  final channelCalls = <String>[];
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -20,7 +20,7 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       const MethodChannel('app/prayer_notification'),
-      (MethodCall call) async {
+      (call) async {
         channelCalls.add(call.method);
         return null;
       },
@@ -89,8 +89,8 @@ void main() {
               as Map<String, dynamic>;
       expect(config['method'], PrayerMethods.egyptian);
       expect(config['timezone'], isEmpty);
-      expect((config['days'] as List), isEmpty);
-      expect((config['midnights'] as List), isEmpty);
+      expect(config['days'] as List, isEmpty);
+      expect(config['midnights'] as List, isEmpty);
     });
   });
 

@@ -1,10 +1,10 @@
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:pdfx/pdfx.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:pdfx/pdfx.dart';
 
 /// Opens a bundled PDF via Flutter's asset bundle instead of
 /// `PdfDocument.openAsset`: pdfx resolves that path with Android's
@@ -31,18 +31,17 @@ class HeliaNasabScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final zikr = _hilya;
-    return Scaffold(
-        appBar: AppBar(
-          actions: [
-            PlayAudioBtnZikrPage(
-              id: zikr.id,
-              title: zikr.title,
-              url: zikr.url,
-            ),
-          ],
-          title: Text(zikr.title),
+    return ZikrReaderScaffold(
+      title: zikr.title,
+      actions: [
+        PlayAudioBtnZikrPage(
+          id: zikr.id,
+          title: zikr.title,
+          url: zikr.url,
         ),
-        body: const HeliaNasabContent(),);
+      ],
+      child: const HeliaNasabContent(),
+    );
   }
 }
 
@@ -75,7 +74,18 @@ class _HeliaNasabContentState extends State<HeliaNasabContent> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: AppPdfView(controller: _controller),
+      child: AppPdfView(
+        controller: _controller,
+        onTap: () => const ZikrReaderChromeNotification(
+          ZikrReaderChromeAction.toggle,
+        ).dispatch(context),
+        onInteractionStart: (_) => const ZikrReaderChromeNotification(
+          ZikrReaderChromeAction.hide,
+        ).dispatch(context),
+        onScrollbarDrag: () => const ZikrReaderChromeNotification(
+          ZikrReaderChromeAction.hide,
+        ).dispatch(context),
+      ),
     );
   }
 }

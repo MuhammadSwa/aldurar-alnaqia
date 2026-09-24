@@ -2,7 +2,7 @@ import 'package:aldurar_alnaqia/common/widgets/app_tile.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A single azkar list entry styled with [AppTile] (V5Outlined).
 /// Navigation is expressed as a typed [ZikrTarget] instead of a raw
@@ -10,10 +10,8 @@ import 'package:flutter/material.dart';
 /// resolve from stable ids.
 class ZikrListViewTile extends StatelessWidget {
   const ZikrListViewTile({
-    super.key,
-    required this.zikrId,
+    required this.zikrId, required this.target, super.key,
     this.title,
-    required this.target,
     this.margin,
   });
 

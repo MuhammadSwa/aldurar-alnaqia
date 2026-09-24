@@ -1,10 +1,12 @@
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/calculation_method_info.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CalcMethodDropDown extends StatefulWidget {
-  const CalcMethodDropDown(
-      {super.key, required this.onSelect, this.initialMethod,});
-  final Function(String) onSelect;
+  const CalcMethodDropDown({
+    required this.onSelect, super.key,
+    this.initialMethod,
+  });
+  final void Function(String) onSelect;
 
   /// Previously saved method key — pre-selects it instead of starting empty.
   final String? initialMethod;
@@ -30,6 +32,7 @@ class _CalcMethodDropDownState extends State<CalcMethodDropDown> {
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField(
@@ -53,10 +56,10 @@ class _CalcMethodDropDownState extends State<CalcMethodDropDown> {
       items: CalculationMethodInfo.methods.map((method) {
         return DropdownMenuItem(
           value: method.key,
-          child: Text(method.arabicName, overflow: TextOverflow.ellipsis),
+          child: Text(method.arabicName,
+              maxLines: 2, overflow: TextOverflow.ellipsis,),
         );
       }).toList(),
-
       onChanged: (value) {
         setState(() {
           method = value;

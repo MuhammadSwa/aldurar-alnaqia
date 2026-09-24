@@ -1,45 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:audio_service/audio_service.dart';
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'package:aldurar_alnaqia/audio/audio_handler.dart';
-import 'package:aldurar_alnaqia/common/helpers/logger.dart';
-
-/// Raw playback state reported by the engine, before the controller applies
-/// its own policy (e.g. rewind-on-complete).
-enum EnginePlaybackState { buffering, playing, paused, completed, idle }
-
-/// Events emitted by [AudioEngine] for the controller to react to.
-sealed class EngineEvent {
-  const EngineEvent();
-}
-
-class EnginePlaybackChanged extends EngineEvent {
-  const EnginePlaybackChanged(this.playback);
-  final EnginePlaybackState playback;
-}
-
-class EngineProgress extends EngineEvent {
-  const EngineProgress({
-    required this.position,
-    required this.buffered,
-    required this.duration,
-  });
-
-  final Duration position;
-  final Duration buffered;
-  final Duration duration;
-}
-
-class EngineFailed extends EngineEvent {
-  const EngineFailed(this.message);
-  final String message;
-}
 
 /// What to load: a downloaded file or a remote stream.
 @immutable
@@ -60,114 +27,80 @@ class EngineLoadRequest {
   final bool isLocal;
 }
 
-/// Framework-facing playback engine. Owns the underlying player instance and
-/// normalizes it into a simple event stream; contains no policy logic.
+/// Thin facade over just_audio's [AudioPlayer]. All playback policy (queue,
+/// auto-advance, fallback, UI state) lives in the audio controller.
 ///
-/// The interface exists so [AudioController] can be unit-tested against a
-/// fake implementation.
-abstract class AudioEngine {
-  Stream<EngineEvent> get events;
-
-  /// Loads [request] and starts playing it.
-  Future<void> load(EngineLoadRequest request);
-
-  Future<void> play();
-  Future<void> pause();
-  Future<void> seek(Duration position);
-  Future<void> setSpeed(double speed);
-
-  /// Stops playback and releases the loaded source.
-  Future<void> stop();
-
-  Future<void> dispose();
-}
-
-/// [just_audio] on its native backends:
+/// Responsibilities:
+///  * builds tagged sources — the `MediaItem` tag is what drives the media
+///    notification via just_audio_background,
+///  * materializes the bundled cover art to a real file (the Android
+///    notification cannot decode `asset:///` URIs — it silently shows a
+///    black square),
+///  * re-applies the current speed after every load,
+///  * surfaces out-of-band playback errors (decode failures, dropped
+///    streams) on [errorStream] (load errors are thrown by [load] instead).
 ///
-/// * Android → ExoPlayer (Media3),
-/// * iOS / macOS → AVPlayer,
-/// * Web → HTML audio.
+/// Audio focus, interruptions (phone calls) and headphone-unplug are
+/// handled inside just_audio itself (`handleInterruptions` is on by
+/// default) — no manual audio_session wiring needed.
 ///
-/// No extra backend setup is needed. Desktop Linux/Windows have no native
-/// just_audio backend; [load] will throw there and the controller surfaces
-/// it as a normal error state.
-class JustAudioEngine implements AudioEngine {
-  /// Optional media-notification bridge; null on platforms without
-  /// notification support (desktop) where playback runs bare.
-  JustAudioEngine({NarrationAudioHandler? notifications})
-      : _notifications = notifications {
-    _notifications?.attach(_player);
+/// The player is created lazily so unit tests can instantiate the engine
+/// (and fakes can extend it) without a native audio backend; listeners are
+/// attached exactly once. Desktop Linux/Windows have no native just_audio
+/// backend; [load] will throw there and the controller surfaces it as a
+/// normal error state.
+class JustAudioEngine {
+  JustAudioEngine();
 
+  AudioPlayer? _player;
+  bool _playerWired = false;
+  final List<StreamSubscription<dynamic>> _subscriptions = [];
+  final StreamController<String> _errors = StreamController<String>.broadcast();
+
+  double _currentSpeed = 1;
+
+  AudioPlayer get _audio {
+    var player = _player;
+    if (player == null) {
+      player = AudioPlayer();
+      _player = player;
+      _wirePlayer(player);
+    }
+    return player;
+  }
+
+  void _wirePlayer(AudioPlayer player) {
+    if (_playerWired) return;
+    _playerWired = true;
     _subscriptions.add(
-      _player.playerStateStream.listen((playerState) {
-        final processing = playerState.processingState;
-        final playing = playerState.playing;
-
-        final EnginePlaybackState mapped;
-        if (processing == ProcessingState.loading ||
-            processing == ProcessingState.buffering) {
-          mapped = EnginePlaybackState.buffering;
-        } else if (processing == ProcessingState.completed) {
-          mapped = EnginePlaybackState.completed;
-        } else if (processing == ProcessingState.idle) {
-          // Idle means no source / stopped after error.
-          mapped = EnginePlaybackState.idle;
-        } else {
-          mapped = playing
-              ? EnginePlaybackState.playing
-              : EnginePlaybackState.paused;
-        }
-        _emit(EnginePlaybackChanged(mapped));
-      }),
-    );
-
-    _subscriptions.add(
-      _player.playbackEventStream.listen(
+      player.playbackEventStream.listen(
         (_) {},
         onError: (Object e, StackTrace st) {
-          logWarn('Audio engine playback error: $e');
-          _emit(EngineFailed(e.toString()));
+          logWarn('Audio playback error: $e');
+          if (!_errors.isClosed) _errors.add(e.toString());
         },
       ),
     );
-
-    _subscriptions.add(_player.positionStream.listen((_) => _emitProgress()));
-    _subscriptions
-        .add(_player.bufferedPositionStream.listen((_) => _emitProgress()));
-    _subscriptions.add(_player.durationStream.listen((_) => _emitProgress()));
   }
 
-  double _currentSpeed = 1.0;
+  // --- Observation (raw player streams; the controller applies policy) ---
 
-  final NarrationAudioHandler? _notifications;
-  final AudioPlayer _player = AudioPlayer();
-  final List<StreamSubscription<dynamic>> _subscriptions = [];
-  final StreamController<EngineEvent> _events =
-      StreamController<EngineEvent>.broadcast();
+  Stream<PlayerState> get playerStateStream => _audio.playerStateStream;
+  Stream<Duration> get positionStream => _audio.positionStream;
+  Stream<Duration> get bufferedPositionStream =>
+      _audio.bufferedPositionStream;
+  Stream<Duration?> get durationStream => _audio.durationStream;
 
-  @override
-  Stream<EngineEvent> get events => _events.stream;
+  /// Terminal, out-of-band playback errors (async decode/stream failures).
+  Stream<String> get errorStream => _errors.stream;
 
-  void _emit(EngineEvent event) {
-    if (!_events.isClosed) _events.add(event);
-  }
+  Duration get position => _player?.position ?? Duration.zero;
+  Duration get bufferedPosition => _player?.bufferedPosition ?? Duration.zero;
+  Duration? get duration => _player?.duration;
 
-  void _emitProgress() {
-    _emit(
-      EngineProgress(
-        position: _player.position,
-        buffered: _player.bufferedPosition,
-        duration: _player.duration ?? Duration.zero,
-      ),
-    );
-  }
+  // --- Metadata ---
 
   /// The bundled cover image, extracted to a real file once.
-  ///
-  /// audio_service's Android artwork loader cannot decode `asset:///` URIs
-  /// (Flutter bundle assets are invisible to the native notification code —
-  /// it silently fails and the notification shows a black square), so we
-  /// materialize the asset on disk and hand the notification a `file://` URI.
   static const String _coverAsset = 'assets/imgs/audio_cover.jpg';
   Uri? _coverFileUri;
   bool _coverResolved = false;
@@ -189,6 +122,9 @@ class JustAudioEngine implements AudioEngine {
     return _coverFileUri;
   }
 
+  /// Builds the notification metadata. This is the tag the engine attaches
+  /// to the audio source; just_audio_background forwards it to the media
+  /// notification (title, album, artist, cover art).
   MediaItem _mediaItemFor(EngineLoadRequest request, Uri? artUri) {
     return MediaItem(
       id: request.trackId,
@@ -199,66 +135,73 @@ class JustAudioEngine implements AudioEngine {
     );
   }
 
-  @override
+  // --- Commands ---
+
+  /// Stops the current source and prepares [request]. Does NOT start
+  /// playback — the controller calls [play] only after confirming this
+  /// load is still the wanted one (guards rapid track-switch races).
   Future<void> load(EngineLoadRequest request) async {
-    // No explicit stop(): setAudioSource replaces the current source, so a
-    // skip never produces the transient idle state that used to be mistaken
-    // for "user closed playback" and hide the mini player mid-skip.
-    //
-    // Plain progressive streaming: direct https to the server, no localhost
-    // proxy, so it works on Android/iOS with no extra platform config.
+    final player = _audio;
+    await player.stop();
+
+    final tag = _mediaItemFor(request, await _coverArtUri());
     final AudioSource source = request.isLocal
-        ? AudioSource.file(request.uri)
-        : AudioSource.uri(Uri.parse(request.uri));
+        ? AudioSource.file(request.uri, tag: tag)
+        : AudioSource.uri(Uri.parse(request.uri), tag: tag);
 
-    // Publish metadata first so the notification shows the new track
-    // immediately while the source is still loading.
-    _notifications
-        ?.setTrackMetadata(_mediaItemFor(request, await _coverArtUri()));
-
-    await _player.setAudioSource(source);
-    await _player.setSpeed(_currentSpeed);
-    await _player.play();
+    await player.setAudioSource(source);
+    await player.setSpeed(_currentSpeed);
   }
 
-  @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    final player = _player;
+    if (player == null) return;
+    await player.play();
+  }
 
-  @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    final player = _player;
+    if (player == null) return;
+    await player.pause();
+  }
 
-  @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) async {
+    final player = _player;
+    if (player == null) return;
+    await player.seek(position);
+  }
 
-  @override
   Future<void> setSpeed(double speed) async {
     _currentSpeed = speed;
-    await _player.setSpeed(speed);
+    final player = _player;
+    if (player == null) return;
+    await player.setSpeed(speed);
   }
 
-  @override
+  /// Halts playback. With just_audio_background the system notification is
+  /// driven by the last tagged source and lingers (paused) until the user
+  /// swipes it away.
   Future<void> stop() async {
-    try {
-      await _player.stop();
-    } catch (_) {
-      // Already idle — still dismiss the notification below.
-    }
-    // Removes the media notification as well. No seek after stop: it
-    // would emit extra player events that could resurrect an empty
-    // (black) notification after the service is stopped.
-    // stopLocally (not stop()): stop() would delegate back to the
-    // controller, which is already awaiting us — that would recurse.
-    await _notifications?.stopLocally();
+    final player = _player;
+    if (player == null) return;
+    await player.stop();
   }
 
-  @override
   Future<void> dispose() async {
     for (final sub in _subscriptions) {
       await sub.cancel();
     }
     _subscriptions.clear();
-    await _events.close();
-    await _notifications?.detach();
-    await _player.dispose();
+    await _errors.close();
+    final player = _player;
+    _player = null;
+    _playerWired = false;
+    if (player != null) {
+      try {
+        await player.dispose();
+      } catch (_) {
+        // Native backend already gone (tests / shutdown).
+      }
+    }
   }
 }

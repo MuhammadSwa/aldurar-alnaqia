@@ -4,10 +4,10 @@ import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -54,7 +54,7 @@ void main() {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
     const MethodChannel('app/prayer_notification'),
-    (MethodCall call) async => null,
+    (call) async => null,
   );
 
   setUpAll(tzdata.initializeTimeZones);

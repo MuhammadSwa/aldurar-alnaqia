@@ -1,21 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:aldurar_alnaqia/models/azkar_models.dart' show Zikr;
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 // ---------------------------------------------------------------------------
 // Routing contract — the single source of truth for everything navigation
 // related in the app.
 //
-// Rules of the road:
-//  * Widgets NEVER build location strings themselves. Either use one of the
-//    typed [ZikrTarget]s / [AppRoutes] builders, or navigate by route NAME
-//    via `goNamed`/`pushNamed`.
-//  * Path parameters (`:zikr`, `:collection`) carry stable ASCII ids
-//    ([Zikr.id], [ZikrCollection.id]) only. Search suggestions display
-//    titles but map back via [zikrIdForTitle] at the search edge.
-//    Always pass values RAW to go_router; it encodes them when building
-//    the location and decodes them in `state.pathParameters`.
-//  * Non-ASCII segments must only travel through named routes or the
-//    builders below, never hand-concatenated strings.
+// Widgets never build locations: use typed [ZikrTarget]s / [AppRoutes] /
+// `goNamed`. Params are stable ASCII ids, passed RAW (go_router encodes
+// when building the location and decodes in `state.pathParameters`).
+// Search maps titles back via [zikrIdForTitle] at the search edge.
+// Swipe context travels as `extra` + restorable `?ids=&i=` query params.
 // ---------------------------------------------------------------------------
 
 /// Absolute route paths for top-level destinations.
@@ -24,15 +19,17 @@ class RoutePaths {
   static const String timings = '/timings';
   static const String awrad = '/awradScreen';
   static const String library = '/library';
+  //
   static const String social = '/social';
   static const String downloadManager = '/downloadManager';
 
-  // Nested segments (relative, used only inside app_router.dart).
-  static const String todaysZikrSegment = 'todaysZikr';
-  static const String timingsSettingsSegment = 'settings';
+  // Nested segments
   static const String weekCollectionSegment = 'weekCollection';
+  static const String todaysZikrSegment = 'todaysZikr';
   static const String zikrCollectionSegment = 'zikrCollection/:collection';
   static const String zikrSegment = 'zikr/:zikr';
+  //
+  static const String timingsSettingsSegment = 'settings';
 }
 
 /// Named-route registry. Zikr detail pages exist once per parent route, so
@@ -87,9 +84,9 @@ enum ZikrBranch {
 
 /// Typed extras contract for zikr detail pages.
 class ZikrRouteExtra {
+  const ZikrRouteExtra({this.zikrIds, this.index});
   final List<String>? zikrIds;
   final int? index;
-  const ZikrRouteExtra({this.zikrIds, this.index});
 }
 
 /// Centralized location builders. Only ASCII-safe segments may be
@@ -158,11 +155,19 @@ class ZikrDetailTarget extends ZikrTarget {
 
   @override
   void go(BuildContext context) {
+    // Swipe context travels twice: `extra` for instant in-memory swiping,
+    // and `ids`+`i` query params so it survives OS process death
+    // (`extra` is not serialized by state restoration — the URL is).
+    final zikrIds = this.zikrIds;
+    final index = this.index;
     context.goNamed(
       RouteNames.zikrPage(pagePrefix ?? branch.namePrefix),
       pathParameters: collection == null
           ? {'zikr': zikrId}
           : {'collection': collection!, 'zikr': zikrId},
+      queryParameters: zikrIds != null && index != null
+          ? {'ids': zikrIds.join(','), 'i': '$index'}
+          : const {},
       extra: ZikrRouteExtra(zikrIds: zikrIds, index: index),
     );
   }

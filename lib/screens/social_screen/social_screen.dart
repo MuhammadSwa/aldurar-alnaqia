@@ -1,19 +1,19 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class _SocialSite {
+  _SocialSite({
+    required this.title,
+    required this.url,
+    required this.icon,
+    required this.iconColor,
+  });
   final String title;
   final String url;
   final Widget icon;
   final Color iconColor;
-
-  _SocialSite(
-      {required this.title,
-      required this.url,
-      required this.icon,
-      required this.iconColor,});
 }
 
 final _sites = <_SocialSite>[
@@ -46,24 +46,26 @@ final _sites = <_SocialSite>[
   ),
 
   _SocialSite(
-      title: 'قناة اليوتيوب',
-      url: 'https://www.youtube.com/c/MohamadSameh',
-      icon: Image.asset(
-        'assets/icons/youtube-icon.png',
-        semanticLabel: 'youtube_icon',
-        width: 24,
-      ),
-      iconColor: Colors.transparent,),
+    title: 'قناة اليوتيوب',
+    url: 'https://www.youtube.com/c/MohamadSameh',
+    icon: Image.asset(
+      'assets/icons/youtube-icon.png',
+      semanticLabel: 'youtube_icon',
+      width: 24,
+    ),
+    iconColor: Colors.transparent,
+  ),
 
   _SocialSite(
-      title: 'دروس د.يسري جبر',
-      url: 'https://youtube.com/@dryosrylectures?si=hzAsCiFuwVLpvTEb',
-      icon: Image.asset(
-        'assets/icons/youtube-icon.png',
-        semanticLabel: 'youtube_icon',
-        width: 24,
-      ),
-      iconColor: Colors.transparent,),
+    title: 'دروس د.يسري جبر',
+    url: 'https://youtube.com/@dryosrylectures?si=hzAsCiFuwVLpvTEb',
+    icon: Image.asset(
+      'assets/icons/youtube-icon.png',
+      semanticLabel: 'youtube_icon',
+      width: 24,
+    ),
+    iconColor: Colors.transparent,
+  ),
 
   _SocialSite(
     title: 'حساب الساوند كلاود',
@@ -134,10 +136,11 @@ final _sites = <_SocialSite>[
     iconColor: Colors.transparent,
   ),
   _SocialSite(
-      title: 'مسجد الأشراف',
-      url: 'https://maps.app.goo.gl/8Eog1x4g8nQqtKSc9',
-      icon: const Icon(Icons.location_on),
-      iconColor: Colors.green,),
+    title: 'مسجد الأشراف',
+    url: 'https://maps.app.goo.gl/8Eog1x4g8nQqtKSc9',
+    icon: const Icon(Icons.location_on),
+    iconColor: Colors.green,
+  ),
   _SocialSite(
     title: 'توصية ورجاء وأمر لجميع المتابعين',
     url: 'https://youtu.be/KbQnZN5x2-g',
@@ -165,64 +168,65 @@ class SocialScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: put in consts
-    return Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-            appBar: AppBar(
-              title: const Text('الصفحات الرسمية'),
-            ),
-            body: SingleChildScrollView(
-              child: Center(
-                  child: SizedBox(
-                width: MediaQuery.sizeOf(context).width * .8,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 12.0),
-                      child: Text(
-                        'الصفحات الرسمية لفضيلة أ.د. يسري جبر',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Image.asset(
-                      'assets/imgs/social_webp.webp',
-                    ),
-                    ListView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      itemCount: _sites.length,
-                      itemBuilder: (context, i) {
-                        final site = _sites[i];
-                        void openSite() {
-                          unawaited(launchUrl(
-                            Uri.parse(site.url),
-                            mode: LaunchMode.externalApplication,
-                          ),);
-                        }
-
-                        return ListTile(
-                          onTap: openSite,
-                          title: Text(site.title),
-                          trailing: IconButton(
-                            style: const ButtonStyle(
-                                iconSize: WidgetStatePropertyAll(27),),
-                            color: site.iconColor,
-                            icon: site.icon,
-                            onPressed: openSite,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+    // TODO(MuhammadSwa): put in consts
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('الصفحات الرسمية'),
+      ),
+      body: SingleChildScrollView(
+        child: Center(
+          child: SizedBox(
+            width: MediaQuery.sizeOf(context).width * .8,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Text(
+                    'الصفحات الرسمية لفضيلة أ.د. يسري جبر',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),),
-            ),),);
+                Image.asset(
+                  'assets/imgs/social_webp.webp',
+                ),
+                ListView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  itemCount: _sites.length,
+                  itemBuilder: (context, i) {
+                    final site = _sites[i];
+                    void openSite() {
+                      unawaited(
+                        launchUrl(
+                          Uri.parse(site.url),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      );
+                    }
+
+                    return ListTile(
+                      onTap: openSite,
+                      title: Text(site.title),
+                      trailing: IconButton(
+                        style: const ButtonStyle(
+                          iconSize: WidgetStatePropertyAll(27),
+                        ),
+                        color: site.iconColor,
+                        icon: site.icon,
+                        onPressed: openSite,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

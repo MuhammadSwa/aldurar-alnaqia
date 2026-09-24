@@ -1,13 +1,12 @@
-import 'package:flutter/material.dart';
-
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lists the seven day-wirds of a branch ('أوراد الأسبوع').
 class WeekCollectionScreen extends StatelessWidget {
-  const WeekCollectionScreen({super.key, required this.branch});
+  const WeekCollectionScreen({required this.branch, super.key});
 
   final ZikrBranch branch;
 
@@ -38,11 +37,7 @@ class WeekCollectionScreen extends StatelessWidget {
 /// Lists the individual azkar of one collection.
 class ZikrCollectionScreen extends StatelessWidget {
   const ZikrCollectionScreen({
-    super.key,
-    required this.branch,
-    required this.collection,
-    required this.collectionId,
-    required this.zikrIds,
+    required this.branch, required this.collection, required this.collectionId, required this.zikrIds, super.key,
   });
 
   final ZikrBranch branch;

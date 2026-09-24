@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Explainer for the persistent prayer notification (Android, always-exact).
 ///
@@ -29,59 +29,56 @@ class PrayerNotificationDialog extends ConsumerWidget {
     const titleStyle = TextStyle(fontSize: 18, fontWeight: FontWeight.w700);
     const bodyStyle = TextStyle(fontSize: 14, height: 1.7);
     const noteStyle = TextStyle(fontSize: 12.5, height: 1.6);
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: AlertDialog(
-        insetPadding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 24,
-        ),
-        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-        titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colors.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.notifications,
-                size: 20,
-                color: colors.onPrimaryContainer,
-              ),
+    return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 24,
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colors.primaryContainer,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 10),
-            const Text('إشعار المواقيت', style: titleStyle),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'إظهار مواقيت الصلاة والعد التنازلي للصلاة القادمة في شريط الإشعارات',
-              style: bodyStyle.copyWith(color: colors.onSurfaceVariant),
+            child: Icon(
+              Icons.notifications,
+              size: 20,
+              color: colors.onPrimaryContainer,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'قد يتأخر ظهور الإشعار بضع ثوانٍ.',
-              style: noteStyle.copyWith(color: colors.onSurfaceVariant),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('إغلاق'),
           ),
-          ElevatedButton(
-            onPressed: () => _enable(context),
-            child: const Text('تشغيل الإشعار'),
+          const SizedBox(width: 10),
+          const Text('إشعار المواقيت', style: titleStyle),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'إظهار مواقيت الصلاة والعد التنازلي للصلاة القادمة في شريط الإشعارات',
+            style: bodyStyle.copyWith(color: colors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'قد يتأخر ظهور الإشعار بضع ثوانٍ.',
+            style: noteStyle.copyWith(color: colors.onSurfaceVariant),
           ),
         ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('إغلاق'),
+        ),
+        ElevatedButton(
+          onPressed: () => _enable(context),
+          child: const Text('تشغيل الإشعار'),
+        ),
+      ],
     );
   }
 }

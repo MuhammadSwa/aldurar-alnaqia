@@ -1,20 +1,17 @@
 import 'package:aldurar_alnaqia/prayer/prayer_hijri.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Hijri date label. Stateless renderer: the caller passes wall-clock time,
 /// the Maghrib boundary, and the manual day offset; rendering goes through
 /// the shared [hijriLabel] helper (same source as the native payload).
 class HijriDateWidget extends StatelessWidget {
+
+  const HijriDateWidget({
+    required this.now, required this.maghrib, required this.offset, super.key,
+  });
   final DateTime now;
   final DateTime? maghrib;
   final int offset;
-
-  const HijriDateWidget({
-    super.key,
-    required this.now,
-    required this.maghrib,
-    required this.offset,
-  });
 
   @override
   Widget build(BuildContext context) {

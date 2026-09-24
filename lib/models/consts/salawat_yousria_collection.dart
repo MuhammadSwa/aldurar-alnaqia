@@ -1,6 +1,6 @@
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 
-const salawatYousriaCollection = [
+const List<Zikr> salawatYousriaCollection = [
   salawatYousriaIntro,
   asmaaAllahHadith,
   day1Yousria,
@@ -13,7 +13,7 @@ const salawatYousriaCollection = [
 
 /// Day parts in order 1..6. Use [yousriaDayZikr] instead of indexing
 /// [salawatYousriaCollection] directly (0 = intro, 1 = asmaa).
-const yousriaDayZikrs = [
+const List<Zikr> yousriaDayZikrs = [
   day1Yousria,
   day2Yousria,
   day3Yousria,

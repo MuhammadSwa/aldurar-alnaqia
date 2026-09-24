@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum AsrCalculation { shafi, hanafi }
 
 class AsrCalcSegmentedButton extends StatefulWidget {
-  const AsrCalcSegmentedButton({super.key, required this.onData, this.initial});
+  const AsrCalcSegmentedButton({required this.onData, super.key, this.initial});
 
   final void Function(String) onData;
 

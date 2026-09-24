@@ -7,16 +7,8 @@
 
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
-analyzer:
-  exclude:
-    - build/**
-    - android/**
-    - ios/**
-    - web/**
-    - windows/**
-    - macos/**
-    - linux/**
-include: package:flutter_lints/flutter.yaml
+include:
+  - package:very_good_analysis/analysis_options.yaml
 
 linter:
   # The lint rules applied to this project can be customized in the
@@ -35,15 +27,34 @@ linter:
     prefer_const_declarations: true
     unawaited_futures: true
     avoid_print: true
-    prefer_single_quotes: true
-    require_trailing_commas: true
+    require_trailing_commas: false
     unnecessary_null_checks: true
     always_use_package_imports: true
+    lines_longer_than_80_chars: false
+    public_member_api_docs: false
+    unnecessary_type_name_in_constructor: false
+    prefer_single_quotes: false
+    flutter_style_todos: false
+    # Intentional catch-all for resilience (prefs, storage, audio fallback).
+    avoid_catches_without_on_clauses: false
+    # Async IO is correct on the UI isolate; sync IO would jank.
+    avoid_slow_async_io: false
+    # Terse internal APIs; named bools add churn for little value here.
+    avoid_positional_boolean_parameters: false
+formatter:
+  trailing_commas: preserve
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
 
-
-
 plugins:
   riverpod_lint: <latest version from https://pub.dev/packages/riverpod_lint>
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**

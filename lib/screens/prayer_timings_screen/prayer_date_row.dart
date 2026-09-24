@@ -2,8 +2,8 @@ import 'package:aldurar_alnaqia/prayer/prayer_providers.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/gregorian_date_widget.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/hijri_date_widget.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared separator style for the prayer header: the Hijri|Gregorian divider
 /// and the dates/countdown divider use the same color and weight.
@@ -19,13 +19,13 @@ class PrayerDateRow extends ConsumerWidget {
   const PrayerDateRow({super.key});
 
   static const Map<int, String> _arabicDayNames = {
-    7: 'الأحد',
     1: 'الإثنين',
     2: 'الثلاثاء',
     3: 'الأربعاء',
     4: 'الخميس',
     5: 'الجمعة',
     6: 'السبت',
+    7: 'الأحد',
   };
 
   @override

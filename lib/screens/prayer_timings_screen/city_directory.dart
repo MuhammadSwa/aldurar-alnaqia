@@ -14,16 +14,21 @@
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
+    show normalizeArabic;
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
-    show normalizeArabic;
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
-
 /// Precomputed normalized search forms for one city.
 class _IndexedCity {
+
+  _IndexedCity(this.city, this.order, CountryInfo? country)
+      : normAr = CityDirectory.normalize(city.nameAr ?? ''),
+        normEn = CityDirectory.normalize(city.nameEn),
+        normCountryAr = CityDirectory.normalize(country?.nameAr ?? ''),
+        normCountryEn = CityDirectory.normalize(country?.nameEn ?? '');
   final City city;
 
   /// Population rank proxy: lower index == larger city (asset is sorted by
@@ -34,23 +39,9 @@ class _IndexedCity {
   final String normEn;
   final String normCountryAr;
   final String normCountryEn;
-
-  _IndexedCity(this.city, this.order, CountryInfo? country)
-      : normAr = CityDirectory.normalize(city.nameAr ?? ''),
-        normEn = CityDirectory.normalize(city.nameEn),
-        normCountryAr = CityDirectory.normalize(country?.nameAr ?? ''),
-        normCountryEn = CityDirectory.normalize(country?.nameEn ?? '');
 }
 
 class CityDirectory {
-  final List<City> cities;
-  final Map<String, CountryInfo> countries;
-
-  /// Search index, built eagerly in the constructor so the provider's
-  /// loading state (and its spinner) covers both JSON parsing and indexing.
-  /// Previously this was `late final`, which deferred ~170 ms of normalize
-  /// work to the first keystroke, with no loading indicator visible.
-  final List<_IndexedCity> _index;
 
   CityDirectory({required this.cities, required this.countries})
       : _index = [
@@ -62,14 +53,23 @@ class CityDirectory {
     final countriesJson = json['countries'] as Map<String, dynamic>;
     return CityDirectory(
       cities: [
-        for (final c in json['cities'] as List) City.fromJson(c),
+        for (final c in json['cities'] as List)
+          City.fromJson(c as Map<String, dynamic>),
       ],
       countries: {
         for (final e in countriesJson.entries)
-          e.key: CountryInfo.fromJson(e.key, e.value),
+          e.key: CountryInfo.fromJson(e.key, e.value as Map<String, dynamic>),
       },
     );
   }
+  final List<City> cities;
+  final Map<String, CountryInfo> countries;
+
+  /// Search index, built eagerly in the constructor so the provider's
+  /// loading state (and its spinner) covers both JSON parsing and indexing.
+  /// Previously this was `late final`, which deferred ~170 ms of normalize
+  /// work to the first keystroke, with no loading indicator visible.
+  final List<_IndexedCity> _index;
 
   /// Loads and parses the bundled asset. The caller is expected to cache
   /// the result (see [cityDirectoryProvider]).
@@ -129,8 +129,7 @@ class CityDirectory {
   }) {
     final q = normalize(query);
     if (q.isEmpty) return (results: const [], total: 0);
-    final scored = _scoreAll(q);
-    scored.sort((a, b) => b.score.compareTo(a.score));
+    final scored = _scoreAll(q)..sort((a, b) => b.score.compareTo(a.score));
     final count = scored.length < limit ? scored.length : limit;
     return (
       results: [for (var i = 0; i < count; i++) scored[i].city],
@@ -199,7 +198,7 @@ class CityDirectory {
   }
 
   /// True when [q] matches the start of any whitespace-separated word.
-  /// Allocation-free: scans [text] with [indexOf] instead of building
+  /// Allocation-free: scans [text] with `indexOf` instead of building
   /// padded copies (`(' $text ').contains(' $q')`) per entry per keystroke.
   static bool _wordStarts(String text, String q) {
     if (q.length > text.length) return false;

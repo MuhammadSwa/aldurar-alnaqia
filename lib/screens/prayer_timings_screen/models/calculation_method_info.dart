@@ -4,14 +4,14 @@ import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart'
     show PrayerMethods;
 
 class CalculationMethodInfo {
-  final String
-      key; // These keys MUST match adhan_dart's CalculationMethod names
-  final String arabicName;
 
   const CalculationMethodInfo({
     required this.key,
     required this.arabicName,
   });
+  final String
+      key; // These keys MUST match adhan_dart's CalculationMethod names
+  final String arabicName;
 
   static const List<CalculationMethodInfo> methods = [
     // Keys MUST match [PrayerMethods] (the cross-platform contract).

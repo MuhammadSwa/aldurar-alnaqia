@@ -4,7 +4,7 @@ import 'package:aldurar_alnaqia/common/helpers/arabic.dart'
     show normalizeArabic;
 import 'package:aldurar_alnaqia/models/azkar_models.dart' show zikrIdForTitle;
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Titles that should lead results for common names which imply related azkar.
 ///
@@ -172,9 +172,6 @@ List<String> filterAndRankSuggestions(String query, List<String> suggestions) {
 }
 
 class SearchWidget extends StatefulWidget {
-  final Function(String)? onSearch;
-  final String? hintText;
-  final List<String>? suggestions;
 
   const SearchWidget({
     super.key,
@@ -182,6 +179,9 @@ class SearchWidget extends StatefulWidget {
     this.hintText = 'Search...',
     this.suggestions,
   });
+  final void Function(String)? onSearch;
+  final String? hintText;
+  final List<String>? suggestions;
 
   @override
   State<SearchWidget> createState() => _SearchWidgetState();
@@ -194,19 +194,20 @@ class _SearchWidgetState extends State<SearchWidget> {
   void _showSearchModal() {
     // Clear previous text before showing modal if desired, or manage state differently
     _controller.clear(); // clear text each time modal opens
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SearchModal(
-        controller: _controller,
-        focusNode: _focusNode,
-        onSearch: widget.onSearch,
-        hintText: widget.hintText,
-        suggestions: widget.suggestions,
-      ),
-    );
+    
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => SearchModal(
+          controller: _controller,
+          focusNode: _focusNode,
+          onSearch: widget.onSearch,
+          hintText: widget.hintText,
+          suggestions: widget.suggestions,
+        ),
+      );
   }
 
   @override
@@ -227,20 +228,18 @@ class _SearchWidgetState extends State<SearchWidget> {
 }
 
 class SearchModal extends StatefulWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final Function(String)? onSearch;
-  final String? hintText;
-  final List<String>? suggestions;
 
   const SearchModal({
-    super.key,
-    required this.controller,
-    required this.focusNode,
+    required this.controller, required this.focusNode, super.key,
     this.onSearch,
     this.hintText,
     this.suggestions,
   });
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final void Function(String)? onSearch;
+  final String? hintText;
+  final List<String>? suggestions;
 
   @override
   State<SearchModal> createState() => _SearchModalState();
@@ -309,7 +308,7 @@ class _SearchModalState extends State<SearchModal> {
     final normalizedQuery = _normalizeArabic(trimmedQuery.toLowerCase());
 
     // Find a suggestion that is an exact match to the query (after normalization)
-    final String matchingSuggestion = widget.suggestions!.firstWhere(
+    final matchingSuggestion = widget.suggestions!.firstWhere(
       (suggestion) =>
           _normalizeArabic(suggestion.toLowerCase()) == normalizedQuery,
       orElse: () => '', // Return an empty string if no match is found
@@ -377,9 +376,8 @@ class _SearchModalState extends State<SearchModal> {
       top: false,
       left: false,
       right: false,
-      bottom: true,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 7.0, sigmaY: 7.0),
+        filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
         child: Container(
           height: sheetHeight,
           decoration: BoxDecoration(
@@ -420,13 +418,6 @@ class _SearchModalState extends State<SearchModal> {
 }
 
 class _SearchTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final String? hintText;
-  final ValueChanged<String> onSubmitted;
-  final VoidCallback onCancel;
-  final Color onSurface;
-  final Color onSurfaceVariant;
 
   const _SearchTextField({
     required this.controller,
@@ -437,6 +428,13 @@ class _SearchTextField extends StatelessWidget {
     required this.onSurface,
     required this.onSurfaceVariant,
   });
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String? hintText;
+  final ValueChanged<String> onSubmitted;
+  final VoidCallback onCancel;
+  final Color onSurface;
+  final Color onSurfaceVariant;
 
   @override
   Widget build(BuildContext context) {
@@ -480,13 +478,13 @@ class _SearchTextField extends StatelessWidget {
 }
 
 class _SuggestionsList extends StatelessWidget {
-  final List<String> suggestions;
-  final ValueChanged<String> onTap;
 
   const _SuggestionsList({
     required this.suggestions,
     required this.onTap,
   });
+  final List<String> suggestions;
+  final ValueChanged<String> onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -512,17 +510,17 @@ class _SuggestionsList extends StatelessWidget {
 }
 
 class _SearchEmptyState extends StatelessWidget {
-  /// True when suggestions were provided (query mode); false when there is
-  /// no search context (suggestions null/empty).
-  final bool hasQuery;
-  final String queryText;
-  final Color onSurfaceVariant;
 
   const _SearchEmptyState({
     required this.hasQuery,
     required this.queryText,
     required this.onSurfaceVariant,
   });
+  /// True when suggestions were provided (query mode); false when there is
+  /// no search context (suggestions null/empty).
+  final bool hasQuery;
+  final String queryText;
+  final Color onSurfaceVariant;
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,9 @@
 import 'package:aldurar_alnaqia/common/widgets/settings_card.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/screens/settings_screen/setting_popup_tile.dart';
-import 'package:flutter/material.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:aldurar_alnaqia/widgets/stream_download_dialog.dart' show StreamOrDownloadDialog;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Drawer setting that controls what happens when the user opens a file
 /// (audio or book) that is not downloaded yet.

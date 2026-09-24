@@ -1,4 +1,4 @@
-package com.dorar.yosriya
+package com.aldurar.alnaqia
 
 import android.app.AlarmManager
 import android.app.Notification
@@ -56,7 +56,7 @@ class PrayerNotificationService : Service() {
     const val ARRIVAL_NOTIFICATION_ID = 989
 
     private const val ALARM_REQUEST_CODE = 990
-    private const val ACTION_ALARM_TRIGGER = "com.dorar.yosriya.PRAYER_ALARM_TRIGGER"
+    private const val ACTION_ALARM_TRIGGER = "com.aldurar.alnaqia.PRAYER_ALARM_TRIGGER"
 
     private const val PREFS_FILE = "FlutterSharedPreferences"
     private const val KEY_CONFIG = "flutter.prayer_native_config"

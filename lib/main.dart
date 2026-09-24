@@ -1,44 +1,36 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
-import 'package:aldurar_alnaqia/common/helpers/arabic_back_material_localizations.dart';
+import 'package:aldurar_alnaqia/audio/audio_controller.dart';
+import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
+import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
 import 'package:aldurar_alnaqia/router/app_router.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart' show RoutePaths;
-import 'package:aldurar_alnaqia/services/shared_prefs.dart';
-import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
-import 'package:audio_service/audio_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
-import 'package:aldurar_alnaqia/audio/audio_controller.dart';
-import 'package:aldurar_alnaqia/audio/audio_engine.dart';
-import 'package:aldurar_alnaqia/audio/audio_handler.dart';
-import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
-import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:aldurar_alnaqia/services/storage_service.dart';
+import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:just_audio_background/just_audio_background.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
 
 Future<ProviderContainer> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Media notification + background audio (mobile). Requires the
-  // audio_service entries in AndroidManifest.xml and the iOS audio
-  // background mode.
-  NarrationAudioHandler? audioHandler;
+  // Media notification + background audio (mobile). just_audio_background
+  // drives the native audio_service infrastructure already configured
+  // (AndroidManifest service entry, iOS background mode) — no platform
+  // changes required.
   if (AppPlatform.isMobile) {
-    audioHandler = await AudioService.init(
-      builder: () => NarrationAudioHandler(),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId:
-            'com.example.aldurar_alnaqia.channel.audio',
-        androidNotificationChannelName: 'تشغيل الصوت',
-        androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
-      ),
+    await JustAudioBackground.init(
+      androidNotificationChannelId:
+          'com.example.aldurar_alnaqia.channel.audio',
+      androidNotificationChannelName: 'تشغيل الصوت',
+      androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
     );
-    await NarrationAudioHandler.configureAudioSession();
   }
 
   await SharedPreferencesService().init();
@@ -50,20 +42,8 @@ Future<ProviderContainer> _bootstrap() async {
   final container = ProviderContainer(
     overrides: [
       storageProvider.overrideWithValue(await StorageService().init()),
-      if (audioHandler != null)
-        audioEngineProvider.overrideWithValue(
-          JustAudioEngine(notifications: audioHandler),
-        ),
     ],
   );
-
-  // Notification X / swipe-away stops through the controller, so the mini
-  // player hides in sync (the controller never infers "closed" from raw
-  // player-idle events — those also surface mid-skip).
-  if (audioHandler != null) {
-    audioHandler.onExternalStop =
-        () => container.read(audioProvider.notifier).stopPlayer();
-  }
 
   return container;
 }
@@ -112,12 +92,40 @@ bool _isAllowedNotificationRoute(String route) {
       route.startsWith('${RoutePaths.downloadManager}/');
 }
 
+/// Stops audio when the OS removes the app (swiped from recents).
+///
+/// The old `audio_service` handler did this natively via `onTaskRemoved`;
+/// `just_audio_background` keeps playing instead (music-app behavior), so
+/// without this the narration would continue headless with no UI left.
+/// Only [AppLifecycleState.detached] triggers a stop — `paused`/`hidden`/
+/// `inactive` must not, or background playback with the screen off would
+/// break. Detached fires while method channels are still alive, so the
+/// fire-and-forget stop reliably reaches the player before teardown.
+class AudioDetachObserver with WidgetsBindingObserver {
+  AudioDetachObserver(this._stop);
+
+  final Future<void> Function() _stop;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      unawaited(_stop());
+    }
+  }
+}
+
 class _MyAppState extends ConsumerState<MyApp> {
+  final GoRouter _router = AppRouter.createRouter();
   StreamSubscription<String>? _routeSub;
+  late final AudioDetachObserver _detachObserver;
 
   @override
   void initState() {
     super.initState();
+    _detachObserver = AudioDetachObserver(
+      () => ref.read(audioProvider.notifier).stopPlayer(),
+    );
+    WidgetsBinding.instance.addObserver(_detachObserver);
     // The native prayer notification asks us to navigate when the user taps
     // it (cold start included — Android buffers the tap until we're ready).
     // Only allow known in-app locations; anything else is ignored so a
@@ -128,37 +136,33 @@ class _MyAppState extends ConsumerState<MyApp> {
         logWarn('Ignoring notification route: $route');
         return;
       }
-      ref.read(appRouterProvider).go(route);
+      _router.go(route);
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(_detachObserver);
     unawaited(_routeSub?.cancel());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final router = ref.watch(appRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
     final fontSize = ref.watch(fontSizeProvider);
     return MaterialApp.router(
-      routerConfig: router,
-      // Single-override: keep default (English) Material strings but show
-      // "رجوع" on the automatic AppBar back-button long-press.
-      // (First delegate wins for MaterialLocalizations; framework defaults
-      // are appended automatically after this.)
-      localizationsDelegates: const [
-        ArabicBackMaterialLocalizationsDelegate(),
-      ],
-      builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: child!,
-      ),
+      routerConfig: _router,
+      restorationScopeId: 'app',
+      //
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      //
       scrollBehavior: AppScrollBehavior(),
       title: 'الدرر النقية',
       debugShowCheckedModeBanner: false,
+      //
       theme: AppTheme.light(fontSize: fontSize),
       darkTheme: AppTheme.dark(fontSize: fontSize),
       themeMode: themeMode,

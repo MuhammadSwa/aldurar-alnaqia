@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart' show BookmarkButton;
+import 'package:material_ui/material_ui.dart';
 
 /// A modern outlined tile styled after variation 5 (`V5Outlined`)
 /// from `tile_separator_lab_screen.dart`.
@@ -11,8 +12,7 @@ import 'package:flutter/material.dart';
 /// - Consistent 6px spacing between adjacent tiles when default margin is used.
 class AppTile extends StatefulWidget {
   const AppTile({
-    super.key,
-    required this.title,
+    required this.title, super.key,
     this.subtitle,
     this.leading,
     this.trailing,
@@ -169,8 +169,7 @@ class _AppTileState extends State<AppTile> {
 /// border radius of [BookmarkButton], for non-bookmark tiles (e.g. today's zikrs).
 class AppTileLeadingIcon extends StatelessWidget {
   const AppTileLeadingIcon({
-    super.key,
-    required this.icon,
+    required this.icon, super.key,
     this.color,
     this.backgroundColor,
     this.size = 20,

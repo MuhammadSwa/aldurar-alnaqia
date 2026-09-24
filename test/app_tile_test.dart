@@ -5,9 +5,9 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/bookmark_button.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

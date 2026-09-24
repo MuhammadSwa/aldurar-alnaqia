@@ -1,14 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/timezone.dart' as tz;
-
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/city_directory.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/location_timezone.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/models/city.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// Thin Riverpod glue over [PrayerRepository]. Holds no prayer data itself:
 /// one stored config plus derived values. See `prayer_repository.dart` for
@@ -22,10 +21,10 @@ import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 /// saved alongside them ('القاهرة، مصر'). Single writer:
 /// [savePrayerSettings] publishes through [PrayerConfigNotifier.publish].
 class PrayerConfig {
-  final PrayerSettings settings;
-  final String cityLabel;
 
   const PrayerConfig({required this.settings, required this.cityLabel});
+  final PrayerSettings settings;
+  final String cityLabel;
 }
 
 class PrayerConfigNotifier extends Notifier<PrayerConfig> {
@@ -57,12 +56,6 @@ final prayerNudgeProvider =
 /// separate loading state; prefs and the tz database are ready before
 /// `runApp`, so a null view unambiguously means "no saved location").
 class PrayerView {
-  final PrayerSettings settings;
-  final PrayerSchedule schedule;
-  final PrayerEvent next;
-  final int weekday;
-  final tz.TZDateTime today;
-  final String cityLabel;
 
   const PrayerView({
     required this.settings,
@@ -72,36 +65,36 @@ class PrayerView {
     required this.today,
     required this.cityLabel,
   });
+  final PrayerSettings settings;
+  final PrayerSchedule schedule;
+  final PrayerEvent next;
+  final int weekday;
+  final tz.TZDateTime today;
+  final String cityLabel;
 }
 
 final prayerViewProvider = Provider<PrayerView?>((ref) {
   ref.watch(prayerNudgeProvider);
   final config = ref.watch(prayerConfigProvider);
   final settings = config.settings;
-  if (settings.validate() != null) return null;
-  final repo = PrayerRepository.instance;
-  final location = _zoneOf(settings);
+  final location = settings.locationOrNull;
   if (location == null) return null;
+  final repo = PrayerRepository.instance;
   final now = tz.TZDateTime.now(location);
   final schedule = repo.scheduleFor(settings, now);
-  if (schedule == null) return null;
+  // Single derivation path: the countdown reads the same `nextAt`, so the
+  // view and the ticker can never disagree. Cache hit — no extra calculation.
+  final next = repo.nextAt(settings, now);
+  if (schedule == null || next == null) return null;
   return PrayerView(
     settings: settings,
     schedule: schedule,
-    next: schedule.nextEventAt(now),
+    next: next,
     weekday: repo.weekdayAt(settings, now),
     today: now,
     cityLabel: config.cityLabel,
   );
 });
-
-tz.Location? _zoneOf(PrayerSettings settings) {
-  try {
-    return tz.getLocation(settings.timezone);
-  } catch (_) {
-    return null;
-  }
-}
 
 /// Owns the single one-shot boundary timer. On fire it bumps the version so
 /// derived providers re-evaluate; [poke] does the same when the countdown

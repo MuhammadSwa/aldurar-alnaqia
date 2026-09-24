@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Determines the current position of the device.
 ///
@@ -48,16 +48,15 @@ Future<Position> determinePosition() async {
 
   // When we reach here, permissions are granted and we can
   // continue accessing the position of the device.
-  return await Geolocator.getCurrentPosition();
+  return Geolocator.getCurrentPosition();
 }
 
 class LocationButtonWidget extends StatefulWidget {
   const LocationButtonWidget({
-    super.key,
-    required this.onGettingLocation,
+    required this.onGettingLocation, super.key,
     this.hasLocation = false,
   });
-  final Function({required String latitude, required String longitude})
+  final void Function({required String latitude, required String longitude})
       onGettingLocation;
   final bool hasLocation;
   @override
@@ -71,9 +70,10 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
     required VoidCallback onOpenSettings,
   }) {
     if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) {
+    
+      showDialog<void>(
+        context: context,
+        builder: (context) {
         final theme = Theme.of(context);
         final buttonStyle = TextButton.styleFrom(
           textStyle: theme.textTheme.bodyMedium,
@@ -111,11 +111,11 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
             ),
           ],
         );
-      },
-    );
+        },
+      );
   }
 
-  void getLocation() async {
+  Future<void> getLocation() async {
     setState(() {
       _isLoading = true;
     });
@@ -149,13 +149,12 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
       // Case 3: Any other unexpected error.
       else {
         if (!mounted) return;
-        unawaited(
-          showDialog(
+        
+          showDialog<void>(
             context: context,
             builder: (builder) =>
                 const AlertWidget(msg: 'حدث خطأ غير متوقع أثناء تحديد الموقع.'),
-          ),
-        );
+          );
       }
     } finally {
       if (mounted) {
@@ -186,16 +185,17 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
       ),
       onPressed: () {
         if (AppPlatform.isLinux) {
-          showDialog(
-            context: context,
-            builder: (builder) => const AlertWidget(
-              msg: 'خاصية التحديد التلقائي للإحداثيات غير مدعومة في لينكس',
-            ),
-          );
+          
+            showDialog<void>(
+              context: context,
+              builder: (builder) => const AlertWidget(
+                msg: 'خاصية التحديد التلقائي للإحداثيات غير مدعومة في لينكس',
+              ),
+            );
           return;
         }
         if (!_isLoading) {
-          getLocation();
+          unawaited(getLocation());
         }
       },
     );
@@ -204,13 +204,17 @@ class _LocationButtonWidgetState extends State<LocationButtonWidget> {
 
 // Your AlertWidget for generic messages
 class AlertWidget extends StatelessWidget {
-  const AlertWidget({super.key, required this.msg});
+  const AlertWidget({required this.msg, super.key});
   final String msg;
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      content: Text(msg, textAlign: TextAlign.center),
+      content: Text(
+        msg,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),

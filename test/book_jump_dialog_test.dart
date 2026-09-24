@@ -1,7 +1,7 @@
 import 'package:aldurar_alnaqia/screens/library_screen/book_temp_loader.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_jump_dialog.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   /// Pumps a screen with an "open" button that shows the dialog, taps it,
@@ -48,7 +48,7 @@ void main() {
   group('showBookJumpDialog', () {
     testWidgets('prefills the current page and hints the valid range',
         (tester) async {
-      final pending = await openDialog(tester, currentPage: 3, total: 100);
+      final pending = await openDialog(tester);
 
       expect(find.widgetWithText(TextField, '3'), findsOneWidget);
       expect(find.text('من 1 إلى 100'), findsOneWidget);

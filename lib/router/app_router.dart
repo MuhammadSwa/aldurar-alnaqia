@@ -1,31 +1,23 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
-import 'package:aldurar_alnaqia/router/app_routes.dart';
-import 'package:aldurar_alnaqia/widgets/collection_screens.dart';
-import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
-import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
-import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
-import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
-import 'package:aldurar_alnaqia/screens/awrad_list_screen/awrad_list_screen.dart';
-import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
-import 'package:aldurar_alnaqia/screens/library_screen/book_viewer_screen.dart';
-import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
-import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
-import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart'
     show islamicWeekdayNow;
-
-/// Provides the app-wide [GoRouter]. The app always starts at home;
-/// notification taps navigate via `go()` after startup.
-final appRouterProvider = Provider<GoRouter>((ref) {
-  return AppRouter.createRouter();
-});
+import 'package:aldurar_alnaqia/router/app_routes.dart';
+import 'package:aldurar_alnaqia/screens/awrad_list_screen/awrad_list_screen.dart';
+import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
+import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/book_viewer_screen.dart';
+import 'package:aldurar_alnaqia/screens/library_screen/library_screen.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_screen.dart';
+import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
+import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
+import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
+import 'package:aldurar_alnaqia/widgets/collection_screens.dart';
+import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
+import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
+import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -33,20 +25,30 @@ final GlobalKey<NavigatorState> _rootNavigatorKey =
 class AppRouter {
   AppRouter._();
 
+  /// Creates the app-wide [GoRouter]. The app always starts at home;
+  /// notification taps navigate via `go()` after startup.
   static GoRouter createRouter() {
     return GoRouter(
       initialLocation: RoutePaths.home,
       debugLogDiagnostics: kDebugMode,
       navigatorKey: _rootNavigatorKey,
+      restorationScopeId: 'router',
       routes: [
-        // Standalone routes (not in bottom nav)
+        // Standalone fullscreen routes (above the bottom-nav shell, so
+        // they take the full screen with no NavigationBar).
         _createSocialRoute(),
         _createDownloadManagerRoute(),
+        _createPdfViewerRoute(),
 
         // Bottom navigation shell with main tabs
         StatefulShellRoute.indexedStack(
-          builder: (context, state, navigationShell) {
-            return MainWrapper(navigationShell: navigationShell);
+          restorationScopeId: 'appShell',
+          pageBuilder: (context, state, navigationShell) {
+            return MaterialPage(
+              key: state.pageKey,
+              restorationId: 'appShellPage',
+              child: MainWrapper(navigationShell: navigationShell),
+            );
           },
           branches: [
             _createHomeBranch(),
@@ -72,8 +74,7 @@ class AppRouter {
     return GoRoute(
       path: '${RoutePaths.downloadManager}/:index',
       builder: (context, state) {
-        final index =
-            int.tryParse(state.pathParameters['index'] ?? '') ?? 0;
+        final index = int.tryParse(state.pathParameters['index'] ?? '') ?? 0;
         final safeIndex = index.clamp(0, 1);
         return DownloadManagerPage(initialIndex: safeIndex);
       },
@@ -84,6 +85,7 @@ class AppRouter {
 
   static StatefulShellBranch _createHomeBranch() {
     return StatefulShellBranch(
+      restorationScopeId: 'homeBranch',
       routes: [
         GoRoute(
           path: RoutePaths.home,
@@ -102,6 +104,7 @@ class AppRouter {
 
   static StatefulShellBranch _createPrayerTimingsBranch() {
     return StatefulShellBranch(
+      restorationScopeId: 'timingsBranch',
       routes: [
         GoRoute(
           path: RoutePaths.timings,
@@ -126,6 +129,8 @@ class AppRouter {
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
           const PrayerTimingsSettingsScreen(),
+          key: state.pageKey,
+          restorationId: 'timingsSettings',
         );
       },
     );
@@ -133,6 +138,7 @@ class AppRouter {
 
   static StatefulShellBranch _createAwradBranch() {
     return StatefulShellBranch(
+      restorationScopeId: 'awradBranch',
       routes: [
         GoRoute(
           path: RoutePaths.awrad,
@@ -151,14 +157,12 @@ class AppRouter {
 
   static StatefulShellBranch _createLibraryBranch() {
     return StatefulShellBranch(
+      restorationScopeId: 'libraryBranch',
       routes: [
         GoRoute(
           path: RoutePaths.library,
           name: RouteNames.library,
           builder: (context, state) => const LibraryScreen(),
-          routes: [
-            _createPdfViewerRoute(),
-          ],
         ),
       ],
     );
@@ -180,9 +184,14 @@ class AppRouter {
             branch: ZikrBranch.home,
             detailPagePrefix: RouteNames.todayZikrPagePrefix,
           ),
+          key: state.pageKey,
+          restorationId: 'todayZikr',
         );
       },
-      routes: [_createZikrPageRoute(ZikrBranch.home, pagePrefix: RouteNames.todayZikrPagePrefix)],
+      routes: [
+        _createZikrPageRoute(ZikrBranch.home,
+            pagePrefix: RouteNames.todayZikrPagePrefix)
+      ],
     );
   }
 
@@ -193,6 +202,8 @@ class AppRouter {
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
           WeekCollectionScreen(branch: branch),
+          key: state.pageKey,
+          restorationId: 'weekCollection-${branch.name}',
         );
       },
       routes: _createDayCollectionRoutes(branch),
@@ -211,6 +222,8 @@ class AppRouter {
               branch: branch,
               detailPagePrefix: pagePrefix,
             ),
+            key: state.pageKey,
+            restorationId: 'dayCollection-${branch.name}-$index',
           );
         },
         routes: [
@@ -237,6 +250,8 @@ class AppRouter {
             collectionId: collection?.id ?? collectionId,
             zikrIds: zikrIds,
           ),
+          key: state.pageKey,
+          restorationId: 'zikrCollection-${branch.name}',
         );
       },
       routes: [
@@ -253,12 +268,17 @@ class AppRouter {
     required String pagePrefix,
   }) {
     return GoRoute(
+      // Keep the branch's URL and back stack, but render the reader above
+      // the shell just like the PDF viewer. This removes NavigationBar while
+      // preserving the shell underneath for a normal back navigation.
+      parentNavigatorKey: _rootNavigatorKey,
       path: RoutePaths.zikrSegment,
       name: RouteNames.zikrPage(pagePrefix),
       pageBuilder: (context, state) {
         final zikrId = state.pathParameters['zikr']!;
 
-        final (zikrIds, index) = _parseZikrExtras(state.extra);
+        final (zikrIds, index) =
+            _resolveSwipeContext(state.extra, state.uri, zikrId);
 
         // When opened from a list with swipe context (ids + index),
         // always go through the slidable screen — even for special
@@ -270,7 +290,15 @@ class AppRouter {
             index >= 0 &&
             index < zikrIds.length) {
           return RouteTransitions.slideTransition(
-            ZikrScreen(zikrId: zikrId, zikrIds: zikrIds, index: index),
+            AudioMiniPlayerOverlay(
+              child: ZikrScreen(
+                zikrId: zikrId,
+                zikrIds: zikrIds,
+                index: index,
+              ),
+            ),
+            key: state.pageKey,
+            restorationId: 'zikrPage-$pagePrefix',
           );
         }
 
@@ -278,14 +306,30 @@ class AppRouter {
         // e.g. opened from search or a deep link).
         final resolved = resolveZikr(zikrId);
         if (resolved?.kind == ZikrKind.hilyaNasab) {
-          return RouteTransitions.slideTransition(const HeliaNasabScreen());
+          return RouteTransitions.slideTransition(
+            const AudioMiniPlayerOverlay(child: HeliaNasabScreen()),
+            key: state.pageKey,
+            restorationId: 'zikrPage-$pagePrefix-hilya',
+          );
         }
         if (resolved?.kind == ZikrKind.tareeqaSanad) {
-          return RouteTransitions.slideTransition(const TareeqaSanadScreen());
+          return RouteTransitions.slideTransition(
+            const AudioMiniPlayerOverlay(child: TareeqaSanadScreen()),
+            key: state.pageKey,
+            restorationId: 'zikrPage-$pagePrefix-sanad',
+          );
         }
 
         return RouteTransitions.slideTransition(
-          ZikrScreen(zikrId: zikrId, zikrIds: zikrIds, index: index),
+          AudioMiniPlayerOverlay(
+            child: ZikrScreen(
+              zikrId: zikrId,
+              zikrIds: zikrIds,
+              index: index,
+            ),
+          ),
+          key: state.pageKey,
+          restorationId: 'zikrPage-$pagePrefix',
         );
       },
     );
@@ -293,18 +337,28 @@ class AppRouter {
 
   static GoRoute _createHeliaNasabRoute() {
     return GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
       path: 'heliaNasab',
       name: RouteNames.heliaNasab,
       pageBuilder: (context, state) {
-        return RouteTransitions.slideTransition(const HeliaNasabScreen());
+        return RouteTransitions.slideTransition(
+          const AudioMiniPlayerOverlay(child: HeliaNasabScreen()),
+          key: state.pageKey,
+          restorationId: 'heliaNasab',
+        );
       },
     );
   }
 
+  /// Fullscreen reader (uses AppPdfView): kept at the root level — not
+  /// nested in the bottom-nav shell — so the book takes the full screen
+  /// with no NavigationBar. The URL stays `/library/pdfViewer/:bookId` so
+  /// existing deep links and AppRoutes.pdfViewerPath keep working.
   static GoRoute _createPdfViewerRoute() {
     return GoRoute(
-      path: 'pdfViewer/:bookId',
+      path: '${RoutePaths.library}/pdfViewer/:bookId',
       name: RouteNames.pdfViewer,
+      parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
         final bookId = state.pathParameters['bookId']!;
         return BookViewerScreen(bookId: bookId);
@@ -312,13 +366,38 @@ class AppRouter {
     );
   }
 
-  /// Typed extras for zikr detail pages. All navigation goes through
-  /// [ZikrRouteExtra]; anything else carries no swipe context.
-  static (List<String>?, int?) _parseZikrExtras(Object? extra) {
+  /// Swipe context for zikr detail pages. Fast path is the typed
+  /// [ZikrRouteExtra]; when that is gone (OS process death — `extra` is
+  /// not serialized, only the URL is), fall back to the `ids`+`i` query
+  /// params written by [ZikrDetailTarget.go]. Anything unparseable or
+  /// inconsistent carries no swipe context.
+  static (List<String>?, int?) _resolveSwipeContext(
+    Object? extra,
+    Uri uri,
+    String zikrId,
+  ) {
     if (extra is ZikrRouteExtra) {
       return (extra.zikrIds, extra.index);
     }
-    return (null, null);
+    final rawIds = uri.queryParameters['ids'];
+    final rawIndex = uri.queryParameters['i'];
+    if (rawIds == null || rawIds.isEmpty || rawIndex == null) {
+      return (null, null);
+    }
+    // Guard against hand-crafted deep links with huge payloads.
+    if (rawIds.length > 4000) return (null, null);
+    final ids = rawIds.split(',').where((s) => s.isNotEmpty).toList();
+    final index = int.tryParse(rawIndex);
+    if (ids.isEmpty ||
+        ids.length > 200 ||
+        index == null ||
+        index < 0 ||
+        index >= ids.length) {
+      return (null, null);
+    }
+    // The list must describe the page being opened, not a foreign list.
+    if (ids[index] != zikrId) return (null, null);
+    return (ids, index);
   }
 }
 
@@ -327,8 +406,14 @@ class AppRouter {
 class RouteTransitions {
   RouteTransitions._();
 
-  static CustomTransitionPage<Widget> slideTransition(Widget child) {
+  static CustomTransitionPage<Widget> slideTransition(
+    Widget child, {
+    required LocalKey key,
+    String? restorationId,
+  }) {
     return CustomTransitionPage<Widget>(
+      key: key,
+      restorationId: restorationId,
       child: child,
       transitionsBuilder: _slideTransition,
     );
@@ -342,7 +427,7 @@ class RouteTransitions {
   ) {
     return SlideTransition(
       position: Tween<Offset>(
-        begin: const Offset(1.0, 0.0),
+        begin: const Offset(1, 0),
         end: Offset.zero,
       ).animate(
         CurvedAnimation(
