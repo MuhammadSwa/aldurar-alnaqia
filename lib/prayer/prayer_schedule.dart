@@ -148,7 +148,25 @@ class PrayerSettings {
   final String highLatitudeRule;
 
   /// Null when valid, otherwise a human-readable reason. Never throws.
+  /// The "why invalid" entry point (logging, tests); the hot path before
+  /// calculating is [locationOrNull]. Pure checks run first, the tz-database
+  /// lookup last, so a cheap answer never pays for I/O.
   String? validate() {
+    final basic = _basicReason;
+    if (basic != null) return basic;
+    try {
+      tz.getLocation(timezone);
+    } catch (_) {
+      return 'unknown timezone "$timezone"';
+    }
+    return null;
+  }
+
+  /// Pure checks that need no tz database: coordinates, the (0, 0)
+  /// "no location selected" sentinel, empty zone, method/madhab/rule.
+  /// Shared by [validate] and [locationOrNull] so the zone is resolved
+  /// exactly once per call instead of twice.
+  String? get _basicReason {
     if (!latitude.isFinite ||
         !longitude.isFinite ||
         latitude < -90 ||
@@ -160,11 +178,6 @@ class PrayerSettings {
     // (0, 0) is the "no location selected" sentinel.
     if (latitude == 0.0 && longitude == 0.0) return 'no location selected';
     if (timezone.isEmpty) return 'missing timezone';
-    try {
-      tz.getLocation(timezone);
-    } catch (_) {
-      return 'unknown timezone "$timezone"';
-    }
     if (!PrayerMethods.isValid(method)) return 'unknown method "$method"';
     if (!PrayerMadhabs.isValid(madhab)) return 'unknown madhab "$madhab"';
     if (!PrayerHighLatitudeRules.isValid(highLatitudeRule)) {
@@ -173,13 +186,11 @@ class PrayerSettings {
     return null;
   }
 
-  bool get isValid => validate() == null;
-
-  /// Resolved zone, or null when unconfigured/invalid. Single place for the
-  /// validate + `getLocation` pairing previously duplicated across the
-  /// repository, providers, and prefs bridges. Never throws.
+  /// Resolved zone, or null when unconfigured/invalid. The "ready to
+  /// compute" check used by the repository and providers — prefer it over
+  /// [validate] whenever the zone is needed next anyway. Never throws.
   tz.Location? get locationOrNull {
-    if (validate() != null) return null;
+    if (_basicReason != null) return null;
     try {
       return tz.getLocation(timezone);
     } catch (_) {

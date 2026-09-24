@@ -7,7 +7,6 @@ import 'package:aldurar_alnaqia/prayer/prayer_schedule.dart';
 import 'package:aldurar_alnaqia/router/app_routes.dart';
 import 'package:aldurar_alnaqia/router/nav_helpers.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/azkar_list_view_widget.dart';
 import 'package:aldurar_alnaqia/widgets/azkar_list_view/zikr_list_view_tile_widget.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show rootScaffoldKey;
 import 'package:aldurar_alnaqia/widgets/search_widget.dart';
@@ -222,66 +221,66 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bookmarks = ref.watch(bookmarksProvider);
 
-    // see if a bookmark is collection or orphan
-    final collectionIds = <String>[];
-    final orphanIds = <String>[];
-    final azkarOfDays = <int>[];
-    var weekAzkarBookmarked = false;
+    if (bookmarks.isEmpty) {
+      return const SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Column(children: [EmptyBookmarks()]),
+      );
+    }
 
+    // Swipe context for individual zikrs: bookmark order, filtered to
+    // non-collection ids so detail pages still swipe across bookmarked
+    // zikrs only.
+    final orphanIds = <String>[];
     for (final bookmark in bookmarks) {
-      final day = _dayFromBookmark(bookmark);
-      if (day != null) {
-        azkarOfDays.add(day);
-      } else if (bookmark == weekCollectionBookmarkId) {
-        weekAzkarBookmarked = true;
-      } else if (collectionById.containsKey(bookmark)) {
-        collectionIds.add(bookmark);
-      } else {
-        orphanIds.add(bookmark);
-      }
+      if (_dayFromBookmark(bookmark) != null) continue;
+      if (bookmark == weekCollectionBookmarkId) continue;
+      if (collectionById.containsKey(bookmark)) continue;
+      orphanIds.add(bookmark);
+    }
+    final orphanIndexById = <String, int>{};
+    for (var i = 0; i < orphanIds.length; i++) {
+      orphanIndexById.putIfAbsent(orphanIds[i], () => i);
     }
 
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
       child: Column(
         children: [
-          if (weekAzkarBookmarked) ...{
-            const ZikrListViewTile(
-              zikrId: weekCollectionBookmarkId,
-              title: 'أوراد الأسبوع',
-              target: WeekCollectionTarget(ZikrBranch.home),
-            ),
-          },
-          if (bookmarks.isNotEmpty) ...{
-            for (final day in azkarOfDays) ...{
+          // Strict bookmark order: collections and individual zikrs (as
+          // well as week/day wirds) interleave by bookmark time.
+          for (final bookmark in bookmarks) ...{
+            final day = _dayFromBookmark(bookmark);
+            if (bookmark == weekCollectionBookmarkId)
+              const ZikrListViewTile(
+                zikrId: weekCollectionBookmarkId,
+                title: 'أوراد الأسبوع',
+                target: WeekCollectionTarget(ZikrBranch.home),
+              )
+            else if (day != null)
               ZikrListViewTile(
-                zikrId: dayWirdBookmarkId(day),
+                zikrId: bookmark,
                 title: dayWirdTitles[day],
                 target: DayWirdTarget(ZikrBranch.home, day: day),
+              )
+            else if (collectionById.containsKey(bookmark))
+              ZikrListViewTile(
+                zikrId: bookmark,
+                target: ZikrCollectionViewTarget(
+                  ZikrBranch.home,
+                  collection: bookmark,
+                ),
+              )
+            else
+              ZikrListViewTile(
+                zikrId: bookmark,
+                target: ZikrDetailTarget(
+                  branch: ZikrBranch.home,
+                  zikrId: bookmark,
+                  zikrIds: orphanIds,
+                  index: orphanIndexById[bookmark] ?? 0,
+                ),
               ),
-            },
-            AzkarListViewWidget(
-              zikrIds: collectionIds,
-              barTitle: 'الأذكار',
-              scrollable: false,
-              targetBuilder: (collectionId, index) => ZikrCollectionViewTarget(
-                ZikrBranch.home,
-                collection: collectionId,
-              ),
-            ),
-            AzkarListViewWidget(
-              zikrIds: orphanIds,
-              barTitle: 'الأذكار',
-              scrollable: false,
-              targetBuilder: (zikrId, index) => ZikrDetailTarget(
-                branch: ZikrBranch.home,
-                zikrId: zikrId,
-                zikrIds: orphanIds,
-                index: index,
-              ),
-            ),
-          } else ...{
-            const EmptyBookmarks(),
           },
         ],
       ),
