@@ -2,7 +2,7 @@ name: aldurar_alnaqia
 description: "تطبيق الدرر النقية يحتوى على أوراد الطريقة اليسرية الصديقية الشاذلية"
 publish_to: "none" 
 
-version: 1.0.1+5
+version: 1.0.1+7
 
 environment:
   sdk: ">=3.3.4 <4.0.0"

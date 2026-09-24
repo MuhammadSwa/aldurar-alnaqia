@@ -89,12 +89,18 @@ before any test, or a stale success will look like a fix.
   `permission_handler` / `geolocator` / `just_audio` need higher.
 - **No Podfile — this project uses Swift Package Manager.** Flutter 3.47 uses SPM
   for iOS by default. Do not add CocoaPods.
+- **iOS icon is `ios/Runner/AppIcon.icon` (Icon Composer), not the asset catalog.**
+  It is a Liquid Glass icon, so Clear/Tinted home screens render it as glass.
+  It shares the name `AppIcon` with `Assets.xcassets/AppIcon.appiconset`, and
+  Xcode lets the `.icon` win: it also renders the flat fallback images for
+  iOS 15–25 from it. So `flutter_launcher_icons` no longer changes the iOS
+  icon; edit the `.icon` in Icon Composer instead. Its layers must stay on a
+  transparent background.
 - **App icon must stay opaque.** App Store upload fails with `ITMS-90717` if the
-  1024×1024 icon has an alpha channel. The source `app_logo_cropped.png` is
-  transparent and non-square (649×701), so iOS uses a separate pre-flattened
-  `app_icon_ios.png` via `image_path_ios` + `remove_alpha_ios: true` in
-  `pubspec.yaml`. Android keeps the transparent source for adaptive icons.
-  Re-check with `sips -g hasAlpha` after regenerating icons.
+  1024×1024 icon has an alpha channel. Xcode's renditions from the `.icon` are
+  opaque (check `Opaque` in `xcrun assetutil --info Assets.car`). Android
+  still uses `flutter_launcher_icons` with the transparent
+  `app_logo_cropped.png` for adaptive icons.
 - **`TARGETED_DEVICE_FAMILY = "1,2"`** — ships on iPad, so App Store submission
   needs iPad screenshots and the iPad layout gets reviewed.
 - **Background audio** (`UIBackgroundModes: audio`) needs justifying in App Review
