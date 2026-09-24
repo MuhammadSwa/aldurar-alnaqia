@@ -14,7 +14,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.dorar.yosriya"
+    applicationId = "com.aldurar.alnaqia"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
