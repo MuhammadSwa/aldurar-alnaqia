@@ -28,7 +28,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.dorar.yosriya"
+        // Must match the Google Play listing (com.aldurar.alnaqia). The Kotlin
+        // sources and `namespace` stay on com.dorar.yosriya; AGP resolves the
+        // manifest's relative names (.MainActivity, .BootReceiver) against the
+        // namespace, so they are unaffected.
+        applicationId = "com.aldurar.alnaqia"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Breaking change: minSdk 24 (Android 7.0). Drops API 21-23 so

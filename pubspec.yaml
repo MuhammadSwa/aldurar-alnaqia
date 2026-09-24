@@ -2,7 +2,7 @@ name: aldurar_alnaqia
 description: "تطبيق الدرر النقية يحتوى على أوراد الطريقة اليسرية الصديقية الشاذلية"
 publish_to: "none" 
 
-version: 1.0.0+1
+version: 1.0.1+5
 
 environment:
   sdk: ">=3.3.4 <4.0.0"
@@ -45,12 +45,15 @@ flutter_launcher_icons:
   ios: true
   image_path: "app_logo_cropped.png"
   image_path_android: "app_logo_cropped.png"
+  image_path_ios: "app_icon_ios.png"
+  remove_alpha_ios: true
+  background_color_ios: "#ffffff"
   min_sdk_android: 21 
   web:
     generate: true
     image_path: "app_logo_cropped.png"
-    background_color: "#hexcode"
-    theme_color: "#hexcode"
+    background_color: "#ffffff"
+    theme_color: "#0B6B4F"
   windows:
     generate: true
     image_path: "app_logo_cropped.png"
