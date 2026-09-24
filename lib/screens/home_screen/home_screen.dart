@@ -217,6 +217,46 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
     return null;
   }
 
+  static ZikrListViewTile _tileFor(
+    String bookmark,
+    List<String> orphanIds,
+    Map<String, int> orphanIndexById,
+  ) {
+    if (bookmark == weekCollectionBookmarkId) {
+      return const ZikrListViewTile(
+        zikrId: weekCollectionBookmarkId,
+        title: 'أوراد الأسبوع',
+        target: WeekCollectionTarget(ZikrBranch.home),
+      );
+    }
+    final day = _dayFromBookmark(bookmark);
+    if (day != null) {
+      return ZikrListViewTile(
+        zikrId: bookmark,
+        title: dayWirdTitles[day],
+        target: DayWirdTarget(ZikrBranch.home, day: day),
+      );
+    }
+    if (collectionById.containsKey(bookmark)) {
+      return ZikrListViewTile(
+        zikrId: bookmark,
+        target: ZikrCollectionViewTarget(
+          ZikrBranch.home,
+          collection: bookmark,
+        ),
+      );
+    }
+    return ZikrListViewTile(
+      zikrId: bookmark,
+      target: ZikrDetailTarget(
+        branch: ZikrBranch.home,
+        zikrId: bookmark,
+        zikrIds: orphanIds,
+        index: orphanIndexById[bookmark] ?? 0,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookmarks = ref.watch(bookmarksProvider);
@@ -249,39 +289,8 @@ class BookmarksTilesHomeScreen extends ConsumerWidget {
         children: [
           // Strict bookmark order: collections and individual zikrs (as
           // well as week/day wirds) interleave by bookmark time.
-          for (final bookmark in bookmarks) ...{
-            final day = _dayFromBookmark(bookmark);
-            if (bookmark == weekCollectionBookmarkId)
-              const ZikrListViewTile(
-                zikrId: weekCollectionBookmarkId,
-                title: 'أوراد الأسبوع',
-                target: WeekCollectionTarget(ZikrBranch.home),
-              )
-            else if (day != null)
-              ZikrListViewTile(
-                zikrId: bookmark,
-                title: dayWirdTitles[day],
-                target: DayWirdTarget(ZikrBranch.home, day: day),
-              )
-            else if (collectionById.containsKey(bookmark))
-              ZikrListViewTile(
-                zikrId: bookmark,
-                target: ZikrCollectionViewTarget(
-                  ZikrBranch.home,
-                  collection: bookmark,
-                ),
-              )
-            else
-              ZikrListViewTile(
-                zikrId: bookmark,
-                target: ZikrDetailTarget(
-                  branch: ZikrBranch.home,
-                  zikrId: bookmark,
-                  zikrIds: orphanIds,
-                  index: orphanIndexById[bookmark] ?? 0,
-                ),
-              ),
-          },
+          for (final bookmark in bookmarks)
+            _tileFor(bookmark, orphanIds, orphanIndexById),
         ],
       ),
     );
