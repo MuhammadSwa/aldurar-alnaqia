@@ -108,7 +108,9 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
         appBar: showAppBar
             ? AppBar(title: Text(widget.title), actions: widget.actions)
             : null,
-        body: NotificationListener<ScrollNotification>(
+        body: 
+        SafeArea(child: 
+        NotificationListener<ScrollNotification>(
           onNotification: _handleScroll,
           // Only wrap in a tap detector while immersive. In portrait the
           // content gets no gesture wrapper at all, so nothing competes with
@@ -120,6 +122,7 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
                   child: widget.child,
                 )
               : widget.child,
+        ),
         ),
       ),
     );
