@@ -38,13 +38,8 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
       audioProvider.select((state) => state.isVisible),
     );
     final isPlayerCollapsed = ref.watch(miniPlayerCollapsedProvider);
-    // The player is positioned above the system bottom inset. Match that
-    // inset in the reader body so every kind of content, including PDFs,
-    // can scroll clear of the overlay.
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final playerClearance = !isPlayerVisible
-        ? 0.0
-        : (isPlayerCollapsed ? 52.0 : 154.0) + bottomInset;
+    final playerClearance =
+        !isPlayerVisible ? 0.0 : (isPlayerCollapsed ? 52.0 : 154.0);
 
     return ColoredBox(
       color: backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
