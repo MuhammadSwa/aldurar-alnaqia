@@ -1,23 +1,8 @@
-import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
+import 'package:aldurar_alnaqia/common/reader/pdf_reader_content.dart';
+import 'package:aldurar_alnaqia/common/reader/reader_page.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
-import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dart';
-import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
-import 'package:flutter/services.dart';
+import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart'; // ZikrContentWidget
 import 'package:material_ui/material_ui.dart';
-import 'package:pdfx/pdfx.dart';
-
-/// Opens a bundled PDF via Flutter's asset bundle instead of
-/// `PdfDocument.openAsset`: pdfx resolves that path with Android's
-/// AssetManager directly, which fails on our Arabic filenames
-/// (PdfRendererException: file not found). Loading the bytes in Dart and
-/// using `openData` writes an ASCII temp file and works reliably.
-Future<PdfDocument> _openBundledPdf(String assetPath) {
-  final bytes = rootBundle.load(assetPath).then(
-        (data) =>
-            data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-      );
-  return PdfDocument.openData(bytes);
-}
 
 /// Canonical hilya zikr (asset filename is the Arabic title).
 Zikr get _hilya => zikrById['hilya-nasab']!;
@@ -30,62 +15,9 @@ class HeliaNasabScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final zikr = _hilya;
-    return ZikrReaderScaffold(
-      title: zikr.title,
-      actions: [
-        PlayAudioBtnZikrPage(
-          id: zikr.id,
-          title: zikr.title,
-          url: zikr.url,
-        ),
-      ],
-      child: const HeliaNasabContent(),
-    );
-  }
-}
-
-/// PDF-only body, reusable inside a swipeable [PageView] (no [Scaffold])
-/// so opening Hilya directly still allows sliding to neighbours.
-class HeliaNasabContent extends StatefulWidget {
-  const HeliaNasabContent({super.key});
-
-  @override
-  State<HeliaNasabContent> createState() => _HeliaNasabContentState();
-}
-
-class _HeliaNasabContentState extends State<HeliaNasabContent> {
-  late final PdfControllerPinch _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = PdfControllerPinch(
-      document: _openBundledPdf('assets/pdfs/${_hilya.title}.pdf'),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: AppPdfView(
-        controller: _controller,
-        onTap: () => const ZikrReaderChromeNotification(
-          ZikrReaderChromeAction.toggle,
-        ).dispatch(context),
-        onInteractionStart: (_) => const ZikrReaderChromeNotification(
-          ZikrReaderChromeAction.hide,
-        ).dispatch(context),
-        onScrollbarDrag: () => const ZikrReaderChromeNotification(
-          ZikrReaderChromeAction.hide,
-        ).dispatch(context),
-      ),
+    return ZikrReaderPage(
+      zikr: _hilya,
+      child: PdfReaderContent.asset(zikrPdfAsset(_hilya)),
     );
   }
 }
@@ -95,14 +27,11 @@ class TareeqaSanadScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_sanad.title)),
-      body: const TareeqaSanadContent(),
-    );
+    return ZikrReaderPage(zikr: _sanad, child: const TareeqaSanadContent());
   }
 }
 
-/// PDF + text body, reusable inside a swipeable [PageView] (no [Scaffold]).
+/// PDF + text body, reusable inside a swipeable [PageView] (no Scaffold).
 class TareeqaSanadContent extends StatefulWidget {
   const TareeqaSanadContent({super.key});
 
@@ -111,34 +40,15 @@ class TareeqaSanadContent extends StatefulWidget {
 }
 
 class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
-  PdfControllerPinch? _controller;
+  bool _pdfRequested = false;
   bool _showPdf = false;
-
-  /// Lazily creates the PDF controller on first request, so opening the
-  /// page (which defaults to text) never reads/decodes the manuscript
-  /// until the user taps «المخطوط».
-  void _ensureController() {
-    _controller ??= PdfControllerPinch(
-      document: _openBundledPdf('assets/pdfs/${_sanad.title}.pdf'),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    // NOTE: PdfViewPinch has its own vertical scrollable. It must NOT be
-    // nested inside a SingleChildScrollView (or under another scrollable
-    // like ZikrContentWidget's) — the outer scroll steals the gestures so
-    // the PDF never scrolls and the whole page moves instead. A toggle
-    // shows one scrollable at a time, each with a bounded height, so both
-    // scroll independently. A SegmentedButton is used instead of a
-    // TabBarView to avoid a horizontal-swipe conflict with the outer
-    // SlidableZikrScreen PageView.
+    // NOTE: PdfViewPinch has its own vertical scrollable; it must NOT be
+    // nested under another scrollable. The toggle shows one scrollable at a
+    // time. SegmentedButton instead of TabBarView avoids a horizontal-swipe
+    // conflict with the outer SlidableZikrScreen PageView.
     return Column(
       children: [
         Padding(
@@ -159,30 +69,30 @@ class _TareeqaSanadContentState extends State<TareeqaSanadContent> {
             selected: {_showPdf},
             onSelectionChanged: (selection) {
               final wantsPdf = selection.first;
-              if (wantsPdf) _ensureController();
-              setState(() => _showPdf = wantsPdf);
+              setState(() {
+                _showPdf = wantsPdf;
+                // Lazy PDF: before the first tap on «المخطوط» nothing reads
+                // or decodes the manuscript — [PdfReaderContent]'s controller
+                // is only created when it's first inserted into the tree.
+                if (wantsPdf) _pdfRequested = true;
+              });
             },
           ),
         ),
         Expanded(
-          // Lazy PDF: before the first tap on «المخطوط» there is no
-          // controller and no PdfViewPinch in the tree, so the manuscript
-          // bytes are never read/decoded on page open. After the first
-          // load, IndexedStack (not `if/else`) keeps PdfViewPinch mounted
-          // when switching to text and back. Removing it from the tree
-          // detaches its internal state from PdfControllerPinch, so the
-          // document would reload on every return.
-          child: _controller == null
+          // After the first load, IndexedStack (not `if/else`) keeps
+          // PdfReaderContent mounted when switching to text and back, so the
+          // document state survives round-trips.
+          child: !_pdfRequested
               ? const ZikrContentWidget(zikrId: 'sanad-tariqa')
               : IndexedStack(
                   index: _showPdf ? 0 : 1,
                   children: [
-                    AppPdfView(controller: _controller!),
+                    PdfReaderContent.asset(zikrPdfAsset(_sanad)),
                     const ZikrContentWidget(zikrId: 'sanad-tariqa'),
                   ],
                 ),
         ),
       ],
     );
-  }
-}
+}  }

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
+import 'package:aldurar_alnaqia/common/widgets/pdf_at_top_observer.dart';
+import 'package:aldurar_alnaqia/common/widgets/pdf_page_pill.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/book_temp_loader.dart';
 import 'package:aldurar_alnaqia/screens/library_screen/books.dart';
@@ -39,8 +41,12 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   int? _totalBytes;
 
   /// Immersive-reader chrome: visible on entry, auto-hides while reading.
+  /// At-top detection lives in the shared [PdfAtTopObserver]; only the
+  /// transport differs from the manuscript readers (direct chrome here,
+  /// chrome notification there).
   bool _chromeVisible = true;
   Timer? _chromeTimer;
+  final PdfAtTopObserver _atTop = PdfAtTopObserver();
 
   String get _id => widget.bookId;
   BookInfo? get _book => bookById(_id);
@@ -59,7 +65,9 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
     _saveCurrentPage();
     unawaited(_document?.close());
-    _controller?.dispose();
+    _controller
+      ?..removeListener(_handlePdfTransform)
+      ..dispose();
     super.dispose();
   }
 
@@ -105,6 +113,43 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   /// immersed, so hide immediately when visible, stay hidden otherwise.
   void _onReadingInteraction() {
     if (_chromeVisible) _hideChrome();
+  }
+
+  /// Reveals the chrome once per arrival at the very top while a
+  /// scroll/fling/zoom settles.
+  void _handlePdfTransform() {
+    final controller = _controller;
+    if (controller == null) return;
+    if (_atTop.handleTransform(controller)) _showChrome();
+  }
+
+  /// A fling keeps settling after the finger lifts; re-check once the
+  /// viewer's progress value is fresh.
+  void _handlePdfInteractionEnd(ScaleEndDetails _) {
+    final controller = _controller;
+    if (controller == null) return;
+    _atTop.handleInteractionEnd(controller, () {
+      if (!mounted) return;
+      _showChrome();
+    });
+  }
+
+  /// A page turn onto the first page may still be settling at the top, so
+  /// defer the hide/show decision until progress is fresh.
+  void _onPageChanged(int page) {
+    unawaited(SharedPreferencesService.setPdfLastPage(_id, page));
+    unawaited(
+      Future.microtask(() {
+        if (!mounted) return;
+        final controller = _controller;
+        if (controller != null && _atTop.isAtTop(controller)) {
+          _atTop.markAtTop();
+          _showChrome();
+        } else {
+          _onReadingInteraction();
+        }
+      }),
+    );
   }
 
   Future<void> _open({bool freshDownload = false}) async {
@@ -187,7 +232,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       final controller = PdfControllerPinch(
         document: Future.value(document),
         initialPage: lastPage,
-      );
+      )..addListener(_handlePdfTransform);
 
       setState(() {
         _document = document;
@@ -218,7 +263,9 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
 
   void _retry() {
     unawaited(_document?.close());
-    _controller?.dispose();
+    _controller
+      ?..removeListener(_handlePdfTransform)
+      ..dispose();
     _document = null;
     unawaited(_open(freshDownload: !_isLocal));
   }
@@ -299,7 +346,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
               ),
               actions: [
                 if (_controller != null)
-                  _PagePill(
+                  PdfPagePill(
                     controller: _controller!,
                     onTap: _showJumpToPage,
                   ),
@@ -323,18 +370,17 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     return AppPdfView(
       controller: controller,
       padding: 8,
-      onPageChanged: (page) {
-        unawaited(SharedPreferencesService.setPdfLastPage(_id, page));
-        _onReadingInteraction();
-      },
+      onPageChanged: _onPageChanged,
       onDocumentLoaded: (_) {
         setState(() {});
         _restartHideTimer();
       },
       onDocumentError: (error) => setState(() => _error = error),
       // Single tap toggles chrome; drag/pinch is reading → hide.
+      // Lifting the finger at the very top reveals chrome again.
       onTap: _toggleChrome,
       onInteractionStart: (_) => _onReadingInteraction(),
+      onInteractionEnd: _handlePdfInteractionEnd,
       onScrollbarDrag: _onReadingInteraction,
       documentLoaderBuilder: _buildLoading,
       errorBuilder: _buildError,
@@ -354,32 +400,6 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       onRetry: _retry,
       onDownloadOffline: _downloadForOffline,
       onOpenBrowser: () => unawaited(_openInBrowser()),
-    );
-  }
-}
-
-/// Small page indicator in the AppBar; tap to jump to a page.
-class _PagePill extends StatelessWidget {
-  const _PagePill({required this.controller, required this.onTap});
-
-  final PdfControllerPinch controller;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return PdfPageNumber(
-      controller: controller,
-      builder: (_, loadingState, page, pagesCount) {
-        if (loadingState != PdfLoadingState.success) {
-          return const SizedBox.shrink();
-        }
-        return ActionChip(
-          label: Text('$page / ${pagesCount ?? '…'}'),
-          avatar: const Icon(Icons.book_outlined, size: 18),
-          tooltip: 'الانتقال إلى صفحة',
-          onPressed: onTap,
-        );
-      },
     );
   }
 }

@@ -13,7 +13,10 @@ final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 /// not inherit its mini player. Use this around a fullscreen reader that
 /// should retain playback controls without restoring the bottom navigation.
 class AudioMiniPlayerOverlay extends ConsumerWidget {
-  const AudioMiniPlayerOverlay({required this.child, super.key});
+  const AudioMiniPlayerOverlay({
+    required this.child,
+    super.key,
+  });
 
   final Widget child;
 
@@ -23,13 +26,8 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
       audioProvider.select((state) => state.isVisible),
     );
     final isPlayerCollapsed = ref.watch(miniPlayerCollapsedProvider);
-    // The player is positioned above the system bottom inset. Match that
-    // inset in the reader body so every kind of content, including PDFs,
-    // can scroll clear of the overlay.
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final playerClearance = !isPlayerVisible
-        ? 0.0
-        : (isPlayerCollapsed ? 64.0 : 166.0) + bottomInset;
+    final playerClearance =
+        !isPlayerVisible ? 0.0 : (isPlayerCollapsed ? 52.0 : 154.0);
 
     return Stack(
       fit: StackFit.expand,

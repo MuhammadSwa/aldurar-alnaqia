@@ -1,4 +1,3 @@
-// lib/screens/download_manager_screen/download_manager_screen.dart
 import 'dart:async';
 
 import 'package:aldurar_alnaqia/common/helpers/file_size.dart';
@@ -188,13 +187,19 @@ class _DownloadProgressIndicator extends ConsumerWidget {
 }
 
 /// Rebuilds [builder] with the total bytes and count of downloaded [items],
-/// refreshing on every download-status change. State is kept across rebuilds
-/// so the last known values stay visible while re-stat'ing.
+/// plus how many items are currently downloading, refreshing on every
+/// download-status change. State is kept across rebuilds so the last known
+/// values stay visible while re-stat'ing.
 class _DownloadedStats extends ConsumerStatefulWidget {
   const _DownloadedStats({required this.items, required this.builder});
 
   final List<DownloadItem> items;
-  final Widget Function(BuildContext context, int bytes, int count) builder;
+  final Widget Function(
+    BuildContext context,
+    int bytes,
+    int count,
+    int activeCount,
+  ) builder;
 
   @override
   ConsumerState<_DownloadedStats> createState() => _DownloadedStatsState();
@@ -203,6 +208,7 @@ class _DownloadedStats extends ConsumerStatefulWidget {
 class _DownloadedStatsState extends ConsumerState<_DownloadedStats> {
   int _bytes = 0;
   int _count = 0;
+  int _active = 0;
   int _generation = 0;
 
   // Saved in initState: ref must never be touched in dispose.
@@ -228,7 +234,11 @@ class _DownloadedStatsState extends ConsumerState<_DownloadedStats> {
     final storage = ref.read(storageProvider);
     var bytes = 0;
     var count = 0;
+    var active = 0;
     for (final item in widget.items) {
+      // Sync check on the live progress map; a revision bump mid-scan
+      // restarts the scan, so staleness self-corrects.
+      if (downloader.isDownloading(item.id)) active++;
       if (await downloader.ensureKnown(item.id, item.type)) {
         final size = await storage.fileSizeBytes(item.type, item.id);
         if (size != null) {
@@ -241,51 +251,13 @@ class _DownloadedStatsState extends ConsumerState<_DownloadedStats> {
     setState(() {
       _bytes = bytes;
       _count = count;
+      _active = active;
     });
   }
 
   @override
-  Widget build(BuildContext context) => widget.builder(context, _bytes, _count);
-}
-
-/// Compact downloaded-total pill for the app bar: small type on a tonal
-/// background so it reads as a stat, not a second title.
-class _TotalPill extends StatelessWidget {
-  const _TotalPill({required this.bytes});
-
-  final int bytes;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      alignment: Alignment.center,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.sd_storage_rounded,
-            size: 14,
-            color: scheme.onPrimaryContainer,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            formatBytes(bytes),
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: scheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      widget.builder(context, _bytes, _count, _active);
 }
 
 class DownloadSection extends StatefulWidget {
@@ -314,7 +286,8 @@ class _DownloadSectionState extends State<DownloadSection> {
       children: [
         _DownloadedStats(
           items: widget.items,
-          builder: (context, bytes, count) {
+          // activeCount is only meaningful to the app bar; unused here.
+          builder: (context, bytes, count, activeCount) {
             final total = widget.items.length;
             final totalLabel = total == 1
                 ? 'عنصر واحد'
@@ -374,6 +347,13 @@ class _DownloadSectionState extends State<DownloadSection> {
   }
 }
 
+/// Arabic plural label for counts ('عنصر واحد' / 'عنصرين' / 'n عناصر').
+String _itemsLabel(int n) {
+  if (n == 1) return 'عنصر واحد';
+  if (n == 2) return 'عنصرين';
+  return '$n عناصر';
+}
+
 class DownloadManagerPage extends ConsumerStatefulWidget {
   const DownloadManagerPage({required this.initialIndex, super.key});
 
@@ -426,6 +406,58 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
     if (mounted) showSnackBar(context, 'تم حذف جميع التحميلات');
   }
 
+  /// Starts a batch download of everything not yet on the device.
+  /// Confirms first — a full batch can be a lot of data.
+  Future<void> _downloadAll() async {
+    final downloader = ref.read(downloaderProvider);
+
+    // Accurate count for the prompt (skips in-flight and downloaded).
+    var pending = 0;
+    for (final item in allItems) {
+      if (downloader.isDownloading(item.id)) continue;
+      if (await downloader.ensureKnown(item.id, item.type)) continue;
+      pending++;
+    }
+
+    if (!mounted) return;
+    if (pending == 0) {
+      showSnackBar(context, 'جميع العناصر محمّلة أو قيد التحميل');
+      return;
+    }
+
+    final confirmed = await showConfirmDialog(
+      context: context,
+      title: 'تحميل جميع الملفات',
+      content: 'سيتم تحميل ${_itemsLabel(pending)} على الجهاز. هل أنت متأكد؟',
+      confirmLabel: 'تحميل الكل',
+      icon: Icons.download_for_offline_outlined,
+    );
+    if (!confirmed || !mounted) return;
+
+    final started = await downloader.downloadAll(allItems);
+    if (!mounted) return;
+    // showSnackBar(
+    //   context,
+    //   started == 0
+    //       ? 'التحميل قيد التنفيذ بالفعل'
+    //       : 'بدأ تحميل ${_itemsLabel(started)}',
+    // );
+  }
+
+  /// Stops every in-flight download. Files that already finished stay.
+  /// No confirmation: canceling is non-destructive.
+  Future<void> _cancelAllDownloads() async {
+    final stopped = await ref.read(downloaderProvider).cancelAllDownloads();
+    if (!mounted) return;
+    showSnackBar(
+      context,
+      stopped == 0
+          ? 'لا توجد تحميلات قيد التنفيذ'
+          // : 'تم إيقاف تحميل ${_itemsLabel(stopped)}',
+          : 'تم إيقاف التحميلات',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -434,10 +466,25 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
         actions: [
           _DownloadedStats(
             items: allItems,
-            builder: (context, bytes, count) => Row(
+            builder: (context, bytes, count, activeCount) => Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (count > 0) _TotalPill(bytes: bytes),
+                // One slot, two roles: while anything is downloading the
+                // button is a stop button; otherwise it's download-all.
+                if (activeCount > 0)
+                  IconButton(
+                    icon: const Icon(Icons.stop_circle_outlined),
+                    tooltip: 'إيقاف جميع التحميلات',
+                    onPressed: _cancelAllDownloads,
+                  )
+                else
+                  IconButton(
+                    icon: const Icon(Icons.download_for_offline_outlined),
+                    tooltip: 'تحميل جميع الملفات',
+                    // Disabled once everything is on the device.
+                    onPressed:
+                        count >= allItems.length ? null : () => _downloadAll(),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.delete_sweep_outlined),
                   tooltip: 'حذف جميع التحميلات',

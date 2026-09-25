@@ -29,6 +29,12 @@ class DownloaderService {
   // Download progress tracking (one stable notifier per task)
   final Map<String, ValueNotifier<double>> _downloadProgress = {};
 
+  // The type of each in-flight task, kept alongside [_downloadProgress]
+  // so batch operations (cancel-all) can do full cleanup per task.
+  // Entries are added when a task reserves a progress slot and removed
+  // when the slot is retired.
+  final Map<String, DownloadType> _progressTypes = {};
+
   // Completed/canceled notifiers kept alive until service disposal, because
   // mounted widgets may still listen to them (see [_retireProgressNotifier]).
   final List<ValueNotifier<double>> _retiredProgressNotifiers = [];
@@ -41,6 +47,13 @@ class DownloaderService {
 
   // In-flight status checks (same keying as [_fileStatusCache]).
   final Map<String, Future<bool>> _statusFutures = {};
+
+  // Guards downloadAll so a double-tap can't run two batch scans at once.
+  bool _batchDownloadRunning = false;
+
+  // Set by cancelAllDownloads to abort a downloadAll loop that is still
+  // scanning/enqueueing, so "stop all" can't be undercut by new enqueues.
+  bool _batchCanceled = false;
 
   static String _statusKey(String id, DownloadType type) => '${type.name}/$id';
 
@@ -106,6 +119,7 @@ class DownloaderService {
         // progress state.
         if (!_downloadProgress.containsKey(taskId)) {
           _downloadProgress[taskId] = ValueNotifier<double>(0);
+          if (type != null) _progressTypes[taskId] = type;
           changed = true;
         }
       case TaskStatus.waitingToRetry:
@@ -122,9 +136,13 @@ class DownloaderService {
     // Reuse a single notifier per task instead of allocating per tick.
     (_downloadProgress[taskId] ??= ValueNotifier<double>(0)).value =
         update.progress;
-    // First activity for this task: notify listeners so widgets that
-    // showed a download button rebuild into the progress state.
-    if (isNew) _bumpStatusRevision();
+    if (isNew) {
+      final type = _typeFromDirectoryName(update.task.directory);
+      if (type != null) _progressTypes[taskId] = type;
+      // First activity for this task: notify listeners so widgets that
+      // showed a download button rebuild into the progress state.
+      _bumpStatusRevision();
+    }
   }
 
   /// Removes a notifier from the active map without disposing it.
@@ -133,6 +151,7 @@ class DownloaderService {
   /// hit "used after disposed" assertions.
   void _retireProgressNotifier(String taskId) {
     final notifier = _downloadProgress.remove(taskId);
+    _progressTypes.remove(taskId);
     if (notifier != null) _retiredProgressNotifiers.add(notifier);
   }
 
@@ -147,6 +166,9 @@ class DownloaderService {
 
   bool isDownloading(String id) => _downloadProgress.containsKey(id);
 
+  /// How many downloads are currently in flight.
+  int get activeDownloadCount => _downloadProgress.length;
+
   ValueNotifier<double>? progressNotifierFor(String id) =>
       _downloadProgress[id];
 
@@ -157,6 +179,14 @@ class DownloaderService {
 
   Future<void> startDownload(DownloadItem item) async {
     if (isDownloading(item.id)) return;
+
+    // Reserve the progress slot synchronously — no await between this and
+    // the check above — so a rapid second call (double-tap, or "download
+    // all" racing a per-item tap) cannot enqueue a duplicate task before
+    // the first status update arrives.
+    (_downloadProgress[item.id] ??= ValueNotifier<double>(0));
+    _progressTypes[item.id] = item.type;
+    _bumpStatusRevision();
 
     final task = DownloadTask(
       taskId: item.id,
@@ -169,10 +199,70 @@ class DownloaderService {
     );
 
     try {
-      await FileDownloader().enqueue(task);
+      final enqueued = await FileDownloader().enqueue(task);
+      if (!enqueued) throw Exception('enqueue returned false');
     } catch (e, st) {
       logError('Failed to enqueue download for "${item.id}"', e, st);
+      // Release the reservation so tiles fall back to the download button.
+      _retireProgressNotifier(item.id);
+      _fileStatusCache[_statusKey(item.id, item.type)] = false;
+      _bumpStatusRevision();
     }
+  }
+
+  /// Enqueues downloads for every item in [items] that is neither already
+  /// on disk nor currently downloading. Concurrent calls are ignored while
+  /// a batch is running, and [cancelAllDownloads] aborts a still-running
+  /// scan. Returns how many downloads were started.
+  Future<int> downloadAll(Iterable<DownloadItem> items) async {
+    if (_batchDownloadRunning) return 0;
+    _batchDownloadRunning = true;
+    _batchCanceled = false;
+    try {
+      var started = 0;
+      for (final item in items) {
+        if (_batchCanceled) break;
+        if (isDownloading(item.id)) continue;
+        if (await ensureKnown(item.id, item.type)) continue;
+        // Re-check: cancelAllDownloads may have fired during the await above.
+        if (_batchCanceled) break;
+        await startDownload(item);
+        started++;
+      }
+      return started;
+    } finally {
+      _batchDownloadRunning = false;
+    }
+  }
+
+  /// Cancels every in-flight download. Files that already finished stay on
+  /// disk. Also aborts a [downloadAll] scan that is still enqueueing.
+  /// Returns how many cancellations were requested.
+  Future<int> cancelAllDownloads() async {
+    // Must come before reading the snapshot so a running batch loop stops
+    // enqueueing new tasks while we cancel.
+    _batchCanceled = true;
+
+    final ids = _downloadProgress.keys.toList();
+    var stopped = 0;
+    for (final id in ids) {
+      final type = _progressTypes[id];
+      if (type != null) {
+        // Full cleanup, identical to a single cancel.
+        await cancelDownload(id, type);
+      } else {
+        // Type unknown (task restored outside startDownload): cancel
+        // natively and let the status-update handler clean up when the
+        // canceled status arrives.
+        try {
+          await FileDownloader().cancelTaskWithId(id);
+        } catch (e, st) {
+          logError('Failed to cancel download "$id"', e, st);
+        }
+      }
+      stopped++;
+    }
+    return stopped;
   }
 
   Future<void> cancelDownload(String id, DownloadType type) async {
@@ -251,6 +341,7 @@ class DownloaderService {
       notifier.dispose();
     }
     _downloadProgress.clear();
+    _progressTypes.clear();
     // Safe to dispose retired notifiers now: the whole service (and every
     // widget listening to it) is going away.
     for (final notifier in _retiredProgressNotifiers) {
