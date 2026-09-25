@@ -25,15 +25,12 @@ class AudioMiniPlayerOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
+      right: false,
+      left: false,
       child: Column(
         children: [
           Expanded(child: child),
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1000),
-              child: const AudioMiniPlayer(),
-            ),
-          ),
+          const AudioMiniPlayer(),
         ],
       ),
     );
@@ -70,11 +67,6 @@ class MainWrapper extends StatelessWidget {
             // Keep the bottom NavigationBar pinned: the keyboard overlays
             // it instead of lifting it above the keyboard.
             resizeToAvoidBottomInset: false,
-            // Simple vertical layout: screen content on top, mini player
-            // (a no-op SizedBox.shrink when nothing is loaded) below it,
-            // and the NavigationBar under that via bottomNavigationBar.
-            // The surrounding Scaffold paints any leftover space, so no
-            // black strip can appear here.
             body: Column(
               children: [
                 Expanded(child: navigationShell),

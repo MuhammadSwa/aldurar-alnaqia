@@ -43,49 +43,48 @@ class AudioMiniPlayer extends ConsumerWidget {
 
     // Rounded card sitting between the screen content above and the
     // NavigationBar below.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      child: Material(
-        color: colorScheme.secondaryContainer,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.4),
+    return Material(
+      color: colorScheme.secondaryContainer,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: colorScheme.onSecondaryContainer.withValues(alpha: 0.15),
+            ),
           ),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: GestureDetector(
-            // Swipe down = collapse, swipe up = expand. The slider inside
-            // uses horizontal drags, so the arenas don't conflict.
-            onVerticalDragEnd: (d) {
-              final v = d.primaryVelocity ?? 0;
-              final notifier = ref.read(miniPlayerCollapsedProvider.notifier);
-              if (v > 250) {
-                notifier.collapse();
-              } else if (v < -250) {
-                notifier.expand();
-              }
-            },
-            // bottomCenter: the edge next to the NavigationBar stays put
-            // and the bar grows/shrinks upward.
-            child: AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.bottomCenter,
-              child: isCollapsed
-                  ? _CollapsedBar(title: track.title)
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _TitleBar(title: track.title),
-                        const _ProgressBar(),
-                        const _TransportRow(),
-                      ],
-                    ),
-            ),
+        child: GestureDetector(
+          // Swipe down = collapse, swipe up = expand. The slider inside
+          // uses horizontal drags, so the arenas don't conflict.
+          onVerticalDragEnd: (d) {
+            final v = d.primaryVelocity ?? 0;
+            final notifier = ref.read(miniPlayerCollapsedProvider.notifier);
+            if (v > 250) {
+              notifier.collapse();
+            } else if (v < -250) {
+              notifier.expand();
+            }
+          },
+          // bottomCenter: the edge next to the NavigationBar stays put
+          // and the bar grows/shrinks upward.
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.bottomCenter,
+            child: isCollapsed
+                ? _CollapsedBar(title: track.title)
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _TitleBar(title: track.title),
+                      const _ProgressBar(),
+                      const _TransportRow(),
+                    ],
+                  ),
           ),
         ),
       ),
