@@ -213,7 +213,14 @@ class ZikrContentWidget extends ConsumerWidget {
     // Lazily built: only visible paragraphs run regex styling + layout.
     // Previously SingleChildScrollView + Column built all N blocks upfront.
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+      // The reader runs under the home indicator; the last line scrolls
+      // clear of it.
+      padding: EdgeInsets.fromLTRB(
+        16,
+        7,
+        16,
+        7 + MediaQuery.paddingOf(context).bottom,
+      ),
       itemCount: itemCount,
       itemBuilder: (context, index) {
         if (hasNotes && index == 0) {

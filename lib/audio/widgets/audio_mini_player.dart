@@ -57,34 +57,40 @@ class AudioMiniPlayer extends ConsumerWidget {
             ),
           ),
         ),
-        child: GestureDetector(
-          // Swipe down = collapse, swipe up = expand. The slider inside
-          // uses horizontal drags, so the arenas don't conflict.
-          onVerticalDragEnd: (d) {
-            final v = d.primaryVelocity ?? 0;
-            final notifier = ref.read(miniPlayerCollapsedProvider.notifier);
-            if (v > 250) {
-              notifier.collapse();
-            } else if (v < -250) {
-              notifier.expand();
-            }
-          },
-          // bottomCenter: the edge next to the NavigationBar stays put
-          // and the bar grows/shrinks upward.
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.bottomCenter,
-            child: isCollapsed
-                ? _CollapsedBar(title: track.title)
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _TitleBar(title: track.title),
-                      const _ProgressBar(),
-                      const _TransportRow(),
-                    ],
-                  ),
+        // At the bottom of a fullscreen reader, the background runs under
+        // the home indicator and the controls stay clear of it. Above the
+        // NavigationBar the Scaffold has already taken that inset away.
+        child: SafeArea(
+          top: false,
+          child: GestureDetector(
+            // Swipe down = collapse, swipe up = expand. The slider inside
+            // uses horizontal drags, so the arenas don't conflict.
+            onVerticalDragEnd: (d) {
+              final v = d.primaryVelocity ?? 0;
+              final notifier = ref.read(miniPlayerCollapsedProvider.notifier);
+              if (v > 250) {
+                notifier.collapse();
+              } else if (v < -250) {
+                notifier.expand();
+              }
+            },
+            // bottomCenter: the edge next to the NavigationBar stays put
+            // and the bar grows/shrinks upward.
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.bottomCenter,
+              child: isCollapsed
+                  ? _CollapsedBar(title: track.title)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _TitleBar(title: track.title),
+                        const _ProgressBar(),
+                        const _TransportRow(),
+                      ],
+                    ),
+            ),
           ),
         ),
       ),

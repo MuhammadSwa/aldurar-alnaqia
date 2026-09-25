@@ -124,21 +124,23 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
         appBar: showAppBar
             ? AppBar(title: Text(widget.title), actions: widget.actions)
             : null,
-        body: 
-        SafeArea(child: 
-        NotificationListener<ScrollNotification>(
-          onNotification: _handleScroll,
-          // Only wrap in a tap detector while immersive. In portrait the
-          // content gets no gesture wrapper at all, so nothing competes with
-          // text selection or the PDF view.
-          child: _chrome.landscape
-              ? GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: _chrome.toggle,
-                  child: widget.child,
-                )
-              : widget.child,
-        ),
+        // No bottom inset: the reader runs to the bottom edge, and the text
+        // pads its end clear of the home indicator instead.
+        body: SafeArea(
+          bottom: false,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _handleScroll,
+            // Only wrap in a tap detector while immersive. In portrait the
+            // content gets no gesture wrapper at all, so nothing competes
+            // with text selection or the PDF view.
+            child: _chrome.landscape
+                ? GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: _chrome.toggle,
+                    child: widget.child,
+                  )
+                : widget.child,
+          ),
         ),
       ),
     );
