@@ -12,6 +12,10 @@ final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 /// Routes hosted by the root navigator sit above [MainWrapper], so they do
 /// not inherit its mini player. Use this around a fullscreen reader that
 /// should retain playback controls without restoring the bottom navigation.
+///
+/// Content is NOT padded down; instead the player's clearance is injected
+/// into [MediaQueryData.padding.bottom], so scrollables absorb it as
+/// scrollable bottom padding and paint edge-to-edge underneath the player.
 class AudioMiniPlayerOverlay extends ConsumerWidget {
   const AudioMiniPlayerOverlay({
     required this.child,
@@ -31,13 +35,21 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
       collapsed: isPlayerCollapsed,
     );
 
+    final mq = MediaQuery.of(context);
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        AnimatedPadding(
+        TweenAnimationBuilder<double>(
+          tween: Tween(end: playerClearance),
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.only(bottom: playerClearance),
+          builder: (context, animatedClearance, child) => MediaQuery(
+            data: mq.copyWith(
+              padding: mq.padding.copyWith(bottom: animatedClearance),
+            ),
+            child: child!,
+          ),
           child: child,
         ),
         SafeArea(
@@ -83,6 +95,8 @@ class MainWrapper extends ConsumerWidget {
       collapsed: isPlayerCollapsed,
     );
 
+    final mq = MediaQuery.of(context);
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Center(
@@ -97,12 +111,24 @@ class MainWrapper extends ConsumerWidget {
             body: Stack(
               fit: StackFit.expand,
               children: [
-                // Reserve space at the bottom so scrollable content ends
-                // above the floating mini player instead of under it.
-                AnimatedPadding(
+                // Content fills the full height and scrolls BEHIND the
+                // floating mini player. The clearance travels via
+                // MediaQuery.padding.bottom, so ListViews/GridViews
+                // (which default to MediaQuery padding) end their items
+                // above the player while their background extends to the
+                // screen edge — no reserved empty strip is visible.
+                TweenAnimationBuilder<double>(
+                  tween: Tween(end: playerClearance),
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.easeOutCubic,
-                  padding: EdgeInsets.only(bottom: playerClearance),
+                  builder: (context, animatedClearance, child) => MediaQuery(
+                      data: mq.copyWith(
+                        padding: mq.padding.copyWith(bottom: animatedClearance),
+                      ),
+                      child: ColoredBox(
+                        color: Theme.of(context).colorScheme.primary,
+                        child: child,
+                      )),
                   child: navigationShell,
                 ),
                 // Floating card stacked over the content, pinned just

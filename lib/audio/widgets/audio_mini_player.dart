@@ -22,15 +22,16 @@ final miniPlayerCollapsedProvider =
   MiniPlayerCollapsedNotifier.new,
 );
 
-/// Bottom clearance to reserve under scrollable content so it stays visible
-/// above the floating mini player.
+/// Bottom clearance injected into [MediaQueryData.padding.bottom] (see
+/// MainWrapper / AudioMiniPlayerOverlay) so scrollable content ends above
+/// the floating mini player.
 ///
 /// Includes the player's height plus its floating margins. Keep in sync
-/// with the card layout in AudioMiniPlayer below.
+/// with the card layout in [AudioMiniPlayer] below.
 const double kMiniPlayerCollapsedClearance = 66;
 const double kMiniPlayerExpandedClearance = 172;
 
-/// Shared helper so MainWrapper and AudioMiniPlayerOverlay reserve the
+/// Shared helper so MainWrapper and AudioMiniPlayerOverlay inject the
 /// same space the floating card occupies.
 double miniPlayerClearance({
   required bool visible,
@@ -41,6 +42,12 @@ double miniPlayerClearance({
       ? kMiniPlayerCollapsedClearance
       : kMiniPlayerExpandedClearance;
 }
+
+/// Bottom inset for non-scrollable screens that must keep their content
+/// clear of the floating mini player. Reads the clearance injected into
+/// MediaQuery by MainWrapper / AudioMiniPlayerOverlay.
+double miniPlayerBottomInset(BuildContext context) =>
+    MediaQuery.paddingOf(context).bottom;
 
 /// Compact playback bar shown above the bottom navigation while a
 /// narration is loaded.
@@ -59,17 +66,21 @@ class AudioMiniPlayer extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Floating card: margin on all sides creates the gap above the
-    // NavigationBar / screen bottom, and the rounded shape + elevation
-    // make it read as stacked over the content below.
+    // NavigationBar / screen bottom, and the rounded shape + border make
+    // it read as stacked over the content scrolling behind it. No
+    // elevation shadow: the shadow painted black over scrollable content
+    // read as a dark box (and the card already contrasts via its color).
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
       child: Material(
         color: colorScheme.secondaryContainer,
-        elevation: 6,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.2),
+            color: colorScheme.outline.withValues(alpha: 0.4),
           ),
         ),
         clipBehavior: Clip.antiAlias,
