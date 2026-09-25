@@ -1,7 +1,6 @@
-import 'dart:async';
-
 import 'package:aldurar_alnaqia/common/reader/reader_scaffold.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
+import 'package:aldurar_alnaqia/common/widgets/pdf_at_top_observer.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
@@ -23,23 +22,48 @@ Future<PdfDocument> openBundledPdf(String assetPath) {
   return PdfDocument.openData(bytes);
 }
 
-/// PDF body shared by Hilya Nasab, the manuscript tab of Tareeqa/Sanad and
-/// the book viewer.
+/// PDF body shared by Hilya Nasab and the manuscript tab of Tareeqa/Sanad.
 ///
 /// Owns the [PdfControllerPinch] lifecycle (created once in initState,
 /// disposed with the state) and reports reading intent to the enclosing
 /// [ReaderScaffold]. In portrait the scaffold ignores those intents, so this
 /// widget never needs to know the orientation.
+///
+/// At-top detection lives in [PdfAtTopObserver], shared with the book
+/// viewer; only the transport differs (chrome notification here, direct
+/// immersive chrome there).
 class PdfReaderContent extends StatefulWidget {
-  const PdfReaderContent({required this.openDocument, super.key});
+  const PdfReaderContent({
+    required this.openDocument,
+    this.initialPage = 1,
+    this.onPageChanged,
+    super.key,
+  });
 
   /// Convenience for bundled assets with (possibly Arabic) filenames.
-  factory PdfReaderContent.asset(String assetPath, {Key? key}) =>
-      PdfReaderContent(key: key, openDocument: () => openBundledPdf(assetPath));
+  factory PdfReaderContent.asset(
+    String assetPath, {
+    Key? key,
+    int initialPage = 1,
+    ValueChanged<int>? onPageChanged,
+  }) =>
+      PdfReaderContent(
+        key: key,
+        openDocument: () => openBundledPdf(assetPath),
+        initialPage: initialPage,
+        onPageChanged: onPageChanged,
+      );
 
   /// Called exactly once, when the state is created. Point it at a file
   /// (`PdfDocument.openFile`) for non-asset books.
   final Future<PdfDocument> Function() openDocument;
+
+  /// Page to open on; manuscripts start at 1 unless a saved page is passed.
+  final int initialPage;
+
+  /// Forwarded to the viewer; used for page persistence by hosts that need
+  /// it (the book viewer persists via its own wiring).
+  final ValueChanged<int>? onPageChanged;
 
   @override
   State<PdfReaderContent> createState() => _PdfReaderContentState();
@@ -47,15 +71,15 @@ class PdfReaderContent extends StatefulWidget {
 
 class _PdfReaderContentState extends State<PdfReaderContent> {
   late final PdfControllerPinch _controller;
-
-  /// Tracks the at-top edge so [ReaderChromeAction.show] is dispatched once
-  /// per arrival at the top, not on every viewer matrix tick.
-  bool _wasAtTop = true;
+  final PdfAtTopObserver _atTop = PdfAtTopObserver();
 
   @override
   void initState() {
     super.initState();
-    _controller = PdfControllerPinch(document: widget.openDocument());
+    _controller = PdfControllerPinch(
+      document: widget.openDocument(),
+      initialPage: widget.initialPage,
+    );
     _controller.addListener(_handleTransform);
   }
 
@@ -70,46 +94,20 @@ class _PdfReaderContentState extends State<PdfReaderContent> {
     ReaderChromeNotification(action).dispatch(context);
   }
 
-  /// Fires on every viewer matrix change; reveals the chrome when the
-  /// document reaches the very top (first page, progress ~0).
+  /// Reveals the chrome once per arrival at the very top.
   void _handleTransform() {
-    final total = _controller.pagesCount;
-    // Single-page (or not-yet-loaded) documents report a constant progress
-    // of 0 — never auto-reveal, or tap-to-hide would be instantly undone.
-    if (total == null || total <= 1) return;
-    double progress;
-    try {
-      progress = _controller.documentProgress;
-    } catch (_) {
-      return;
-    }
-    final atTop = progress <= 0.001;
-    if (atTop && !_wasAtTop) {
-      _wasAtTop = true;
+    if (_atTop.handleTransform(_controller)) {
       _sendChrome(ReaderChromeAction.show);
-    } else if (!atTop) {
-      _wasAtTop = false;
     }
   }
 
   /// A fling keeps settling after the finger lifts; re-check once the
   /// viewer's progress value is fresh.
   void _handleInteractionEnd(ScaleEndDetails _) {
-    unawaited(
-      Future.microtask(() {
-        if (!mounted) return;
-        final total = _controller.pagesCount;
-        if (total == null || total <= 1) return;
-        try {
-          if (_controller.documentProgress <= 0.01) {
-            _wasAtTop = true;
-            _sendChrome(ReaderChromeAction.show);
-          }
-        } catch (_) {
-          // Viewer detached mid-gesture; nothing to reveal.
-        }
-      }),
-    );
+    _atTop.handleInteractionEnd(_controller, () {
+      if (!mounted) return;
+      _sendChrome(ReaderChromeAction.show);
+    });
   }
 
   @override
@@ -117,6 +115,7 @@ class _PdfReaderContentState extends State<PdfReaderContent> {
     return Center(
       child: AppPdfView(
         controller: _controller,
+        onPageChanged: widget.onPageChanged,
         onTap: () => _sendChrome(ReaderChromeAction.toggle),
         onInteractionStart: (_) => _sendChrome(ReaderChromeAction.hide),
         onInteractionEnd: _handleInteractionEnd,
