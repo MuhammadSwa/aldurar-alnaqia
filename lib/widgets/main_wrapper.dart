@@ -1,22 +1,19 @@
-import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/widgets/audio_mini_player.dart';
 import 'package:aldurar_alnaqia/widgets/my_drawer.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 
-/// Places the shared audio controls over a fullscreen route.
+/// Places the shared audio controls below a fullscreen route.
 ///
 /// Routes hosted by the root navigator sit above [MainWrapper], so they do
-/// not inherit its mini player. Use this around a fullscreen reader that
-/// should retain playback controls without restoring the bottom navigation.
+/// not inherit its mini player. Wrap a fullscreen reader with this to keep
+/// playback controls without restoring the bottom navigation.
 ///
-/// Content is NOT padded down; instead the player's clearance is injected
-/// into [MediaQueryData.padding.bottom], so scrollables absorb it as
-/// scrollable bottom padding and paint edge-to-edge underneath the player.
-class AudioMiniPlayerOverlay extends ConsumerWidget {
+/// Layout: `Expanded(child)` on top, [AudioMiniPlayer] pinned below. When
+/// no track is loaded the player collapses to [SizedBox.shrink].
+class AudioMiniPlayerOverlay extends StatelessWidget {
   const AudioMiniPlayerOverlay({
     required this.child,
     super.key,
@@ -25,49 +22,25 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isPlayerVisible = ref.watch(
-      audioProvider.select((state) => state.isVisible),
-    );
-    final isPlayerCollapsed = ref.watch(miniPlayerCollapsedProvider);
-    final playerClearance = miniPlayerClearance(
-      visible: isPlayerVisible,
-      collapsed: isPlayerCollapsed,
-    );
-
-    final mq = MediaQuery.of(context);
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        TweenAnimationBuilder<double>(
-          tween: Tween(end: playerClearance),
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          builder: (context, animatedClearance, child) => MediaQuery(
-            data: mq.copyWith(
-              padding: mq.padding.copyWith(bottom: animatedClearance),
-            ),
-            child: child!,
-          ),
-          child: child,
-        ),
-        SafeArea(
-          top: false,
-          child: Align(
-            alignment: Alignment.bottomCenter,
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Column(
+        children: [
+          Expanded(child: child),
+          Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1000),
               child: const AudioMiniPlayer(),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class MainWrapper extends ConsumerWidget {
+class MainWrapper extends StatelessWidget {
   const MainWrapper({
     required this.navigationShell,
     super.key,
@@ -75,7 +48,7 @@ class MainWrapper extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     void goBranch(int index) {
       navigationShell.goBranch(
         index,
@@ -85,17 +58,6 @@ class MainWrapper extends ConsumerWidget {
 
     // Selected tab icon color contrasts with the primary indicator pill.
     final selectedIconColor = Theme.of(context).colorScheme.onPrimary;
-
-    final isPlayerVisible = ref.watch(
-      audioProvider.select((state) => state.isVisible),
-    );
-    final isPlayerCollapsed = ref.watch(miniPlayerCollapsedProvider);
-    final playerClearance = miniPlayerClearance(
-      visible: isPlayerVisible,
-      collapsed: isPlayerCollapsed,
-    );
-
-    final mq = MediaQuery.of(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -108,36 +70,15 @@ class MainWrapper extends ConsumerWidget {
             // Keep the bottom NavigationBar pinned: the keyboard overlays
             // it instead of lifting it above the keyboard.
             resizeToAvoidBottomInset: false,
-            body: Stack(
-              fit: StackFit.expand,
+            // Simple vertical layout: screen content on top, mini player
+            // (a no-op SizedBox.shrink when nothing is loaded) below it,
+            // and the NavigationBar under that via bottomNavigationBar.
+            // The surrounding Scaffold paints any leftover space, so no
+            // black strip can appear here.
+            body: Column(
               children: [
-                // Content fills the full height and scrolls BEHIND the
-                // floating mini player. The clearance travels via
-                // MediaQuery.padding.bottom, so ListViews/GridViews
-                // (which default to MediaQuery padding) end their items
-                // above the player while their background extends to the
-                // screen edge — no reserved empty strip is visible.
-                TweenAnimationBuilder<double>(
-                  tween: Tween(end: playerClearance),
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, animatedClearance, child) => MediaQuery(
-                      data: mq.copyWith(
-                        padding: mq.padding.copyWith(bottom: animatedClearance),
-                      ),
-                      child: ColoredBox(
-                        color: Theme.of(context).colorScheme.primary,
-                        child: child,
-                      )),
-                  child: navigationShell,
-                ),
-                // Floating card stacked over the content, pinned just
-                // above the NavigationBar. AudioMiniPlayer collapses to
-                // SizedBox.shrink internally when nothing is loaded.
-                const Align(
-                  alignment: Alignment.bottomCenter,
-                  child: AudioMiniPlayer(),
-                ),
+                Expanded(child: navigationShell),
+                const AudioMiniPlayer(),
               ],
             ),
             bottomNavigationBar: NavigationBar(
