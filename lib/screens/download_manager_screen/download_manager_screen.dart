@@ -431,6 +431,7 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
       content: 'سيتم تحميل ${_itemsLabel(pending)} على الجهاز. هل أنت متأكد؟',
       confirmLabel: 'تحميل الكل',
       icon: Icons.download_for_offline_outlined,
+      isDestructive: false,
     );
     if (!confirmed || !mounted) return;
 
@@ -494,7 +495,7 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
                 IconButton(
                   icon: Icon(
                     Icons.delete_sweep_outlined,
-                      color: Theme.of(context).colorScheme.error,
+                    color: Theme.of(context).colorScheme.error,
                   ),
                   tooltip: 'حذف جميع التحميلات',
                   onPressed: count == 0 ? null : () => _clearAll(count),
