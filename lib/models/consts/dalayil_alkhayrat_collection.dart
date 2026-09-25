@@ -12,7 +12,7 @@ const List<Zikr> dalayilAlkhayratCollection = [
 
 const dalayilHizb1 = Zikr(
   id: 'dalayil-hizb-1',
-  title: 'دلائل الخيرات',
+  title: 'ورد يوم الاثنين',
   notes: 'دلائل الخيرات ورد يوم الاثنين',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_mon.mp3',
   footer: '''
@@ -113,7 +113,7 @@ const dalayilHizb1 = Zikr(
 
 const dalayilHizb2 = Zikr(
   id: 'dalayil-hizb-2',
-  title: 'دلائل الخيرات',
+  title: 'ورد يوم الثلاثاء',
   notes: 'دلائل الخيرات ورد يوم الثلاثاء',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_tue.mp3',
   content: '''
@@ -155,7 +155,7 @@ const dalayilHizb2 = Zikr(
 
 const dalayilHizb3 = Zikr(
   id: 'dalayil-hizb-3',
-  title: 'دلائل الخيرات',
+  title: 'ورد يوم الأربعاء',
   notes: 'دلائل الخيرات ورد يوم الأربعاء',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_wed.mp3',
   content: '''
@@ -209,7 +209,7 @@ const dalayilHizb3 = Zikr(
 
 const dalayilHizb4 = Zikr(
   id: 'dalayil-hizb-4',
-  title: 'دلائل الخيرات',
+  title: 'ورد يوم الخميس',
   notes: 'دلائل الخيرات ورد يوم الخميس',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_thu.mp3',
   content: '''
@@ -269,7 +269,7 @@ const dalayilHizb4 = Zikr(
 
 const dalayilHizb5 = Zikr(
   id: 'dalayil-hizb-5',
-  title: 'دلائل الخيرات',
+  title: 'دلائل ورد يوم الجمعة',
   notes: 'دلائل الخيرات ورد يوم الجمعة',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_fri.mp3',
   footer:
@@ -345,7 +345,7 @@ const dalayilHizb5 = Zikr(
 
 const dalayilHizb6 = Zikr(
   id: 'dalayil-hizb-6',
-  title: 'دلائل الخيرات',
+  title: 'ورد يوم السبت',
   notes: 'دلائل الخيرات ورد يوم السبت',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_sat.mp3',
   content: '''
@@ -393,7 +393,7 @@ const dalayilHizb6 = Zikr(
 
 const dalayilHizb7 = Zikr(
   id: 'dalayil-hizb-7',
-  title: 'دلائل الخيرات',
+  title: 'ورد يوم الأحد',
   notes: 'دلائل الخيرات ورد يوم الأحد',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_sun.mp3',
   content: '''
