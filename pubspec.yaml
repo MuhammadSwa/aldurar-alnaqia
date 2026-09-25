@@ -2,7 +2,7 @@ name: aldurar_alnaqia
 description: "تطبيق الدرر النقية يحتوى على أوراد الطريقة اليسرية الصديقية الشاذلية"
 publish_to: "none"
 
-version: 1.0.1+12
+version: 1.0.1+13
 
 environment:
   sdk: ">=3.3.4 <4.0.0"
@@ -31,6 +31,7 @@ dependencies:
 dev_dependencies:
   flutter_launcher_icons: ^0.14.3
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.8
   flutter_test:
     sdk: flutter
   plugin_platform_interface: any
@@ -55,6 +56,20 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "app_logo_cropped.png"
+
+# Regenerate with: dart run flutter_native_splash:create
+# Light matches the logo artwork's cream; dark matches darkScheme.surface
+# (home screen). Android 12+ masks the icon to a circle, so it gets a padded
+# copy that fits the 768px-diameter safe zone of a 1152px canvas.
+flutter_native_splash:
+  color: "#F1ECE0"
+  color_dark: "#0E1514"
+  image: assets/splash/splash_logo.png
+  android_12:
+    image: assets/splash/splash_logo_android12.png
+    color: "#F1ECE0"
+    color_dark: "#0E1514"
+  web: false
 
 flutter:
   uses-material-design: true
