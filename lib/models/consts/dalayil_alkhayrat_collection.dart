@@ -269,7 +269,7 @@ const dalayilHizb4 = Zikr(
 
 const dalayilHizb5 = Zikr(
   id: 'dalayil-hizb-5',
-  title: 'دلائل ورد يوم الجمعة',
+  title: 'ورد يوم الجمعة',
   notes: 'دلائل الخيرات ورد يوم الجمعة',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_fri.mp3',
   footer:
