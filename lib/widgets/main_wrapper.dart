@@ -26,8 +26,10 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
       audioProvider.select((state) => state.isVisible),
     );
     final isPlayerCollapsed = ref.watch(miniPlayerCollapsedProvider);
-    final playerClearance =
-        !isPlayerVisible ? 0.0 : (isPlayerCollapsed ? 52.0 : 154.0);
+    final playerClearance = miniPlayerClearance(
+      visible: isPlayerVisible,
+      collapsed: isPlayerCollapsed,
+    );
 
     return Stack(
       fit: StackFit.expand,
@@ -53,7 +55,7 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
   }
 }
 
-class MainWrapper extends StatelessWidget {
+class MainWrapper extends ConsumerWidget {
   const MainWrapper({
     required this.navigationShell,
     super.key,
@@ -61,7 +63,7 @@ class MainWrapper extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     void goBranch(int index) {
       navigationShell.goBranch(
         index,
@@ -71,6 +73,15 @@ class MainWrapper extends StatelessWidget {
 
     // Selected tab icon color contrasts with the primary indicator pill.
     final selectedIconColor = Theme.of(context).colorScheme.onPrimary;
+
+    final isPlayerVisible = ref.watch(
+      audioProvider.select((state) => state.isVisible),
+    );
+    final isPlayerCollapsed = ref.watch(miniPlayerCollapsedProvider);
+    final playerClearance = miniPlayerClearance(
+      visible: isPlayerVisible,
+      collapsed: isPlayerCollapsed,
+    );
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -83,17 +94,25 @@ class MainWrapper extends StatelessWidget {
             // Keep the bottom NavigationBar pinned: the keyboard overlays
             // it instead of lifting it above the keyboard.
             resizeToAvoidBottomInset: false,
-            body: Center(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: navigationShell,
-                  ),
-                  // The AudioMiniPlayer widget internally watches audio state and collapses to
-                  // SizedBox.shrink when nothing is loaded.
-                  const AudioMiniPlayer(),
-                ],
-              ),
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Reserve space at the bottom so scrollable content ends
+                // above the floating mini player instead of under it.
+                AnimatedPadding(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  padding: EdgeInsets.only(bottom: playerClearance),
+                  child: navigationShell,
+                ),
+                // Floating card stacked over the content, pinned just
+                // above the NavigationBar. AudioMiniPlayer collapses to
+                // SizedBox.shrink internally when nothing is loaded.
+                const Align(
+                  alignment: Alignment.bottomCenter,
+                  child: AudioMiniPlayer(),
+                ),
+              ],
             ),
             bottomNavigationBar: NavigationBar(
               indicatorShape: const StadiumBorder(),
