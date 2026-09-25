@@ -40,17 +40,26 @@ class AppRouter {
         _createDownloadManagerRoute(),
         _createPdfViewerRoute(),
 
-        // Bottom navigation shell with main tabs
-        StatefulShellRoute.indexedStack(
+        // Bottom navigation shell with main tabs. MainWrapper lays the
+        // branches out side by side in a pager, so a swipe moves between
+        // tabs. Every branch is preloaded so a tab swiped into view shows
+        // its screen, not an empty page; the pager still builds that screen
+        // only once it comes into view.
+        StatefulShellRoute(
           restorationScopeId: 'appShell',
           pageBuilder: (context, state, navigationShell) {
             return MaterialPage(
               key: state.pageKey,
               restorationId: 'appShellPage',
-              child: MainWrapper(
-                navigationShell: navigationShell,
-                isTabRoot: isTabRoot(state.uri),
-              ),
+              child: navigationShell,
+            );
+          },
+          navigatorContainerBuilder: (context, navigationShell, children) {
+            return MainWrapper(
+              navigationShell: navigationShell,
+              isTabRoot:
+                  isTabRoot(navigationShell.shellRouteContext.routerState.uri),
+              children: children,
             );
           },
           branches: [
@@ -72,8 +81,8 @@ class AppRouter {
   };
 
   /// Whether [location] is a bottom-nav tab's own screen rather than one
-  /// pushed inside it. Only there may a swipe open the drawer; everywhere
-  /// else the swipe goes back.
+  /// pushed inside it. Only there does a swipe move between tabs (and, from
+  /// home, open the drawer); everywhere else the swipe goes back.
   static bool isTabRoot(Uri location) =>
       _tabRootPaths.contains(location.path);
 
@@ -102,6 +111,7 @@ class AppRouter {
   static StatefulShellBranch _createHomeBranch() {
     return StatefulShellBranch(
       restorationScopeId: 'homeBranch',
+      preload: true,
       routes: [
         GoRoute(
           path: RoutePaths.home,
@@ -121,6 +131,7 @@ class AppRouter {
   static StatefulShellBranch _createPrayerTimingsBranch() {
     return StatefulShellBranch(
       restorationScopeId: 'timingsBranch',
+      preload: true,
       routes: [
         GoRoute(
           path: RoutePaths.timings,
@@ -155,6 +166,7 @@ class AppRouter {
   static StatefulShellBranch _createAwradBranch() {
     return StatefulShellBranch(
       restorationScopeId: 'awradBranch',
+      preload: true,
       routes: [
         GoRoute(
           path: RoutePaths.awrad,
@@ -174,6 +186,7 @@ class AppRouter {
   static StatefulShellBranch _createLibraryBranch() {
     return StatefulShellBranch(
       restorationScopeId: 'libraryBranch',
+      preload: true,
       routes: [
         GoRoute(
           path: RoutePaths.library,

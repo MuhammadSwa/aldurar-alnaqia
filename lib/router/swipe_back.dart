@@ -13,17 +13,38 @@ import 'package:material_ui/material_ui.dart';
 // Relies on the route transition in `RouteTransitions`: the page slides off
 // toward that side as the route animation runs 1 → 0, linearly while a pop
 // gesture is in progress so it stays under the finger.
+//
+// [OverscrollHandoffPhysics] is what lets a pager hand drags past its first
+// page to something else; the bottom-nav tab pager uses it to slide the side
+// menu open from the home tab.
 // ---------------------------------------------------------------------------
 
 /// Release speed, in page widths per second, above which the fling's
 /// direction decides however far the page was dragged (iOS's value).
 const double _kMinFlingVelocity = 1;
 
+/// Follows a horizontal drag that a pager hands over past its first page
+/// ([OverscrollHandoffPhysics]).
+///
+/// Distances are logical pixels, positive = past the first page.
+abstract interface class OverscrollTracker {
+  /// Whether it is following the current drag.
+  bool get isTracking;
+
+  /// Moves by [delta] and returns the part it did not use: all of it when it
+  /// can't take the drag, or the overshoot once it is back where it started,
+  /// which ends the drag.
+  double update(double delta);
+
+  /// Ends the drag; [velocity] is the release speed in pixels per second.
+  void end(double velocity);
+}
+
 /// Drives a route's pop transition from a horizontal drag through
 /// [TransitionRoute]'s public back-gesture hooks.
 ///
 /// Distances are logical pixels, positive = toward the previous screen.
-class _SwipeBackTracker {
+class _SwipeBackTracker implements OverscrollTracker {
   /// The route to pop; owners refresh it from [ModalRoute.of].
   ModalRoute<Object?>? route;
 
@@ -31,11 +52,13 @@ class _SwipeBackTracker {
   NavigatorState? _navigator;
   double _width = 0;
 
+  @override
   bool get isTracking => _tracking != null;
 
   /// Moves the page by [delta] and returns the part it did not use: all of
   /// it when the page can't be swiped back, or the overshoot once the page
   /// is fully back in place, which ends the swipe.
+  @override
   double update(double delta) {
     var tracking = _tracking;
     if (tracking == null) {
@@ -53,6 +76,7 @@ class _SwipeBackTracker {
   }
 
   /// Ends the swipe; [velocity] is the release speed in pixels per second.
+  @override
   void end(double velocity) {
     final tracking = _tracking;
     if (tracking == null) return;
@@ -205,7 +229,10 @@ class _SwipeBackPageViewState extends State<SwipeBackPageView> {
       // it brings its own page snapping.
       pageSnapping: false,
       physics: widget.swipeEnabled
-          ? _SwipeBackScrollPhysics(_tracker, parent: const PageScrollPhysics())
+          ? OverscrollHandoffPhysics(
+              _tracker,
+              parent: const PageScrollPhysics(),
+            )
           : const NeverScrollableScrollPhysics(),
       itemCount: widget.itemCount,
       onPageChanged: widget.onPageChanged,
@@ -214,21 +241,26 @@ class _SwipeBackPageViewState extends State<SwipeBackPageView> {
   }
 }
 
-/// Hands drags past the first page to [tracker] instead of overscrolling,
-/// and keeps the pager on that page while the route follows the finger.
+/// Hands a pager's drags past its first page to [tracker] instead of
+/// overscrolling, and keeps the pager on that page while [tracker] follows
+/// the finger.
+///
+/// It must see every release, so it goes outermost: the pager turns
+/// `pageSnapping` off and passes [PageScrollPhysics] as [parent].
 ///
 /// Positive user offsets head toward the first page. With the pager in the
-/// ambient text direction, that's the side the route slides off to.
-class _SwipeBackScrollPhysics extends ScrollPhysics {
-  const _SwipeBackScrollPhysics(this.tracker, {super.parent});
+/// ambient text direction, that's the side the route slides off to (and
+/// the side menu slides in from).
+class OverscrollHandoffPhysics extends ScrollPhysics {
+  const OverscrollHandoffPhysics(this.tracker, {super.parent});
 
-  final _SwipeBackTracker tracker;
+  final OverscrollTracker tracker;
 
   @override
-  _SwipeBackScrollPhysics applyTo(ScrollPhysics? ancestor) =>
-      _SwipeBackScrollPhysics(tracker, parent: buildParent(ancestor));
+  OverscrollHandoffPhysics applyTo(ScrollPhysics? ancestor) =>
+      OverscrollHandoffPhysics(tracker, parent: buildParent(ancestor));
 
-  /// A single page can't scroll, but must still take drags to swipe back.
+  /// A single page can't scroll, but must still take drags to hand over.
   @override
   bool shouldAcceptUserOffset(ScrollMetrics position) => true;
 
@@ -242,12 +274,12 @@ class _SwipeBackScrollPhysics extends ScrollPhysics {
     if (offset <= room || room < 0) {
       return super.applyPhysicsToUserOffset(position, offset);
     }
-    // The pager scrolls to its first page; the rest swipes back.
+    // The pager scrolls to its first page; the tracker takes the rest.
     return _toPager(position, room + tracker.update(offset - room));
   }
 
   /// The parent never sees a zero offset: iOS's bouncing physics asserts on
-  /// it, and a swipe back in progress hands the pager nothing.
+  /// it, and a drag the tracker is following hands the pager nothing.
   double _toPager(ScrollMetrics position, double offset) =>
       offset == 0 ? 0 : super.applyPhysicsToUserOffset(position, offset);
 
@@ -257,7 +289,7 @@ class _SwipeBackScrollPhysics extends ScrollPhysics {
     double velocity,
   ) {
     if (tracker.isTracking) {
-      // Positive scroll velocity heads to later pages, away from going back.
+      // Positive scroll velocity heads to later pages, away from the tracker.
       tracker.end(-velocity);
       return null;
     }

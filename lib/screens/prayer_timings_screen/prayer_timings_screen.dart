@@ -12,7 +12,7 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_settings_di
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_setup_required_dialog.dart';
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_card.dart';
 import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
-import 'package:aldurar_alnaqia/widgets/main_wrapper.dart' show rootScaffoldKey;
+import 'package:aldurar_alnaqia/widgets/swipe_drawer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -30,6 +30,11 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
   // when prayer timings can't be calculated (e.g. no location yet).
   bool _hasAutoShownSettings = false;
 
+  /// Whether this is the open tab. The tab pager builds this screen as soon
+  /// as a swipe brings it into view, but only lets the open tab's tickers
+  /// run; a peek that swipes back to the previous tab mustn't prompt.
+  bool _isOpenTab = false;
+
   @override
   void initState() {
     super.initState();
@@ -38,14 +43,17 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
     // parse now runs on a background isolate, but starting it early
     // still hides its latency behind this screen).
     ref.read(cityDirectoryProvider);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _maybeAutoShowSettingsDialog();
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _isOpenTab = TickerMode.valuesOf(context).enabled;
+    _maybeAutoShowSettingsDialog();
   }
 
   void _maybeAutoShowSettingsDialog() {
-    if (_hasAutoShownSettings || !mounted) return;
+    if (_hasAutoShownSettings || !mounted || !_isOpenTab) return;
     // Null view means unconfigured (prefs are ready before runApp, so there
     // is no separate loading state to wait for).
     if (ref.read(prayerViewProvider) != null) return;
@@ -73,7 +81,7 @@ class _PrayerTimingsScreenState extends ConsumerState<PrayerTimingsScreen> {
         title: const Text('مواقيت الصلاة'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => rootScaffoldKey.currentState?.openDrawer(),
+          onPressed: () => SwipeDrawer.of(context).open(),
           tooltip: 'فتح القائمة',
         ),
         actions: [
