@@ -42,6 +42,10 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   bool _chromeVisible = true;
   Timer? _chromeTimer;
 
+  /// Tracks the at-top edge so the chrome is revealed once per arrival at
+  /// the top, not on every viewer matrix tick.
+  bool _wasAtTop = true;
+
   String get _id => widget.bookId;
   BookInfo? get _book => bookById(_id);
   String? get _url => _book?.url;
@@ -59,6 +63,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
     _saveCurrentPage();
     unawaited(_document?.close());
+    _controller?.removeListener(_handlePdfTransform);
     _controller?.dispose();
     super.dispose();
   }
@@ -105,6 +110,70 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   /// immersed, so hide immediately when visible, stay hidden otherwise.
   void _onReadingInteraction() {
     if (_chromeVisible) _hideChrome();
+  }
+
+  /// True when a multi-page document sits at the very top (progress ~0).
+  /// Single-page docs always report 0, so they are excluded — otherwise
+  /// tap-to-hide would be instantly undone.
+  bool _isAtTop() {
+    final controller = _controller;
+    if (controller == null) return false;
+    try {
+      final total = controller.pagesCount;
+      if (total == null || total <= 1) return false;
+      return controller.documentProgress <= 0.01;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Fires on every viewer matrix change; reveals the chrome once per
+  /// arrival at the very top while a scroll/fling/zoom settles.
+  void _handlePdfTransform() {
+    final controller = _controller;
+    if (controller == null) return;
+    try {
+      final total = controller.pagesCount;
+      if (total == null || total <= 1) return;
+      final atTop = controller.documentProgress <= 0.001;
+      if (atTop && !_wasAtTop) {
+        _wasAtTop = true;
+        _showChrome();
+      } else if (!atTop) {
+        _wasAtTop = false;
+      }
+    } catch (_) {
+      // Viewer mid-layout/detached; the next tick will re-evaluate.
+    }
+  }
+
+  /// A fling keeps settling after the finger lifts; re-check once the
+  /// viewer's progress value is fresh.
+  void _handlePdfInteractionEnd(ScaleEndDetails _) {
+    unawaited(
+      Future.microtask(() {
+        if (!mounted || !_isAtTop()) return;
+        _wasAtTop = true;
+        _showChrome();
+      }),
+    );
+  }
+
+  /// A page turn onto the first page may still be settling at the top, so
+  /// defer the hide/show decision until progress is fresh.
+  void _onPageChanged(int page) {
+    unawaited(SharedPreferencesService.setPdfLastPage(_id, page));
+    unawaited(
+      Future.microtask(() {
+        if (!mounted) return;
+        if (_isAtTop()) {
+          _wasAtTop = true;
+          _showChrome();
+        } else {
+          _onReadingInteraction();
+        }
+      }),
+    );
   }
 
   Future<void> _open({bool freshDownload = false}) async {
@@ -187,7 +256,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       final controller = PdfControllerPinch(
         document: Future.value(document),
         initialPage: lastPage,
-      );
+      )..addListener(_handlePdfTransform);
 
       setState(() {
         _document = document;
@@ -218,7 +287,9 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
 
   void _retry() {
     unawaited(_document?.close());
-    _controller?.dispose();
+    _controller
+      ?..removeListener(_handlePdfTransform)
+      ..dispose();
     _document = null;
     unawaited(_open(freshDownload: !_isLocal));
   }
@@ -323,18 +394,17 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     return AppPdfView(
       controller: controller,
       padding: 8,
-      onPageChanged: (page) {
-        unawaited(SharedPreferencesService.setPdfLastPage(_id, page));
-        _onReadingInteraction();
-      },
+      onPageChanged: _onPageChanged,
       onDocumentLoaded: (_) {
         setState(() {});
         _restartHideTimer();
       },
       onDocumentError: (error) => setState(() => _error = error),
       // Single tap toggles chrome; drag/pinch is reading → hide.
+      // Lifting the finger at the very top reveals chrome again.
       onTap: _toggleChrome,
       onInteractionStart: (_) => _onReadingInteraction(),
+      onInteractionEnd: _handlePdfInteractionEnd,
       onScrollbarDrag: _onReadingInteraction,
       documentLoaderBuilder: _buildLoading,
       errorBuilder: _buildError,

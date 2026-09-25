@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aldurar_alnaqia/common/reader/reader_scaffold.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
@@ -46,20 +48,68 @@ class PdfReaderContent extends StatefulWidget {
 class _PdfReaderContentState extends State<PdfReaderContent> {
   late final PdfControllerPinch _controller;
 
+  /// Tracks the at-top edge so [ReaderChromeAction.show] is dispatched once
+  /// per arrival at the top, not on every viewer matrix tick.
+  bool _wasAtTop = true;
+
   @override
   void initState() {
     super.initState();
     _controller = PdfControllerPinch(document: widget.openDocument());
+    _controller.addListener(_handleTransform);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_handleTransform);
     _controller.dispose();
     super.dispose();
   }
 
   void _sendChrome(ReaderChromeAction action) {
     ReaderChromeNotification(action).dispatch(context);
+  }
+
+  /// Fires on every viewer matrix change; reveals the chrome when the
+  /// document reaches the very top (first page, progress ~0).
+  void _handleTransform() {
+    final total = _controller.pagesCount;
+    // Single-page (or not-yet-loaded) documents report a constant progress
+    // of 0 — never auto-reveal, or tap-to-hide would be instantly undone.
+    if (total == null || total <= 1) return;
+    double progress;
+    try {
+      progress = _controller.documentProgress;
+    } catch (_) {
+      return;
+    }
+    final atTop = progress <= 0.001;
+    if (atTop && !_wasAtTop) {
+      _wasAtTop = true;
+      _sendChrome(ReaderChromeAction.show);
+    } else if (!atTop) {
+      _wasAtTop = false;
+    }
+  }
+
+  /// A fling keeps settling after the finger lifts; re-check once the
+  /// viewer's progress value is fresh.
+  void _handleInteractionEnd(ScaleEndDetails _) {
+    unawaited(
+      Future.microtask(() {
+        if (!mounted) return;
+        final total = _controller.pagesCount;
+        if (total == null || total <= 1) return;
+        try {
+          if (_controller.documentProgress <= 0.01) {
+            _wasAtTop = true;
+            _sendChrome(ReaderChromeAction.show);
+          }
+        } catch (_) {
+          // Viewer detached mid-gesture; nothing to reveal.
+        }
+      }),
+    );
   }
 
   @override
@@ -69,6 +119,7 @@ class _PdfReaderContentState extends State<PdfReaderContent> {
         controller: _controller,
         onTap: () => _sendChrome(ReaderChromeAction.toggle),
         onInteractionStart: (_) => _sendChrome(ReaderChromeAction.hide),
+        onInteractionEnd: _handleInteractionEnd,
         onScrollbarDrag: () => _sendChrome(ReaderChromeAction.hide),
       ),
     );

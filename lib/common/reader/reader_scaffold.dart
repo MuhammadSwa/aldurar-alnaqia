@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 /// Intent emitted by embedded reader content (PDF view, text view, …) that
 /// wants to drive the reader's AppBar.
-enum ReaderChromeAction { toggle, hide }
+enum ReaderChromeAction { toggle, hide, show }
 
 /// Lets embedded reader content control the containing reader's AppBar.
 class ReaderChromeNotification extends Notification {
@@ -79,6 +79,8 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
         _toggleAppBar();
       case ReaderChromeAction.hide:
         _hideAppBar();
+      case ReaderChromeAction.show:
+        _showAppBar();
     }
     return true;
   }
@@ -89,6 +91,14 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
     // reader scroll should affect the chrome.
     if (notification.metrics.axis != Axis.vertical) return false;
 
+    // Pull-down overscroll at the very top (finger drags down while already
+    // at offset 0): reveal even if metrics haven't settled exactly on
+    // minScrollExtent.
+    if (notification is OverscrollNotification &&
+        notification.overscroll < 0) {
+      _showAppBar();
+      return false;
+    }
     if (notification.metrics.pixels <= notification.metrics.minScrollExtent) {
       _showAppBar();
     } else if (notification is ScrollUpdateNotification &&
