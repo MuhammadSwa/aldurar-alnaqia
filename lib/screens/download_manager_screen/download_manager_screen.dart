@@ -473,20 +473,29 @@ class _DownloadManagerPageState extends ConsumerState<DownloadManagerPage>
                 // button is a stop button; otherwise it's download-all.
                 if (activeCount > 0)
                   IconButton(
-                    icon: const Icon(Icons.stop_circle_outlined),
+                    icon: Icon(
+                      Icons.stop_circle_outlined,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
                     tooltip: 'إيقاف جميع التحميلات',
                     onPressed: _cancelAllDownloads,
                   )
                 else
                   IconButton(
-                    icon: const Icon(Icons.download_for_offline_outlined),
+                    icon: Icon(
+                      Icons.download_for_offline_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     tooltip: 'تحميل جميع الملفات',
                     // Disabled once everything is on the device.
                     onPressed:
                         count >= allItems.length ? null : () => _downloadAll(),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.delete_sweep_outlined),
+                  icon: Icon(
+                    Icons.delete_sweep_outlined,
+                      color: Theme.of(context).colorScheme.error,
+                  ),
                   tooltip: 'حذف جميع التحميلات',
                   onPressed: count == 0 ? null : () => _clearAll(count),
                 ),
