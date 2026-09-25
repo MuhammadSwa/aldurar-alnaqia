@@ -1,0 +1,51 @@
+{
+  "features" : [
+    "specular-location"
+  ],
+  "fill-specializations" : [
+    {
+      "value" : "automatic"
+    },
+    {
+      "appearance" : "dark",
+      "value" : "automatic"
+    }
+  ],
+  "groups" : [
+    {
+      "blur-material" : null,
+      "layers" : [
+        {
+          "fill" : "none",
+          "image-name" : "logo app1 2.png",
+          "name" : "logo app1 2",
+          "position" : {
+            "scale" : 1.24,
+            "translation-in-points" : [
+              0.6200000000000045,
+              -37
+            ]
+          }
+        }
+      ],
+      "lighting" : "combined",
+      "name" : "Group",
+      "opacity" : 1,
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : "inside",
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.3
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

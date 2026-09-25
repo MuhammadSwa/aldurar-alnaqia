@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:aldurar_alnaqia/audio/media_session.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
+import 'package:audio_service/audio_service.dart' show MediaItem;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// What to load: a downloaded file or a remote stream.
@@ -31,8 +32,9 @@ class EngineLoadRequest {
 /// auto-advance, fallback, UI state) lives in the audio controller.
 ///
 /// Responsibilities:
-///  * builds tagged sources — the `MediaItem` tag is what drives the media
-///    notification via just_audio_background,
+///  * feeds the system media session ([MediaSessionHandler]: lock screen,
+///    media notification) the current `MediaItem`, and forwards its
+///    prev/next presses on [remoteSkips],
 ///  * materializes the bundled cover art to a real file (the Android
 ///    notification cannot decode `asset:///` URIs — it silently shows a
 ///    black square),
@@ -50,7 +52,10 @@ class EngineLoadRequest {
 /// backend; [load] will throw there and the controller surfaces it as a
 /// normal error state.
 class JustAudioEngine {
-  JustAudioEngine();
+  JustAudioEngine({MediaSessionHandler? session}) : _session = session;
+
+  /// Null in tests and on platforms without a media session.
+  final MediaSessionHandler? _session;
 
   AudioPlayer? _player;
   bool _playerWired = false;
@@ -72,6 +77,7 @@ class JustAudioEngine {
   void _wirePlayer(AudioPlayer player) {
     if (_playerWired) return;
     _playerWired = true;
+    _session?.attach(player);
     _subscriptions.add(
       player.playbackEventStream.listen(
         (_) {},
@@ -87,12 +93,15 @@ class JustAudioEngine {
 
   Stream<PlayerState> get playerStateStream => _audio.playerStateStream;
   Stream<Duration> get positionStream => _audio.positionStream;
-  Stream<Duration> get bufferedPositionStream =>
-      _audio.bufferedPositionStream;
+  Stream<Duration> get bufferedPositionStream => _audio.bufferedPositionStream;
   Stream<Duration?> get durationStream => _audio.durationStream;
 
   /// Terminal, out-of-band playback errors (async decode/stream failures).
   Stream<String> get errorStream => _errors.stream;
+
+  /// Previous/next presses on the lock screen or media notification.
+  Stream<RemoteSkip> get remoteSkips =>
+      _session?.remoteSkips ?? const Stream<RemoteSkip>.empty();
 
   Duration get position => _player?.position ?? Duration.zero;
   Duration get bufferedPosition => _player?.bufferedPosition ?? Duration.zero;
@@ -122,9 +131,8 @@ class JustAudioEngine {
     return _coverFileUri;
   }
 
-  /// Builds the notification metadata. This is the tag the engine attaches
-  /// to the audio source; just_audio_background forwards it to the media
-  /// notification (title, album, artist, cover art).
+  /// Builds the lock screen / media notification metadata (title, album,
+  /// artist, cover art).
   MediaItem _mediaItemFor(EngineLoadRequest request, Uri? artUri) {
     return MediaItem(
       id: request.trackId,
@@ -142,15 +150,33 @@ class JustAudioEngine {
   /// load is still the wanted one (guards rapid track-switch races).
   Future<void> load(EngineLoadRequest request) async {
     final player = _audio;
-    await player.stop();
+    final item = _mediaItemFor(request, await _coverArtUri());
+    _session?.beginTrackSwitch(item);
+    try {
+      await player.stop();
 
-    final tag = _mediaItemFor(request, await _coverArtUri());
-    final AudioSource source = request.isLocal
-        ? AudioSource.file(request.uri, tag: tag)
-        : AudioSource.uri(Uri.parse(request.uri), tag: tag);
+      final AudioSource source = request.isLocal
+          ? AudioSource.file(request.uri)
+          : AudioSource.uri(Uri.parse(request.uri));
 
-    await player.setAudioSource(source);
-    await player.setSpeed(_currentSpeed);
+      await player.setAudioSource(source);
+      await player.setSpeed(_currentSpeed);
+    } finally {
+      _session?.endTrackSwitch();
+    }
+  }
+
+  /// Which queue buttons the lock screen / media notification offers.
+  void setQueueNavigation({
+    required bool hasQueue,
+    required bool hasPrevious,
+    required bool hasNext,
+  }) {
+    _session?.setQueueNavigation(
+      hasQueue: hasQueue,
+      hasPrevious: hasPrevious,
+      hasNext: hasNext,
+    );
   }
 
   Future<void> play() async {
@@ -178,9 +204,8 @@ class JustAudioEngine {
     await player.setSpeed(speed);
   }
 
-  /// Halts playback. With just_audio_background the system notification is
-  /// driven by the last tagged source and lingers (paused) until the user
-  /// swipes it away.
+  /// Halts playback. The player goes idle, which ends the media session and
+  /// removes the lock-screen controls / media notification.
   Future<void> stop() async {
     final player = _player;
     if (player == null) return;
@@ -193,6 +218,7 @@ class JustAudioEngine {
     }
     _subscriptions.clear();
     await _errors.close();
+    _session?.detach();
     final player = _player;
     _player = null;
     _playerWired = false;

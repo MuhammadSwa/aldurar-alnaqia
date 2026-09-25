@@ -2,24 +2,29 @@ import Flutter
 import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GeneratedPluginRegistrant.register(with: self)
-    registerStorageChannel()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  /// UIScene lifecycle (required on iOS 27): the engine is created by the
+  /// scene's storyboard after launch, so `window` is nil in
+  /// `didFinishLaunching`. Plugins and channels are registered here instead.
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    registerStorageChannel(messenger: engineBridge.applicationRegistrar.messenger())
   }
 
   /// `app/storage` channel: marks download directories as excluded from
   /// iCloud/iTunes backup (downloaded books and narrations are
   /// re-downloadable and must not consume backup quota).
-  private func registerStorageChannel() {
-    guard let controller = window?.rootViewController as? FlutterViewController else { return }
+  private func registerStorageChannel(messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(
       name: "app/storage",
-      binaryMessenger: controller.binaryMessenger
+      binaryMessenger: messenger
     )
     channel.setMethodCallHandler { call, result in
       guard call.method == "excludeFromBackup",

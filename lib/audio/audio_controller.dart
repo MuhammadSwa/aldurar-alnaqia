@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:aldurar_alnaqia/audio/audio_engine.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
+import 'package:aldurar_alnaqia/audio/media_session.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
@@ -16,6 +17,8 @@ import 'package:just_audio/just_audio.dart' show PlayerState, ProcessingState;
 ///  * falls back from a broken local file to streaming once,
 ///  * maps raw player streams into one immutable [AudioState] for the UI,
 ///  * guards against rapid track-switch races with a generation token,
+///  * drives the lock screen / notification prev-next buttons from the
+///    queue,
 ///  * persists playback speed across restarts.
 ///
 /// Transient network hiccups (buffering, reconnection) are handled inside
@@ -54,7 +57,17 @@ class AudioController extends Notifier<AudioState> {
       ..add(_engine.errorStream.listen(_onEngineError))
       ..add(_engine.positionStream.listen((_) => _emitProgress()))
       ..add(_engine.bufferedPositionStream.listen((_) => _emitProgress()))
-      ..add(_engine.durationStream.listen((_) => _emitProgress()));
+      ..add(_engine.durationStream.listen((_) => _emitProgress()))
+      ..add(_engine.remoteSkips.listen(_onRemoteSkip));
+
+    // The session dedupes, so the per-tick progress updates are free.
+    listenSelf((_, next) {
+      _engine.setQueueNavigation(
+        hasQueue: next.hasQueue,
+        hasPrevious: next.hasPrevious,
+        hasNext: next.hasNext,
+      );
+    });
 
     // Restore the persisted speed once per app run. Tests run without
     // initialized prefs — fall back to 1.0 instead of throwing.
@@ -311,6 +324,15 @@ class AudioController extends Notifier<AudioState> {
     );
   }
 
+  void _onRemoteSkip(RemoteSkip skip) {
+    switch (skip) {
+      case RemoteSkip.next:
+        unawaited(playNext());
+      case RemoteSkip.previous:
+        unawaited(playPrevious());
+    }
+  }
+
   void _onEngineError(String message) {
     if (_switching) return;
     logWarn('Audio engine reported failure: $message');
@@ -391,8 +413,12 @@ class AudioController extends Notifier<AudioState> {
   }
 }
 
+/// The system media session; overridden in `main` on mobile, where
+/// `AudioService.init` creates it. Null elsewhere (tests, desktop).
+final mediaSessionProvider = Provider<MediaSessionHandler?>((ref) => null);
+
 final audioEngineProvider = Provider<JustAudioEngine>((ref) {
-  final engine = JustAudioEngine();
+  final engine = JustAudioEngine(session: ref.watch(mediaSessionProvider));
   ref.onDispose(engine.dispose);
   return engine;
 });

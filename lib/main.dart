@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
+import 'package:aldurar_alnaqia/audio/media_session.dart';
 import 'package:aldurar_alnaqia/common/helpers/app_platform.dart';
 import 'package:aldurar_alnaqia/common/helpers/logger.dart';
 import 'package:aldurar_alnaqia/common/theme/app_theme.dart';
@@ -11,25 +12,28 @@ import 'package:aldurar_alnaqia/services/prayer_notification_service.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 
 Future<ProviderContainer> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Media notification + background audio (mobile). just_audio_background
-  // drives the native audio_service infrastructure already configured
-  // (AndroidManifest service entry, iOS background mode) — no platform
-  // changes required.
+  // Media notification / lock-screen controls + background audio (mobile).
+  // Uses the audio_service infrastructure already configured (AndroidManifest
+  // service entry, AudioServiceActivity, iOS background mode).
+  MediaSessionHandler? mediaSession;
   if (AppPlatform.isMobile) {
-    await JustAudioBackground.init(
-      androidNotificationChannelId:
-          'com.example.aldurar_alnaqia.channel.audio',
-      androidNotificationChannelName: 'تشغيل الصوت',
-      androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
+    mediaSession = await AudioService.init(
+      builder: MediaSessionHandler.new,
+      config: const AudioServiceConfig(
+        androidNotificationChannelId:
+            'com.example.aldurar_alnaqia.channel.audio',
+        androidNotificationChannelName: 'تشغيل الصوت',
+        androidNotificationChannelDescription: 'التحكم بتشغيل التلاوات',
+      ),
     );
   }
 
@@ -42,6 +46,8 @@ Future<ProviderContainer> _bootstrap() async {
   final container = ProviderContainer(
     overrides: [
       storageProvider.overrideWithValue(await StorageService().init()),
+      if (mediaSession != null)
+        mediaSessionProvider.overrideWithValue(mediaSession),
     ],
   );
 

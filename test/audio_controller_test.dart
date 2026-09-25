@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/audio_engine.dart';
 import 'package:aldurar_alnaqia/audio/audio_state.dart';
+import 'package:aldurar_alnaqia/audio/media_session.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_controller.dart';
 import 'package:aldurar_alnaqia/services/storage_service.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
@@ -27,6 +28,10 @@ class FakeEngine extends JustAudioEngine {
   final _positionCtrl = StreamController<Duration>.broadcast();
   final _bufferedCtrl = StreamController<Duration>.broadcast();
   final _durationCtrl = StreamController<Duration?>.broadcast();
+  final _remoteSkipCtrl = StreamController<RemoteSkip>.broadcast();
+
+  /// Last queue buttons pushed to the media session.
+  ({bool hasQueue, bool hasPrevious, bool hasNext})? queueNavigation;
 
   Duration positionValue = Duration.zero;
   Duration bufferedValue = Duration.zero;
@@ -60,6 +65,8 @@ class FakeEngine extends JustAudioEngine {
   Stream<Duration> get bufferedPositionStream => _bufferedCtrl.stream;
   @override
   Stream<Duration?> get durationStream => _durationCtrl.stream;
+  @override
+  Stream<RemoteSkip> get remoteSkips => _remoteSkipCtrl.stream;
 
   @override
   Duration get position => positionValue;
@@ -84,6 +91,9 @@ class FakeEngine extends JustAudioEngine {
       _playerStateCtrl.add(PlayerState(false, ProcessingState.idle));
 
   void emitError(String message) => _errorCtrl.add(message);
+
+  /// A prev/next press on the lock screen or media notification.
+  void emitRemoteSkip(RemoteSkip skip) => _remoteSkipCtrl.add(skip);
 
   void setProgress({
     Duration? position,
@@ -133,6 +143,16 @@ class FakeEngine extends JustAudioEngine {
   }
 
   @override
+  void setQueueNavigation({
+    required bool hasQueue,
+    required bool hasPrevious,
+    required bool hasNext,
+  }) {
+    queueNavigation =
+        (hasQueue: hasQueue, hasPrevious: hasPrevious, hasNext: hasNext);
+  }
+
+  @override
   Future<void> stop() async {
     stops++;
     final gate = stopGate;
@@ -146,6 +166,7 @@ class FakeEngine extends JustAudioEngine {
     await _positionCtrl.close();
     await _bufferedCtrl.close();
     await _durationCtrl.close();
+    await _remoteSkipCtrl.close();
     await super.dispose();
   }
 }
