@@ -120,7 +120,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
             AppTile(
               title: dalayilAlkhayratCollection[dayIndex].title,
-              maxTitleLines: 2,
+              // maxTitleLines: 1,
               subtitle: 'ورد يوم ${arabicWeekdays[dayIndex]}}',
               leading: const AppTileLeadingIcon(
                 icon: Icons.auto_stories_rounded,

@@ -1,3 +1,4 @@
+import 'package:aldurar_alnaqia/common/reader/reader_chrome_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Intent emitted by embedded reader content (PDF view, text view, …) that
@@ -14,7 +15,8 @@ class ReaderChromeNotification extends Notification {
 /// Reader chrome shared by every reading screen (azkar text, Hilya/Sanad
 /// manuscripts, books).
 ///
-/// Chrome policy is orientation-aware and lives *here* — embedded content
+/// Chrome policy is orientation-aware and lives in
+/// [ReaderChromeController], shared with the book viewer — embedded content
 /// never branches on orientation, it just dispatches
 /// [ReaderChromeNotification]s, which are ignored in portrait:
 ///
@@ -42,51 +44,55 @@ class ReaderScaffold extends StatefulWidget {
 }
 
 class _ReaderScaffoldState extends State<ReaderScaffold> {
-  /// Cached in [didChangeDependencies]; the notification handlers run outside
-  /// build, so they only read the field.
-  bool _landscape = false;
+  /// Unified chrome state shared with the book viewer. The notification and
+  /// scroll handlers below only translate content intent into it.
+  late final ReaderChromeController _chrome;
 
-  /// Only meaningful while immersive (landscape); portrait always shows.
-  bool _appBarVisible = true;
+  @override
+  void initState() {
+    super.initState();
+    _chrome = ReaderChromeController();
+    _chrome.addListener(_onChromeChanged);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // MediaQuery.orientationOf registers the dependency: this runs on every
-    // rotation and a build always follows, so plain assignment is enough.
-    _landscape = MediaQuery.orientationOf(context) == Orientation.landscape;
-    // Leaving landscape: restore state so rotating back starts visible
-    // instead of staying stuck hidden.
-    if (!_landscape) _appBarVisible = true;
+    // rotation and a build always follows.
+    _chrome.updateOrientation(
+      MediaQuery.orientationOf(context) == Orientation.landscape,
+    );
   }
 
-  void _showAppBar() {
-    if (!_appBarVisible && mounted) setState(() => _appBarVisible = true);
+  @override
+  void dispose() {
+    _chrome.removeListener(_onChromeChanged);
+    _chrome.dispose();
+    super.dispose();
   }
 
-  void _hideAppBar() {
-    if (_appBarVisible && mounted) setState(() => _appBarVisible = false);
-  }
-
-  void _toggleAppBar() {
-    if (mounted) setState(() => _appBarVisible = !_appBarVisible);
+  void _onChromeChanged() {
+    if (mounted) setState(() {});
   }
 
   bool _handleChromeIntent(ReaderChromeNotification notification) {
-    if (!_landscape) return false; // Fixed bar in portrait: ignore intents.
+    if (!_chrome.landscape) {
+      return false; // Fixed bar in portrait: ignore intents.
+    }
     switch (notification.action) {
       case ReaderChromeAction.toggle:
-        _toggleAppBar();
+        _chrome.toggle();
       case ReaderChromeAction.hide:
-        _hideAppBar();
+        _chrome.hide();
       case ReaderChromeAction.show:
-        _showAppBar();
+        _chrome.show();
     }
     return true;
   }
 
   bool _handleScroll(ScrollNotification notification) {
-    if (!_landscape) return false; // Fixed bar in portrait.
+    if (!_chrome.landscape) return false; // Fixed bar in portrait.
     // The outer PageView also emits scroll notifications; only the vertical
     // reader scroll should affect the chrome.
     if (notification.metrics.axis != Axis.vertical) return false;
@@ -96,21 +102,21 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
     // minScrollExtent.
     if (notification is OverscrollNotification &&
         notification.overscroll < 0) {
-      _showAppBar();
+      _chrome.show();
       return false;
     }
     if (notification.metrics.pixels <= notification.metrics.minScrollExtent) {
-      _showAppBar();
+      _chrome.show();
     } else if (notification is ScrollUpdateNotification &&
         notification.scrollDelta != 0) {
-      _hideAppBar();
+      _chrome.hide();
     }
     return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    final showAppBar = !_landscape || _appBarVisible;
+    final showAppBar = _chrome.visible;
 
     return NotificationListener<ReaderChromeNotification>(
       onNotification: _handleChromeIntent,
@@ -125,10 +131,10 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
           // Only wrap in a tap detector while immersive. In portrait the
           // content gets no gesture wrapper at all, so nothing competes with
           // text selection or the PDF view.
-          child: _landscape
+          child: _chrome.landscape
               ? GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onTap: _toggleAppBar,
+                  onTap: _chrome.toggle,
                   child: widget.child,
                 )
               : widget.child,

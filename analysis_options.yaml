@@ -41,6 +41,7 @@ linter:
     avoid_slow_async_io: false
     # Terse internal APIs; named bools add churn for little value here.
     avoid_positional_boolean_parameters: false
+    comment_references: false
 formatter:
   trailing_commas: preserve
 
