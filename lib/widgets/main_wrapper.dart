@@ -1,18 +1,19 @@
-import 'package:aldurar_alnaqia/audio/audio_controller.dart';
 import 'package:aldurar_alnaqia/audio/widgets/audio_mini_player.dart';
 import 'package:aldurar_alnaqia/widgets/my_drawer.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 final rootScaffoldKey = GlobalKey<ScaffoldState>(debugLabel: 'rootDrawer');
 
-/// Places the shared audio controls over a fullscreen route.
+/// Places the shared audio controls below a fullscreen route.
 ///
 /// Routes hosted by the root navigator sit above [MainWrapper], so they do
-/// not inherit its mini player. Use this around a fullscreen reader that
-/// should retain playback controls without restoring the bottom navigation.
-class AudioMiniPlayerOverlay extends ConsumerWidget {
+/// not inherit its mini player. Wrap a fullscreen reader with this to keep
+/// playback controls without restoring the bottom navigation.
+///
+/// Layout: `Expanded(child)` on top, [AudioMiniPlayer] pinned below. When
+/// no track is loaded the player collapses to [SizedBox.shrink].
+class AudioMiniPlayerOverlay extends StatelessWidget {
   const AudioMiniPlayerOverlay({
     required this.child,
     super.key,
@@ -21,34 +22,17 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isPlayerVisible = ref.watch(
-      audioProvider.select((state) => state.isVisible),
-    );
-    final isPlayerCollapsed = ref.watch(miniPlayerCollapsedProvider);
-    final playerClearance =
-        !isPlayerVisible ? 0.0 : (isPlayerCollapsed ? 52.0 : 154.0);
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        AnimatedPadding(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.only(bottom: playerClearance),
-          child: child,
-        ),
-        SafeArea(
-          top: false,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1000),
-              child: const AudioMiniPlayer(),
-            ),
-          ),
-        ),
-      ],
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      right: false,
+      left: false,
+      child: Column(
+        children: [
+          Expanded(child: child),
+          const AudioMiniPlayer(),
+        ],
+      ),
     );
   }
 }
@@ -90,17 +74,11 @@ class MainWrapper extends StatelessWidget {
             // Keep the bottom NavigationBar pinned: the keyboard overlays
             // it instead of lifting it above the keyboard.
             resizeToAvoidBottomInset: false,
-            body: Center(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: navigationShell,
-                  ),
-                  // The AudioMiniPlayer widget internally watches audio state and collapses to
-                  // SizedBox.shrink when nothing is loaded.
-                  const AudioMiniPlayer(),
-                ],
-              ),
+            body: Column(
+              children: [
+                Expanded(child: navigationShell),
+                const AudioMiniPlayer(),
+              ],
             ),
             bottomNavigationBar: NavigationBar(
               indicatorShape: const StadiumBorder(),

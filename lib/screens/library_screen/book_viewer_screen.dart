@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:aldurar_alnaqia/common/helpers/snackbar.dart';
+import 'package:aldurar_alnaqia/common/reader/reader_chrome_controller.dart';
 import 'package:aldurar_alnaqia/common/widgets/app_pdf_view.dart';
 import 'package:aldurar_alnaqia/common/widgets/pdf_at_top_observer.dart';
 import 'package:aldurar_alnaqia/common/widgets/pdf_page_pill.dart';
@@ -12,7 +13,6 @@ import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_jump_dialog.
 import 'package:aldurar_alnaqia/screens/library_screen/widgets/book_loading_view.dart';
 import 'package:aldurar_alnaqia/services/shared_prefs.dart';
 import 'package:aldurar_alnaqia/state/app_providers.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pdfx/pdfx.dart';
@@ -40,12 +40,10 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   int _receivedBytes = 0;
   int? _totalBytes;
 
-  /// Immersive-reader chrome: visible on entry, auto-hides while reading.
-  /// At-top detection lives in the shared [PdfAtTopObserver]; only the
-  /// transport differs from the manuscript readers (direct chrome here,
-  /// chrome notification there).
-  bool _chromeVisible = true;
-  Timer? _chromeTimer;
+  /// Unified chrome state shared with the zikr readers' scaffold:
+  /// fixed bar in portrait, immersive in landscape with a 3s auto-hide.
+  /// At-top detection lives in [PdfAtTopObserver].
+  late final ReaderChromeController _chrome;
   final PdfAtTopObserver _atTop = PdfAtTopObserver();
 
   String get _id => widget.bookId;
@@ -55,14 +53,34 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
   @override
   void initState() {
     super.initState();
+    _chrome = ReaderChromeController(
+      autoHide: const Duration(seconds: 3),
+      immersiveSystemUi: true,
+      canAutoHide: () => _controller != null && _error == null,
+    );
+    _chrome.addListener(_onChromeChanged);
     unawaited(_open());
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // MediaQuery.orientationOf registers the dependency: this runs on every
+    // rotation and a build always follows.
+    _chrome.updateOrientation(
+      MediaQuery.orientationOf(context) == Orientation.landscape,
+    );
+  }
+
+  void _onChromeChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
-    _chromeTimer?.cancel();
-    // Always leave immersive mode: other screens expect edge-to-edge.
-    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+    _chrome.removeListener(_onChromeChanged);
+    // Cancels the hide timer and leaves immersive system UI.
+    _chrome.dispose();
     _saveCurrentPage();
     unawaited(_document?.close());
     _controller
@@ -71,56 +89,12 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     super.dispose();
   }
 
-  /// Shows the AppBar + status bar and (re)starts the auto-hide countdown.
-  void _showChrome() {
-    if (!mounted || _chromeVisible) {
-      if (mounted) _restartHideTimer();
-      return;
-    }
-    setState(() => _chromeVisible = true);
-    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
-    _restartHideTimer();
-  }
-
-  void _hideChrome() {
-    if (!mounted || !_chromeVisible) return;
-    _chromeTimer?.cancel();
-    setState(() => _chromeVisible = false);
-    unawaited(
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
-    );
-  }
-
-  void _toggleChrome() {
-    if (_chromeVisible) {
-      _hideChrome();
-    } else {
-      _showChrome();
-    }
-  }
-
-  /// Hides 3s after the last explicit show. Only runs while a document is
-  /// actually readable — never over loading/error states.
-  void _restartHideTimer() {
-    _chromeTimer?.cancel();
-    if (_controller == null || _error != null) return;
-    _chromeTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && _chromeVisible) _hideChrome();
-    });
-  }
-
-  /// Reading-intent signals: a drag/pinch or a page turn means the user is
-  /// immersed, so hide immediately when visible, stay hidden otherwise.
-  void _onReadingInteraction() {
-    if (_chromeVisible) _hideChrome();
-  }
-
   /// Reveals the chrome once per arrival at the very top while a
   /// scroll/fling/zoom settles.
   void _handlePdfTransform() {
     final controller = _controller;
     if (controller == null) return;
-    if (_atTop.handleTransform(controller)) _showChrome();
+    if (_atTop.handleTransform(controller)) _chrome.show();
   }
 
   /// A fling keeps settling after the finger lifts; re-check once the
@@ -130,7 +104,7 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
     if (controller == null) return;
     _atTop.handleInteractionEnd(controller, () {
       if (!mounted) return;
-      _showChrome();
+      _chrome.show();
     });
   }
 
@@ -144,9 +118,9 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
         final controller = _controller;
         if (controller != null && _atTop.isAtTop(controller)) {
           _atTop.markAtTop();
-          _showChrome();
+          _chrome.show();
         } else {
-          _onReadingInteraction();
+          _chrome.readingInteraction();
         }
       }),
     );
@@ -334,11 +308,12 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Portrait is a normal screen with a fixed bar; landscape overlays the
+    // bar fullscreen so showing/hiding it never resizes the pages.
+    final showAppBar = _chrome.visible;
     return Scaffold(
-      // Body stays fullscreen behind the AppBar, so showing/hiding it
-      // never resizes the pages — it just overlays for full immersion.
-      extendBodyBehindAppBar: true,
-      appBar: _chromeVisible
+      extendBodyBehindAppBar: _chrome.landscape,
+      appBar: showAppBar
           ? AppBar(
               title: Text(
                 _book?.title ?? _id,
@@ -373,15 +348,15 @@ class _BookViewerScreenState extends ConsumerState<BookViewerScreen> {
       onPageChanged: _onPageChanged,
       onDocumentLoaded: (_) {
         setState(() {});
-        _restartHideTimer();
+        _chrome.restartHideTimer();
       },
       onDocumentError: (error) => setState(() => _error = error),
       // Single tap toggles chrome; drag/pinch is reading → hide.
       // Lifting the finger at the very top reveals chrome again.
-      onTap: _toggleChrome,
-      onInteractionStart: (_) => _onReadingInteraction(),
+      onTap: _chrome.toggle,
+      onInteractionStart: (_) => _chrome.readingInteraction(),
       onInteractionEnd: _handlePdfInteractionEnd,
-      onScrollbarDrag: _onReadingInteraction,
+      onScrollbarDrag: _chrome.readingInteraction,
       documentLoaderBuilder: _buildLoading,
       errorBuilder: _buildError,
     );

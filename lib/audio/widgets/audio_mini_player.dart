@@ -24,6 +24,9 @@ final miniPlayerCollapsedProvider =
 
 /// Compact playback bar shown above the bottom navigation while a
 /// narration is loaded.
+///
+/// Renders as [SizedBox.shrink] when no track is loaded, so it can be
+/// placed unconditionally in a Column without occupying space.
 class AudioMiniPlayer extends ConsumerWidget {
   const AudioMiniPlayer({super.key});
 
@@ -38,16 +41,22 @@ class AudioMiniPlayer extends ConsumerWidget {
 
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Rounded card sitting between the screen content above and the
+    // NavigationBar below.
     return Material(
       color: colorScheme.secondaryContainer,
-      elevation: 4,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: colorScheme.outline.withValues(alpha: 0.2),
+          border: Border(
+            bottom: BorderSide(
+              color: colorScheme.onSecondaryContainer.withValues(alpha: 0.15),
+            ),
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: GestureDetector(
           // Swipe down = collapse, swipe up = expand. The slider inside
           // uses horizontal drags, so the arenas don't conflict.

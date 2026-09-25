@@ -12,7 +12,8 @@ const List<Zikr> dalayilAlkhayratCollection = [
 
 const dalayilHizb1 = Zikr(
   id: 'dalayil-hizb-1',
-  title: 'دلائل الخيرات ورد يوم الاثنين',
+  title: 'دلائل الخيرات',
+  notes: 'دلائل الخيرات ورد يوم الاثنين',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_mon.mp3',
   footer: '''
 [1]: أَحِيد: أي أحِيد عن أمتي نار جهنم، أَحْيَد بسكون الحاء وفتح الياء، أي أبعد الناس عن النار
@@ -112,7 +113,8 @@ const dalayilHizb1 = Zikr(
 
 const dalayilHizb2 = Zikr(
   id: 'dalayil-hizb-2',
-  title: 'دلائل الخيرات ورد يوم الثلاثاء',
+  title: 'دلائل الخيرات',
+  notes: 'دلائل الخيرات ورد يوم الثلاثاء',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_tue.mp3',
   content: '''
 اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ خَيْرِ مَا تَعْلَمُ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا تَعْلَمُ، وَأَسْتَغْفِرُكَ مِنْ كُلِّ مَا تَعْلَمُ، إِنَّكَ تَعْلَمُ وَلَا نَعْلَمُ وَأَنْتَ عَلَّامُ الْغُيُوبِ.
@@ -153,7 +155,8 @@ const dalayilHizb2 = Zikr(
 
 const dalayilHizb3 = Zikr(
   id: 'dalayil-hizb-3',
-  title: 'دلائل الخيرات ورد يوم الأربعاء',
+  title: 'دلائل الخيرات',
+  notes: 'دلائل الخيرات ورد يوم الأربعاء',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_wed.mp3',
   content: '''
 اللَّهُمَّ صَلِّ عَلَى رُوحِ سَيِّدِنَا مُحَمَّدٍ فِي الْأَرْوَاحِ، وَعَلَى جَسَدِهِ فِي الْأَجْسَادِ، وَعَلَى قَبْرِهِ فِي الْقُبُورِ، وَعَلَى آلِهِ وَصَحْبِهِ وَسَلِّمْ. 
@@ -206,7 +209,8 @@ const dalayilHizb3 = Zikr(
 
 const dalayilHizb4 = Zikr(
   id: 'dalayil-hizb-4',
-  title: 'دلائل الخيرات ورد يوم الخميس',
+  title: 'دلائل الخيرات',
+  notes: 'دلائل الخيرات ورد يوم الخميس',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_thu.mp3',
   content: '''
 اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ عَبْدِكَ وَرَسُولِكَ النَّبِيِّ الأُمِّيِّ وَعَلَى آلِ سَيِّدِنَا مُحَمَّدٍ. 
@@ -265,7 +269,8 @@ const dalayilHizb4 = Zikr(
 
 const dalayilHizb5 = Zikr(
   id: 'dalayil-hizb-5',
-  title: 'دلائل الخيرات ورد يوم الجمعة',
+  title: 'دلائل الخيرات',
+  notes: 'دلائل الخيرات ورد يوم الجمعة',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_fri.mp3',
   footer:
       '[1]: نكتب اسمنا ونكتب كلمة(لعبدك) إذا كان ذكراً، و(لأمتك) إذا كانت أنثى',
@@ -340,7 +345,8 @@ const dalayilHizb5 = Zikr(
 
 const dalayilHizb6 = Zikr(
   id: 'dalayil-hizb-6',
-  title: 'دلائل الخيرات ورد يوم السبت',
+  title: 'دلائل الخيرات',
+  notes: 'دلائل الخيرات ورد يوم السبت',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_sat.mp3',
   content: '''
 اللَّهُمَّ رَبَّ الْأَرْوَاحِ وَالْأَجْسَادِ الْبَالِيَةِ، أَسْأَلُكَ بِطَاعَةِ الأَرْوَاحِ الرَّاجِعَةِ إِلَى أَجْسَادِهَا، وَبِطَاعَةِ الأَجْسَادِ الْـمُلْتَئِمَةِ بِعُرُوقِهَا، وَبِكَلِمَاتِكَ النَّافِذَةِ فِيهِمْ، وَأَخْذِكَ الْـحَقَّ مِنْهُمْ، والْـخَلَائِقُ بَيْنَ يَدَيْكَ يَنْتَظِرُونَ فَصْلَ قَضَائِكَ، وَيَرْجُونَ رَحْمَتَكَ، وَيَخافُونَ عِقَابَكَ، أنْ تَجْعَلَ النُّورَ فِي بَصَرِي، وَذِكْرَكَ باللَّيْلِ وَالنَّهَارِ عَلَى لِسَانِي، وَعَمَلاً صَالِحًا فارْزُقْنِي. 
@@ -387,7 +393,8 @@ const dalayilHizb6 = Zikr(
 
 const dalayilHizb7 = Zikr(
   id: 'dalayil-hizb-7',
-  title: 'دلائل الخيرات ورد يوم الأحد',
+  title: 'دلائل الخيرات',
+  notes: 'دلائل الخيرات ورد يوم الأحد',
   url: 'https://archive.org/download/dalailelkhairhat/dalailelkhairhat_sun.mp3',
   content: '''
 اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ وَعَلَى آلِ سَيِّدِنَا مُحَمَّدٍ مَا سَجَعَتِ الحَمَائِمُ، وَحَمَتِ الحَوَائِمُ، وَسَرَحَتِ الْبَهَائِمُ، وَنَفَعَتِ التَّمَائِمُ، وَشُدَّتِ الْعَمَائِمُ، وَنَمَتِ النَّوَائِمُ. 
