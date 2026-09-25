@@ -22,6 +22,27 @@ Future<PdfDocument> openBundledPdf(String assetPath) {
   return PdfDocument.openData(bytes);
 }
 
+/// Lets a pager learn which of its manuscript pages are zoomed in: while one
+/// is, horizontal drags must pan it rather than turn the page.
+class PdfZoomScope extends InheritedWidget {
+  const PdfZoomScope({
+    required this.onZoomChanged,
+    required super.child,
+    super.key,
+  });
+
+  /// Called with the reporting [PdfReaderContent] state whenever it becomes
+  /// zoomed in or not. Also called from build and dispose, so it must not
+  /// rebuild synchronously.
+  final void Function(Object manuscript, {required bool zoomed}) onZoomChanged;
+
+  static PdfZoomScope? maybeOf(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<PdfZoomScope>();
+
+  @override
+  bool updateShouldNotify(PdfZoomScope oldWidget) => false;
+}
+
 /// PDF body shared by Hilya Nasab and the manuscript tab of Tareeqa/Sanad.
 ///
 /// Owns the [PdfControllerPinch] lifecycle (created once in initState,
@@ -72,6 +93,9 @@ class PdfReaderContent extends StatefulWidget {
 class _PdfReaderContentState extends State<PdfReaderContent> {
   late final PdfControllerPinch _controller;
   final PdfAtTopObserver _atTop = PdfAtTopObserver();
+  PdfZoomScope? _zoomScope;
+  bool _visible = true;
+  bool _reportedZoomed = false;
 
   @override
   void initState() {
@@ -84,10 +108,28 @@ class _PdfReaderContentState extends State<PdfReaderContent> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _zoomScope = PdfZoomScope.maybeOf(context);
+    // False while Tareeqa/Sanad shows its text tab over this manuscript.
+    _visible = Visibility.of(context);
+    _reportZoom();
+  }
+
+  @override
   void dispose() {
+    if (_reportedZoomed) _zoomScope?.onZoomChanged(this, zoomed: false);
     _controller.removeListener(_handleTransform);
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Zoom 1 is fit-to-width, the viewer's minimum.
+  void _reportZoom() {
+    final zoomed = _visible && _controller.zoomRatio > 1.01;
+    if (zoomed == _reportedZoomed) return;
+    _reportedZoomed = zoomed;
+    _zoomScope?.onZoomChanged(this, zoomed: zoomed);
   }
 
   void _sendChrome(ReaderChromeAction action) {
@@ -96,6 +138,7 @@ class _PdfReaderContentState extends State<PdfReaderContent> {
 
   /// Reveals the chrome once per arrival at the very top.
   void _handleTransform() {
+    _reportZoom();
     if (_atTop.handleTransform(_controller)) {
       _sendChrome(ReaderChromeAction.show);
     }

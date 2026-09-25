@@ -2,6 +2,7 @@ import 'package:aldurar_alnaqia/audio/audio_state.dart';
 import 'package:aldurar_alnaqia/common/reader/pdf_reader_content.dart';
 import 'package:aldurar_alnaqia/common/reader/reader_page.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
+import 'package:aldurar_alnaqia/router/swipe_back.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/bayt_widget.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/swipe_hint_dialog.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/widgets/zikr_inline_text.dart';
@@ -12,7 +13,9 @@ import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart'
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Swipeable azkar reader: one [PageView] over a collection of zikr ids.
+/// Swipeable azkar reader: one [SwipeBackPageView] over a collection of zikr
+/// ids. Swipe → for the next zikr, ← for the previous one, and ← on the
+/// first goes back to the list.
 ///
 /// Special compositions (Hilya/Nasab manuscript, Tareeqa/Sanad) reuse their
 /// shared content widgets with no nested [Scaffold], so every page —
@@ -22,9 +25,18 @@ import 'package:material_ui/material_ui.dart';
 class SlidableZikrScreen extends StatefulWidget {
   const SlidableZikrScreen({
     required this.zikrIds, required this.initialIndex, super.key,
-  });
+  }) : _fromList = true;
+
+  /// One zikr opened on its own (search, home tiles, deep links): no
+  /// neighbours and no playlist, but ← still goes back.
+  SlidableZikrScreen.single(String zikrId, {super.key})
+      : zikrIds = [zikrId],
+        initialIndex = 0,
+        _fromList = false;
+
   final List<String> zikrIds;
   final int initialIndex;
+  final bool _fromList;
 
   @override
   State<SlidableZikrScreen> createState() => _SlidableZikrScreenState();
@@ -34,6 +46,10 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
   late PageController _pageController;
   late String _currentId;
   late Zikr _currentZikr;
+
+  /// Manuscript pages currently zoomed in; while any is, horizontal drags
+  /// pan it instead of paging or swiping back.
+  final Set<Object> _zoomedManuscripts = {};
 
   @override
   void initState() {
@@ -66,10 +82,24 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
     _currentZikr = resolveZikr(_currentId) ?? zikrById.values.first;
   }
 
+  void _handleZoomChanged(Object manuscript, {required bool zoomed}) {
+    final changed = zoomed
+        ? _zoomedManuscripts.add(manuscript)
+        : _zoomedManuscripts.remove(manuscript);
+    if (!changed) return;
+    // Reports arrive mid-build and from disposing pages: rebuild after.
+    WidgetsBinding.instance
+      ..addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      })
+      ..ensureVisualUpdate();
+  }
+
   /// Playlist for continuous playback: every list item that has audio, in
   /// slide order. The controller plays local files first and streams the
-  /// rest automatically.
-  List<AudioTrack> _audioQueue() {
+  /// rest automatically. A zikr opened on its own plays alone.
+  List<AudioTrack>? _audioQueue() {
+    if (!widget._fromList) return null;
     return [
       for (final id in widget.zikrIds)
         if (resolveZikr(id) case final Zikr z when z.hasAudio)
@@ -92,26 +122,30 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
       // Full slide order as the playback queue so the mini player can
       // auto-advance through it.
       queue: _audioQueue(),
-      child: PageView.builder(
-        controller: _pageController,
-        itemCount: widget.zikrIds.length,
-        onPageChanged: (index) {
-          setState(() => _updateCurrentZikr(index));
-        },
-        itemBuilder: (context, index) {
-          final zikr = resolveZikr(widget.zikrIds[index]);
-          switch (zikr?.kind) {
-            case ZikrKind.hilyaNasab:
-              // Manuscript body; owns its PdfControllerPinch lifecycle and
-              // reports chrome intents to the enclosing ReaderScaffold.
-              return PdfReaderContent.asset(zikrPdfAsset(zikr!));
-            case ZikrKind.tareeqaSanad:
-              return const TareeqaSanadContent();
-            case ZikrKind.text:
-            case null:
-              return ZikrContentWidget(zikrId: widget.zikrIds[index]);
-          }
-        },
+      child: PdfZoomScope(
+        onZoomChanged: _handleZoomChanged,
+        child: SwipeBackPageView(
+          controller: _pageController,
+          itemCount: widget.zikrIds.length,
+          swipeEnabled: _zoomedManuscripts.isEmpty,
+          onPageChanged: (index) {
+            setState(() => _updateCurrentZikr(index));
+          },
+          itemBuilder: (context, index) {
+            final zikr = resolveZikr(widget.zikrIds[index]);
+            switch (zikr?.kind) {
+              case ZikrKind.hilyaNasab:
+                // Manuscript body; owns its PdfControllerPinch lifecycle and
+                // reports chrome intents to the enclosing ReaderScaffold.
+                return PdfReaderContent.asset(zikrPdfAsset(zikr!));
+              case ZikrKind.tareeqaSanad:
+                return const TareeqaSanadContent();
+              case ZikrKind.text:
+              case null:
+                return ZikrContentWidget(zikrId: widget.zikrIds[index]);
+            }
+          },
+        ),
       ),
     );
   }
@@ -136,26 +170,23 @@ class ZikrScreen extends StatelessWidget {
         index! < zikrIds!.length) {
       return SlidableZikrScreen(zikrIds: zikrIds!, initialIndex: index!);
     }
-    // Find the specific Zikr data using the id; show a friendly page
-    // instead of crashing when the id is unknown (e.g. from search).
-    final zikr = resolveZikr(zikrId);
-
-    if (zikr == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text(zikrId)),
-        body: const Center(
-          child: Text(
-            'لم يتم العثور على هذا الذكر',
-            style: TextStyle(fontSize: 18),
+    // Show a friendly page instead of crashing when the id is unknown
+    // (e.g. from search or a stale deep link).
+    if (resolveZikr(zikrId) == null) {
+      return SwipeBackDetector(
+        child: Scaffold(
+          appBar: AppBar(title: Text(zikrId)),
+          body: const Center(
+            child: Text(
+              'لم يتم العثور على هذا الذكر',
+              style: TextStyle(fontSize: 18),
+            ),
           ),
         ),
       );
     }
 
-    return ZikrReaderPage(
-      zikr: zikr,
-      child: ZikrContentWidget(zikrId: zikr.id),
-    );
+    return SlidableZikrScreen.single(zikrId);
   }
 }
 

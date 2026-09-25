@@ -2,6 +2,7 @@ import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/prayer/prayer_repository.dart'
     show islamicWeekdayNow;
 import 'package:aldurar_alnaqia/router/app_routes.dart';
+import 'package:aldurar_alnaqia/router/swipe_back.dart';
 import 'package:aldurar_alnaqia/screens/awrad_list_screen/awrad_list_screen.dart';
 import 'package:aldurar_alnaqia/screens/download_manager_screen/download_manager_screen.dart';
 import 'package:aldurar_alnaqia/screens/home_screen/home_screen.dart';
@@ -11,7 +12,6 @@ import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_scr
 import 'package:aldurar_alnaqia/screens/prayer_timings_screen/prayer_timings_settings_screen.dart';
 import 'package:aldurar_alnaqia/screens/social_screen/social_screen.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart';
-import 'package:aldurar_alnaqia/widgets/azkar_list_view/helia_nasab_screen.dart';
 import 'package:aldurar_alnaqia/widgets/collection_screens.dart';
 import 'package:aldurar_alnaqia/widgets/main_wrapper.dart';
 import 'package:aldurar_alnaqia/widgets/week_azkar_list.dart';
@@ -47,7 +47,10 @@ class AppRouter {
             return MaterialPage(
               key: state.pageKey,
               restorationId: 'appShellPage',
-              child: MainWrapper(navigationShell: navigationShell),
+              child: MainWrapper(
+                navigationShell: navigationShell,
+                isTabRoot: isTabRoot(state.uri),
+              ),
             );
           },
           branches: [
@@ -60,6 +63,19 @@ class AppRouter {
       ],
     );
   }
+
+  static const Set<String> _tabRootPaths = {
+    RoutePaths.home,
+    RoutePaths.timings,
+    RoutePaths.awrad,
+    RoutePaths.library,
+  };
+
+  /// Whether [location] is a bottom-nav tab's own screen rather than one
+  /// pushed inside it. Only there may a swipe open the drawer; everywhere
+  /// else the swipe goes back.
+  static bool isTabRoot(Uri location) =>
+      _tabRootPaths.contains(location.path);
 
   // --- Standalone routes ---------------------------------------------------
 
@@ -280,46 +296,9 @@ class AppRouter {
         final (zikrIds, index) =
             _resolveSwipeContext(state.extra, state.uri, zikrId);
 
-        // When opened from a list with swipe context (ids + index),
-        // always go through the slidable screen — even for special
-        // compositions like Hilya/Sanad — so the user can swipe to
-        // neighbouring azkar. SlidableZikrScreen renders their PDF
-        // content internally.
-        if (zikrIds != null &&
-            index != null &&
-            index >= 0 &&
-            index < zikrIds.length) {
-          return RouteTransitions.slideTransition(
-            AudioMiniPlayerOverlay(
-              child: ZikrScreen(
-                zikrId: zikrId,
-                zikrIds: zikrIds,
-                index: index,
-              ),
-            ),
-            key: state.pageKey,
-            restorationId: 'zikrPage-$pagePrefix',
-          );
-        }
-
-        // Handle special standalone compositions (no swipe context,
-        // e.g. opened from search or a deep link).
-        final resolved = resolveZikr(zikrId);
-        if (resolved?.kind == ZikrKind.hilyaNasab) {
-          return RouteTransitions.slideTransition(
-            const AudioMiniPlayerOverlay(child: HeliaNasabScreen()),
-            key: state.pageKey,
-            restorationId: 'zikrPage-$pagePrefix-hilya',
-          );
-        }
-        if (resolved?.kind == ZikrKind.tareeqaSanad) {
-          return RouteTransitions.slideTransition(
-            const AudioMiniPlayerOverlay(child: TareeqaSanadScreen()),
-            key: state.pageKey,
-            restorationId: 'zikrPage-$pagePrefix-sanad',
-          );
-        }
-
+        // With swipe context (ids + index) the reader swipes across the
+        // list; without it (search, deep links) it shows the zikr alone.
+        // Either way it renders special compositions like Hilya/Sanad.
         return RouteTransitions.slideTransition(
           AudioMiniPlayerOverlay(
             child: ZikrScreen(
@@ -330,6 +309,7 @@ class AppRouter {
           ),
           key: state.pageKey,
           restorationId: 'zikrPage-$pagePrefix',
+          swipeBack: false,
         );
       },
     );
@@ -342,9 +322,12 @@ class AppRouter {
       name: RouteNames.heliaNasab,
       pageBuilder: (context, state) {
         return RouteTransitions.slideTransition(
-          const AudioMiniPlayerOverlay(child: HeliaNasabScreen()),
+          const AudioMiniPlayerOverlay(
+            child: ZikrScreen(zikrId: 'hilya-nasab'),
+          ),
           key: state.pageKey,
           restorationId: 'heliaNasab',
+          swipeBack: false,
         );
       },
     );
@@ -406,18 +389,34 @@ class AppRouter {
 class RouteTransitions {
   RouteTransitions._();
 
+  /// Slides the page in from the left in RTL (the right in LTR). Swiping
+  /// that way (←) drags it back off to return to the previous screen (see
+  /// `swipe_back.dart`).
+  ///
+  /// [swipeBack] makes the whole page take that swipe. Pages whose content
+  /// has its own horizontal gestures pass false: the zikr reader's pager
+  /// takes the swipe back from its first page itself.
   static CustomTransitionPage<Widget> slideTransition(
     Widget child, {
     required LocalKey key,
     String? restorationId,
+    bool swipeBack = true,
   }) {
     return CustomTransitionPage<Widget>(
       key: key,
       restorationId: restorationId,
-      child: child,
+      child: swipeBack ? SwipeBackDetector(child: child) : child,
       transitionsBuilder: _slideTransition,
     );
   }
+
+  static final Animatable<Offset> _slideIn = Tween<Offset>(
+    begin: const Offset(1, 0),
+    end: Offset.zero,
+  );
+  static final Animatable<Offset> _slideInCurved = _slideIn.chain(
+    CurveTween(curve: Curves.easeInOutCubicEmphasized),
+  );
 
   static Widget _slideTransition(
     BuildContext context,
@@ -425,16 +424,12 @@ class RouteTransitions {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
+    // Linear while a swipe back drags the page, so it stays under the finger.
+    final linear = ModalRoute.of(context)!.popGestureInProgress;
     return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(1, 0),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeInOutCubicEmphasized,
-        ),
-      ),
+      // Mirrors [_slideIn] in RTL.
+      textDirection: Directionality.of(context),
+      position: animation.drive(linear ? _slideIn : _slideInCurved),
       child: FadeTransition(
         opacity: animation,
         child: child,

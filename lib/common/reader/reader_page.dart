@@ -5,8 +5,8 @@ import 'package:aldurar_alnaqia/screens/zikr_screen/play_audio_btn_zikr_page.dar
 import 'package:material_ui/material_ui.dart';
 
 /// Wires a [Zikr] into the shared reader chrome: title + audio action.
-/// The standalone zikr screen, HeliaNasabScreen and TareeqaSanadScreen are
-/// now one-liners that differ only in [child].
+/// Every zikr page, including the Hilya/Nasab and Tareeqa/Sanad
+/// compositions, is one of these around a swipeable reader.
 class ZikrReaderPage extends StatelessWidget {
   const ZikrReaderPage({
     required this.zikr,

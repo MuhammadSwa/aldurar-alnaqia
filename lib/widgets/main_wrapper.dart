@@ -56,9 +56,15 @@ class AudioMiniPlayerOverlay extends ConsumerWidget {
 class MainWrapper extends StatelessWidget {
   const MainWrapper({
     required this.navigationShell,
+    required this.isTabRoot,
     super.key,
   });
   final StatefulNavigationShell navigationShell;
+
+  /// Whether the current tab shows its own screen. Screens pushed inside a
+  /// tab take the swipe as "back", so the drawer only opens from the edge
+  /// on the tab screens themselves (the menu button still works).
+  final bool isTabRoot;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +86,7 @@ class MainWrapper extends StatelessWidget {
           child: Scaffold(
             key: rootScaffoldKey,
             drawer: const MyDrawer(),
+            drawerEnableOpenDragGesture: isTabRoot,
             // Keep the bottom NavigationBar pinned: the keyboard overlays
             // it instead of lifting it above the keyboard.
             resizeToAvoidBottomInset: false,

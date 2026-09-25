@@ -1,35 +1,10 @@
 import 'package:aldurar_alnaqia/common/reader/pdf_reader_content.dart';
-import 'package:aldurar_alnaqia/common/reader/reader_page.dart';
 import 'package:aldurar_alnaqia/models/azkar_models.dart';
 import 'package:aldurar_alnaqia/screens/zikr_screen/zikr_screen.dart'; // ZikrContentWidget
 import 'package:material_ui/material_ui.dart';
 
-/// Canonical hilya zikr (asset filename is the Arabic title).
-Zikr get _hilya => zikrById['hilya-nasab']!;
-
 /// Canonical sanad zikr (asset filename is the Arabic title).
 Zikr get _sanad => zikrById['sanad-tariqa']!;
-
-class HeliaNasabScreen extends StatelessWidget {
-  const HeliaNasabScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ZikrReaderPage(
-      zikr: _hilya,
-      child: PdfReaderContent.asset(zikrPdfAsset(_hilya)),
-    );
-  }
-}
-
-class TareeqaSanadScreen extends StatelessWidget {
-  const TareeqaSanadScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ZikrReaderPage(zikr: _sanad, child: const TareeqaSanadContent());
-  }
-}
 
 /// PDF + text body, reusable inside a swipeable [PageView] (no Scaffold).
 class TareeqaSanadContent extends StatefulWidget {
