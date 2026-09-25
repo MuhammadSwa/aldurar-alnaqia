@@ -100,8 +100,7 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
     // Pull-down overscroll at the very top (finger drags down while already
     // at offset 0): reveal even if metrics haven't settled exactly on
     // minScrollExtent.
-    if (notification is OverscrollNotification &&
-        notification.overscroll < 0) {
+    if (notification is OverscrollNotification && notification.overscroll < 0) {
       _chrome.show();
       return false;
     }
@@ -124,21 +123,19 @@ class _ReaderScaffoldState extends State<ReaderScaffold> {
         appBar: showAppBar
             ? AppBar(title: Text(widget.title), actions: widget.actions)
             : null,
-        body: 
-        SafeArea(child: 
-        NotificationListener<ScrollNotification>(
-          onNotification: _handleScroll,
-          // Only wrap in a tap detector while immersive. In portrait the
-          // content gets no gesture wrapper at all, so nothing competes with
-          // text selection or the PDF view.
-          child: _chrome.landscape
-              ? GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: _chrome.toggle,
-                  child: widget.child,
-                )
-              : widget.child,
-        ),
+        body: SafeArea(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _handleScroll,
+            // Keep this wrapper in the tree in both orientations. Adding or
+            // removing it on rotation would recreate a nested PageView, making
+            // a slidable zikr return to its initial page. With a null callback
+            // it registers no tap gesture in portrait, so it stays inert there.
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _chrome.landscape ? _chrome.toggle : null,
+              child: widget.child,
+            ),
+          ),
         ),
       ),
     );
