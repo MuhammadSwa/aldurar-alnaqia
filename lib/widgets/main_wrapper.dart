@@ -83,6 +83,16 @@ class _MainWrapperState extends State<MainWrapper> {
   /// selection moves mid-swipe, before the branch switches.
   late int _page = widget.navigationShell.currentIndex;
 
+  /// The tabs the pager has in view: the one it rests on, or the two a
+  /// swipe is between. Only their tickers run.
+  late ({int first, int last}) _inView = (first: _page, last: _page);
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController.addListener(_onScroll);
+  }
+
   @override
   void didUpdateWidget(MainWrapper oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -108,6 +118,15 @@ class _MainWrapperState extends State<MainWrapper> {
     if (page != _page) setState(() => _page = page);
   }
 
+  void _onScroll() {
+    var page = _pageController.page;
+    if (page == null) return;
+    // Resting on a tab can leave the page a hair off it (see _onScrollEnd).
+    if ((page - page.round()).abs() < 1e-6) page = page.roundToDouble();
+    final inView = (first: page.floor(), last: page.ceil());
+    if (inView != _inView) setState(() => _inView = inView);
+  }
+
   bool _onScrollEnd(ScrollEndNotification notification) {
     final page = _pageController.page;
     if (notification.depth != 0 || page == null) return false;
@@ -124,7 +143,6 @@ class _MainWrapperState extends State<MainWrapper> {
 
   /// Built below the drawer, to hand it the pager's drags past home.
   Widget _buildPager(BuildContext context) {
-    final currentIndex = widget.navigationShell.currentIndex;
     return NotificationListener<ScrollEndNotification>(
       onNotification: _onScrollEnd,
       child: PageView(
@@ -140,11 +158,17 @@ class _MainWrapperState extends State<MainWrapper> {
             : const NeverScrollableScrollPhysics(),
         onPageChanged: _onPageChanged,
         children: [
-          // As in go_router's IndexedStack container, only the open tab's
-          // tickers run; a tab swiped into view starts its own once the
-          // swipe settles on it.
+          // As in go_router's IndexedStack container, a tab out of view
+          // stops its tickers. It restarts them as soon as a swipe brings
+          // it into view, not once the swipe settles: animations it missed
+          // offscreen then finish at once. Otherwise a theme change shows
+          // mid-swipe with the old text color, as Material fades text
+          // color but switches backgrounds instantly.
           for (final (index, child) in widget.children.indexed)
-            TickerMode(enabled: index == currentIndex, child: child),
+            TickerMode(
+              enabled: index >= _inView.first && index <= _inView.last,
+              child: child,
+            ),
         ],
       ),
     );

@@ -71,10 +71,7 @@ class _Screen extends StatelessWidget {
       Scaffold(body: Center(child: Text(name)));
 }
 
-Future<GoRouter> _pumpShell(WidgetTester tester) async {
-  final router = _router();
-  addTearDown(router.dispose);
-  await tester.pumpWidget(
+Widget _app(GoRouter router, {ThemeMode themeMode = ThemeMode.light}) =>
     ProviderScope(
       overrides: [audioProvider.overrideWith(_IdleAudio.new)],
       child: MaterialApp.router(
@@ -82,9 +79,16 @@ Future<GoRouter> _pumpShell(WidgetTester tester) async {
         locale: const Locale('ar'),
         supportedLocales: const [Locale('ar')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        theme: ThemeData(brightness: Brightness.light),
+        darkTheme: ThemeData(brightness: Brightness.dark),
+        themeMode: themeMode,
       ),
-    ),
-  );
+    );
+
+Future<GoRouter> _pumpShell(WidgetTester tester) async {
+  final router = _router();
+  addTearDown(router.dispose);
+  await tester.pumpWidget(_app(router));
   await tester.pumpAndSettle();
   return router;
 }
@@ -95,8 +99,17 @@ String _location(GoRouter router) =>
 int _selectedTab(WidgetTester tester) =>
     tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex;
 
-bool _isOpenTab(WidgetTester tester, String tab) =>
-    TickerMode.valuesOf(tester.element(find.text(tab))).enabled;
+bool _isTicking(WidgetTester tester, String tab) => TickerMode.valuesOf(
+      tester.element(find.text(tab, skipOffstage: false)),
+    ).enabled;
+
+/// Whether [tab]'s text shows the current theme's color, rather than one
+/// its Material is still fading from.
+bool _hasThemeTextColor(WidgetTester tester, String tab) {
+  final text = tester.element(find.text(tab));
+  return DefaultTextStyle.of(text).style.color ==
+      Theme.of(text).textTheme.bodyMedium!.color;
+}
 
 void main() {
   setUp(() async {
@@ -121,7 +134,8 @@ void main() {
     expect(_location(router), RoutePaths.timings);
     expect(_selectedTab(tester), 1);
     expect(find.text(RoutePaths.home), findsNothing);
-    expect(_isOpenTab(tester, RoutePaths.timings), isTrue);
+    expect(_isTicking(tester, RoutePaths.timings), isTrue);
+    expect(_isTicking(tester, RoutePaths.home), isFalse);
 
     await tester.fling(
       find.text(RoutePaths.timings),
@@ -145,16 +159,53 @@ void main() {
     await gesture.moveBy(const Offset(40, 0));
     await gesture.moveBy(const Offset(200, 0));
     await tester.pump();
-    // In view, but not the open tab until a swipe settles on it.
+    // In view, so ticking, but not the open tab until a swipe settles on it.
     expect(find.text(RoutePaths.timings), findsOneWidget);
-    expect(_isOpenTab(tester, RoutePaths.timings), isFalse);
+    expect(_isTicking(tester, RoutePaths.timings), isTrue);
+    expect(_location(router), RoutePaths.home);
 
     await gesture.moveBy(const Offset(-200, 0));
     await gesture.up();
     await tester.pumpAndSettle();
     expect(_location(router), RoutePaths.home);
     expect(_selectedTab(tester), 0);
-    expect(_isOpenTab(tester, RoutePaths.home), isTrue);
+    expect(_isTicking(tester, RoutePaths.home), isTrue);
+    expect(_isTicking(tester, RoutePaths.timings), isFalse);
+  });
+
+  testWidgets('a tab swiped into view after a theme change shows its colors',
+      (tester) async {
+    final router = await _pumpShell(tester);
+    // Build the timings tab, then leave it offscreen.
+    await tester.tap(find.text('مواقيت الصلاة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('الرئيسية'));
+    await tester.pumpAndSettle();
+
+    for (final themeMode in [ThemeMode.dark, ThemeMode.light]) {
+      await tester.pumpWidget(_app(router, themeMode: themeMode));
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text(RoutePaths.home)),
+      );
+      await gesture.moveBy(const Offset(40, 0));
+      await gesture.moveBy(const Offset(200, 0));
+      await tester.pump();
+      await tester.pump();
+      expect(_hasThemeTextColor(tester, RoutePaths.timings), isTrue);
+
+      await gesture.moveBy(const Offset(-240, 0));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      // Opening the tab lets anything it has left to animate finish, so the
+      // next switch starts from its settled colors.
+      await tester.tap(find.text('مواقيت الصلاة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('الرئيسية'));
+      await tester.pumpAndSettle();
+    }
   });
 
   testWidgets('swiping past home pulls out the drawer under the finger',
