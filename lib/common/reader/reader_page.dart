@@ -30,6 +30,7 @@ class ZikrReaderPage extends StatelessWidget {
           id: zikr.id,
           title: zikr.title,
           url: zikr.url,
+          coverAsset: zikr.coverAsset,
           queue: queue,
         ),
       ],

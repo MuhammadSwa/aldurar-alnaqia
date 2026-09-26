@@ -31,6 +31,7 @@ class Zikr {
     this.notes = '',
     this.footer = '',
     this.kind = ZikrKind.text,
+    this.coverAsset,
   });
   /// Stable ASCII identifier. Never shown to users; used for routes,
   /// bookmarks, downloads and filenames. Never rename.
@@ -41,6 +42,12 @@ class Zikr {
   final String footer;
   final String? url;
   final ZikrKind kind;
+
+  /// Bundled cover art for the lock screen / media notification, e.g.
+  /// `assets/imgs/audio/my-zikr.jpg`. Null means the shared default cover.
+  /// Every zikr currently falls back to the placeholder until real artwork
+  /// is added.
+  final String? coverAsset;
 
   bool get hasAudio => url != null && url!.isNotEmpty;
 }

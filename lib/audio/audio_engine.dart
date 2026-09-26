@@ -17,6 +17,7 @@ class EngineLoadRequest {
     required this.trackId,
     required this.title,
     required this.isLocal,
+    this.coverAsset,
   });
 
   /// File path when [isLocal], else an https URL.
@@ -26,6 +27,10 @@ class EngineLoadRequest {
 
   /// Whether [uri] points at a local file (vs a remote stream).
   final bool isLocal;
+
+  /// Bundled cover art asset path for this zikr, or null for the shared
+  /// default cover.
+  final String? coverAsset;
 }
 
 /// Thin facade over just_audio's [AudioPlayer]. All playback policy (queue,
@@ -35,9 +40,10 @@ class EngineLoadRequest {
 ///  * feeds the system media session ([MediaSessionHandler]: lock screen,
 ///    media notification) the current `MediaItem`, and forwards its
 ///    prev/next presses on [remoteSkips],
-///  * materializes the bundled cover art to a real file (the Android
-///    notification cannot decode `asset:///` URIs — it silently shows a
-///    black square),
+///  * materializes the requested cover art ([EngineLoadRequest.coverAsset],
+///    else the shared default) to a real file, once per distinct asset (the
+///    Android notification cannot decode `asset:///` URIs — it silently shows
+///    a black square),
 ///  * re-applies the current speed after every load,
 ///  * surfaces out-of-band playback errors (decode failures, dropped
 ///    streams) on [errorStream] (load errors are thrown by [load] instead).
@@ -109,26 +115,56 @@ class JustAudioEngine {
 
   // --- Metadata ---
 
-  /// The bundled cover image, extracted to a real file once.
-  static const String _coverAsset = 'assets/imgs/audio_cover.jpg';
-  Uri? _coverFileUri;
-  bool _coverResolved = false;
+  /// Shared placeholder cover until per-zikr artwork lands. Set
+  /// [Zikr.coverAsset] to point a zikr at its own bundled image.
+  static const String _defaultCoverAsset = 'assets/imgs/audio_cover.jpg';
 
-  Future<Uri?> _coverArtUri() async {
-    if (_coverResolved) return _coverFileUri;
-    _coverResolved = true;
+  /// Materialized art files, keyed by asset path. Each distinct artwork is
+  /// extracted to a real file once (the Android notification cannot decode
+  /// `asset:///` URIs — it silently shows a black square).
+  final Map<String, Uri?> _artCache = {};
+
+  Future<Uri?> _resolveArtUri(String? coverAsset) async {
+    final asset = coverAsset ?? _defaultCoverAsset;
+    if (_artCache.containsKey(asset)) return _artCache[asset];
+    final uri = await _materializeAsset(asset);
+    // A missing per-zikr image must not blank the notification: fall back
+    // to the shared cover instead of null.
+    if (uri == null && asset != _defaultCoverAsset) {
+      logInfo('Cover art "$asset" unavailable, using the default cover');
+      return await _resolveArtUri(null);
+    }
+    _artCache[asset] = uri;
+    logInfo('Cover art for "$asset" -> $uri');
+    return uri;
+  }
+
+  Future<Uri?> _materializeAsset(String asset) async {
     try {
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/audio_cover.jpg');
+      final file = File('${dir.path}/${_tempNameFor(asset)}');
       if (!await file.exists()) {
-        final data = await rootBundle.load(_coverAsset);
+        final data = await rootBundle.load(asset);
         await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
       }
-      _coverFileUri = Uri.file(file.path);
+      return Uri.file(file.path);
     } catch (e) {
-      logWarn('Failed to materialize audio cover art: $e');
+      logWarn('Failed to materialize audio cover art "$asset": $e');
+      return null;
     }
-    return _coverFileUri;
+  }
+
+  /// Flattens an asset path into a collision-free temp filename, keeping the
+  /// source extension — the system notification decodes `artUri` by name, so
+  /// WebP/PNG bytes must not be handed over as `*.jpg`.
+  static String _tempNameFor(String asset) {
+    final name = asset.split('/').last;
+    final dot = name.lastIndexOf('.');
+    final ext = dot > 0 ? name.substring(dot) : '';
+    final base = asset
+        .substring(0, asset.length - ext.length)
+        .replaceAll(RegExp('[^a-zA-Z0-9]+'), '_');
+    return '$base$ext';
   }
 
   /// Builds the lock screen / media notification metadata (title, album,
@@ -150,7 +186,7 @@ class JustAudioEngine {
   /// load is still the wanted one (guards rapid track-switch races).
   Future<void> load(EngineLoadRequest request) async {
     final player = _audio;
-    final item = _mediaItemFor(request, await _coverArtUri());
+    final item = _mediaItemFor(request, await _resolveArtUri(request.coverAsset));
     _session?.beginTrackSwitch(item);
     try {
       await player.stop();

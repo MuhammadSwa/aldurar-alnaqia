@@ -62,6 +62,7 @@ flutter:
   assets:
     - assets/pdfs/
     - assets/imgs/
+    - assets/imgs/audio_covers/
     - assets/lottie/
     - assets/imgs/sunnah_midnight.png
     - assets/imgs/sunnah_last_third.png

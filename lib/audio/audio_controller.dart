@@ -244,6 +244,7 @@ class AudioController extends Notifier<AudioState> {
           trackId: track.id,
           title: track.title,
           isLocal: true,
+          coverAsset: track.coverAsset,
         );
       }
     } catch (e) {
@@ -254,6 +255,7 @@ class AudioController extends Notifier<AudioState> {
       trackId: track.id,
       title: track.title,
       isLocal: false,
+      coverAsset: track.coverAsset,
     );
   }
 
@@ -267,6 +269,7 @@ class AudioController extends Notifier<AudioState> {
       trackId: request.trackId,
       title: request.title,
       isLocal: false,
+      coverAsset: request.coverAsset ?? track.coverAsset,
     );
   }
 

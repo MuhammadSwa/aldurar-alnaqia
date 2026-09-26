@@ -13,11 +13,15 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
   const PlayAudioBtnZikrPage({
     required this.title, required this.url, required this.id, super.key,
     this.queue,
+    this.coverAsset,
   });
 
   final String title;
   final String? url;
   final String id;
+
+  /// Per-zikr lock-screen art; null falls back to the shared default cover.
+  final String? coverAsset;
 
   /// Playlist context (e.g. the slidable azkar list). When provided, the
   /// mini player can auto-advance through it; each item streams automatically
@@ -107,7 +111,12 @@ class PlayAudioBtnZikrPage extends ConsumerWidget {
   void _play(WidgetRef ref) {
     unawaited(
       ref.read(audioProvider.notifier).playTrack(
-            AudioTrack(id: id, title: title, remoteUrl: url!),
+            AudioTrack(
+              id: id,
+              title: title,
+              remoteUrl: url!,
+              coverAsset: coverAsset,
+            ),
             queue: queue,
           ),
     );

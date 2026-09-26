@@ -73,7 +73,12 @@ class _SlidableZikrScreenState extends State<SlidableZikrScreen> {
     return [
       for (final id in widget.zikrIds)
         if (resolveZikr(id) case final Zikr z when z.hasAudio)
-          AudioTrack(id: z.id, title: z.title, remoteUrl: z.url!),
+          AudioTrack(
+            id: z.id,
+            title: z.title,
+            remoteUrl: z.url!,
+            coverAsset: z.coverAsset,
+          ),
     ];
   }
 

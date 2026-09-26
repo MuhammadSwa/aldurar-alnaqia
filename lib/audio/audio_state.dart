@@ -25,6 +25,7 @@ class AudioTrack {
     required this.id,
     required this.title,
     required this.remoteUrl,
+    this.coverAsset,
   });
 
   /// Stable id of the zikr/narration (used for local-file lookup).
@@ -32,15 +33,20 @@ class AudioTrack {
   final String title;
   final String remoteUrl;
 
+  /// Bundled cover art asset path, or null for the shared default cover.
+  /// Plumbs [Zikr.coverAsset] through to the engine's `artUri`.
+  final String? coverAsset;
+
   @override
   bool operator ==(Object other) =>
       other is AudioTrack &&
       other.id == id &&
       other.title == title &&
-      other.remoteUrl == remoteUrl;
+      other.remoteUrl == remoteUrl &&
+      other.coverAsset == coverAsset;
 
   @override
-  int get hashCode => Object.hash(id, title, remoteUrl);
+  int get hashCode => Object.hash(id, title, remoteUrl, coverAsset);
 }
 
 /// Immutable snapshot of everything the audio UI needs.
